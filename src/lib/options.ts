@@ -65,7 +65,11 @@ export const OUTPUT_TYPES: Option[] = [
   { id: "hype", label: "Hype Machine", hint: "Maximum hype", example: "Your words cranked to the absolute maximum.", group: "fun", instruction: "Rewrite as COMPLETELY UNHINGED, maximum-volume hype. Go to the absolute furthest extreme: ALL-CAPS bursts, explosive energy, wild superlatives, stacks of exclamation points. Keep the core subject true, but crank intensity to the max." },
   { id: "poem", label: "Poem", hint: "A short poem", example: "Your ramble reshaped into a short poem.", group: "fun", instruction: "Rewrite as a short poem based on what they said: a few stanzas, evocative imagery, rhyme optional. Keep the core subject true." },
   { id: "haiku", label: "Haiku", hint: "5-7-5, three lines", example: "A 3-line, 5-7-5 haiku of what you said.", group: "fun", instruction: "Rewrite as a haiku: three lines in a 5-7-5 syllable pattern capturing the essence of what they said." },
-  { id: "song", label: "Song / Rap", hint: "Lyrics with a hook", example: "Verse-and-chorus lyrics, or a rap.", group: "fun", instruction: "Rewrite as song lyrics or a rap based on what they said: a verse and a catchy chorus or hook, with rhythm and rhyme." },
+  { id: "rap", label: "Rap", hint: "Bars with a hook", example: "Rhythmic bars with rhyme and a hook.", group: "fun", instruction: "Rewrite as a rap based on what they said: rhythmic bars with internal rhyme, a strong flow, and a catchy hook. Confident and punchy." },
+  { id: "pop", label: "Pop song", hint: "Big sing-along chorus", example: "Verses and a catchy radio chorus.", group: "fun", instruction: "Rewrite as a catchy pop song: verses and a big sing-along chorus, simple emotional hooks, radio-friendly." },
+  { id: "country", label: "Country song", hint: "Down-home storytelling", example: "Story verses and a heartfelt chorus.", group: "fun", instruction: "Rewrite as a country song: storytelling verses, a heartfelt chorus, and down-home imagery (trucks, dirt roads, heartbreak, home)." },
+  { id: "rnb", label: "R&B", hint: "Smooth and soulful", example: "Soulful verses and a silky chorus.", group: "fun", instruction: "Rewrite as a smooth R&B song: soulful, emotional verses and a silky chorus, romantic or heartfelt." },
+  { id: "rockabilly", label: "Rockabilly", hint: "50s rock and roll", example: "Twangy, foot-tapping 50s energy.", group: "fun", instruction: "Rewrite as a rockabilly tune: upbeat 1950s rock-and-roll energy, twangy and foot-tapping, playful lyrics with a driving rhythm." },
   { id: "nursery", label: "Nursery Rhyme", hint: "Sing-song kids' rhyme", example: "A bouncy, sing-song kids' rhyme.", group: "fun", instruction: "Rewrite as a short, bouncy nursery rhyme with simple rhyme and a sing-song rhythm, like a classic children's rhyme. Playful and lighthearted." },
 ];
 
@@ -85,7 +89,7 @@ export const TONES: Option[] = [
 
 // ---------- ACCENT: how it sounds (dialect) ----------
 export const ACCENTS: Option[] = [
-  { id: "hillbilly", label: "Hillbilly", hint: "Backwoods Southern twang", instruction: "Give it a thick, exaggerated backwoods hillbilly voice, and RESPELL words phonetically to capture the twang. Drop the g's (drainin', nuthin', fixin'), respell to match the accent (finger -> fanger, window -> winder, going -> goin'), use double negatives (ain't got nuthin'), and pile on folksy slang (y'all, reckon, yonder, dang)." },
+  { id: "hillbilly", label: "Southern (Bubba)", hint: "Deep South good ol' boy", instruction: "Give it an authentic Deep South good-ol'-boy voice (Texas, Georgia, Alabama, the Carolinas), respelled for the drawl: 'fixin' to', 'y'all', 'reckon', 'ain't', dropped g's, 'darlin''. This is a real Southern twang, NOT a dumb backwoods caricature. He's a regular guy, a Bubba or an Ed Earl, crackin' a cold Bud or Michelob in a wifebeater on the tailgate, his wife right there with him. Warm, slow, plainspoken, and proud, never stupid. If the scene needs props, use Southern-authentic ones (cold beer, pickup truck, BBQ, the lake), never sweet tea and doilies." },
   { id: "southern", label: "Southern belle", hint: "Genteel Deep South", instruction: "Give it a warm, genteel Deep South accent, respelled phonetically: 'darlin'', 'bless your heart', 'y'all', 'fixin' to', drawn-out vowels, gracious and unhurried Southern charm." },
   { id: "cowboy", label: "Cowboy", hint: "Laconic Old West", instruction: "Give it a laconic Old West cowboy voice: 'howdy', 'reckon', 'partner', 'much obliged', 'this here', dropped g's, dusty-trail metaphors, slow and steady." },
   { id: "newyork", label: "New Yorker", hint: "Fast-talking, blunt", instruction: "Give it a fast-talking New Yorker voice: 'fuhgeddaboudit', 'ay', 'I'm walkin' here', 'ya know what I'm sayin'', blunt, impatient, dropped r's, wise-guy edge." },
@@ -136,3 +140,37 @@ export function getAccent(id: string): Option | undefined {
 export function getPersona(id: string): Option | undefined {
   return PERSONAS.find((p) => p.id === id);
 }
+
+// Sub-category groupings so long lists nest into tidy sections in the UI.
+export interface OptionGroup {
+  label: string;
+  ids: string[];
+}
+
+export const USEFUL_GROUPS: OptionGroup[] = [
+  { label: "Messages", ids: ["email", "reply", "followup", "text", "dm"] },
+  { label: "Work", ids: ["note", "summary", "tldr", "meeting", "agenda", "status", "todo", "outline", "memo", "bug", "idea", "proposal", "pitch", "prompt"] },
+  { label: "Writing", ids: ["letter", "coverletter", "thankyou", "apology", "complaint", "review", "howto", "speech", "blog", "caption", "bio", "journal"] },
+  { label: "Social", ids: ["linkedin", "social"] },
+];
+
+export const FUN_GROUPS: OptionGroup[] = [
+  { label: "Comedy", ids: ["laugh", "roast", "meme"] },
+  { label: "Story", ids: ["tale", "bedtime", "trailer"] },
+  { label: "Music", ids: ["rap", "pop", "country", "rnb", "rockabilly"] },
+  { label: "Poetry", ids: ["poem", "haiku", "nursery"] },
+  { label: "Hype", ids: ["hype"] },
+];
+
+export const ACCENT_GROUPS: OptionGroup[] = [
+  { label: "Southern", ids: ["hillbilly", "southern", "cowboy"] },
+  { label: "American", ids: ["newyork", "boston", "valley", "surfer", "street"] },
+  { label: "World", ids: ["british", "scottish", "irish", "australian", "jamaican", "shakespeare"] },
+  { label: "Generation", ids: ["genz", "millennial", "genx", "boomer"] },
+];
+
+export const PERSONA_GROUPS: OptionGroup[] = [
+  { label: "Comedy", ids: ["standup", "dramaqueen", "karen", "salesman"] },
+  { label: "Performer", ids: ["sportscaster", "infomercial", "newsanchor", "hypeman", "motivational"] },
+  { label: "Characters", ids: ["conspiracy", "noir", "villain", "fortuneteller", "lifecoach", "preacher"] },
+];

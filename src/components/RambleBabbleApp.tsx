@@ -13,6 +13,12 @@ import {
   DEFAULT_TONE,
   getAccent,
   getPersona,
+  USEFUL_GROUPS,
+  FUN_GROUPS,
+  ACCENT_GROUPS,
+  PERSONA_GROUPS,
+  type Option,
+  type OptionGroup,
 } from "@/lib/options";
 import {
   MAX_RECORDING_SECONDS,
@@ -56,11 +62,10 @@ export default function RambleBabbleApp({
   const [tone, setTone] = useState(reopen?.tone ?? DEFAULT_TONE);
   const [vocabulary, setVocabulary] = useState("");
   const [vocabOpen, setVocabOpen] = useState(false);
-  const [expandedTab, setExpandedTab] = useState<"work" | "fun" | null>(null);
   const [accent, setAccent] = useState("");
   const [persona, setPersona] = useState("");
   const [openVoice, setOpenVoice] = useState<
-    "tone" | "accent" | "character" | null
+    "format" | "tone" | "accent" | "character" | null
   >(null);
   const [customInstruction, setCustomInstruction] = useState("");
 
@@ -147,7 +152,6 @@ export default function RambleBabbleApp({
   const showWarning =
     recorder.status === "recording" && recorder.seconds >= WARNING_AT_SECONDS;
 
-  const workTypes = OUTPUT_TYPES.filter((o) => o.group !== "fun");
   const funTypes = OUTPUT_TYPES.filter((o) => o.group === "fun");
   // "Fun" = a fun format OR any accent/character is set.
   const selectedIsFun =
@@ -306,8 +310,8 @@ export default function RambleBabbleApp({
 
   const pickStyle = (id: string) => {
     setOutputType(id);
-    // Collapse the category once a choice is made (custom keeps it open to type).
-    if (id !== "custom") setExpandedTab(null);
+    // Close the picker once a choice is made (custom keeps it open to type).
+    if (id !== "custom") setOpenVoice(null);
   };
   const pickTone = (id: string) => {
     setTone(id);
@@ -487,113 +491,50 @@ export default function RambleBabbleApp({
 
         {/* Scrollable controls between the record card and the Babble button */}
         <div className="flex-1 space-y-4 overflow-y-auto pr-1">
-        {/* Format — always-visible tabs so BOTH sides are obvious */}
-        <section>
-          <Label>Turn it into…</Label>
-          <div className="mt-2 grid grid-cols-2 gap-2.5">
-            <button
-              onClick={() =>
-                setExpandedTab((t) => (t === "work" ? null : "work"))
-              }
-              className="rb-pulseglow flex items-center justify-between rounded-[14px] border-2 px-4 py-3.5 text-sm font-bold transition active:scale-[0.99]"
-              style={
-                {
-                  borderColor: "var(--primary)",
-                  background:
-                    expandedTab === "work"
-                      ? "var(--primary)"
-                      : "var(--primary-soft)",
-                  color:
-                    expandedTab === "work"
-                      ? "var(--primary-ink)"
-                      : "var(--text)",
-                  "--pulse-color": "rgba(123,92,255,0.45)",
-                } as React.CSSProperties
-              }
-            >
-              Useful
-              <span className="text-xs opacity-70">
-                {expandedTab === "work" ? "▴" : "▾"}
-              </span>
-            </button>
-            <button
-              onClick={() =>
-                setExpandedTab((t) => (t === "fun" ? null : "fun"))
-              }
-              className="rb-pulseglow flex items-center justify-between rounded-[14px] border-2 px-4 py-3.5 text-sm font-bold transition active:scale-[0.99]"
-              style={
-                {
-                  borderColor: "var(--fun1)",
-                  background:
-                    expandedTab === "fun" ? "var(--fun1)" : "var(--fun-soft)",
-                  color: expandedTab === "fun" ? "#fff" : "var(--fun1)",
-                  "--pulse-color": "rgba(255,77,157,0.45)",
-                } as React.CSSProperties
-              }
-            >
-              <span>Fun</span>
-              <span className="text-xs opacity-70">
-                {expandedTab === "fun" ? "▴" : "▾"}
-              </span>
-            </button>
-          </div>
-
-          {expandedTab === "work" && (
-            <>
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                {workTypes.map((o) => (
-                  <OptionCard
-                    key={o.id}
-                    label={o.label}
-                    active={outputType === o.id}
-                    onClick={() => pickStyle(o.id)}
-                    dotColor="var(--primary)"
-                  />
-                ))}
-                <OptionCard
-                  label="Something else…"
-                  active={outputType === "custom"}
-                  onClick={() => pickStyle("custom")}
-                  dotColor="var(--text-faint)"
-                />
-              </div>
-              {outputType === "custom" && (
-                <input
-                  type="text"
-                  value={customInstruction}
-                  onChange={(e) => setCustomInstruction(e.target.value)}
-                  placeholder="Turn it into… e.g. a wedding toast, a recipe, a cover letter"
-                  autoComplete="off"
-                  className="mt-2.5 w-full rounded-[14px] border border-[var(--primary)] bg-[var(--surface)] p-3 text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
-                />
-              )}
-            </>
+        {/* Format */}
+        <Accordion
+          label="Format"
+          value={
+            outputType === "custom"
+              ? "Something else"
+              : (selectedStyle?.label ?? "None")
+          }
+          sub="what it becomes"
+          open={openVoice === "format"}
+          onToggle={() =>
+            setOpenVoice((v) => (v === "format" ? null : "format"))
+          }
+        >
+          <GroupedChips
+            groups={USEFUL_GROUPS}
+            options={OUTPUT_TYPES}
+            value={outputType}
+            onPick={pickStyle}
+          />
+          <GroupedChips
+            groups={FUN_GROUPS}
+            options={OUTPUT_TYPES}
+            value={outputType}
+            onPick={pickStyle}
+            fun
+          />
+          <GroupHeader>Custom</GroupHeader>
+          <Chip
+            label="Something else"
+            active={outputType === "custom"}
+            onClick={() => pickStyle("custom")}
+          />
+          {outputType === "custom" && (
+            <input
+              type="text"
+              value={customInstruction}
+              onChange={(e) => setCustomInstruction(e.target.value)}
+              placeholder="e.g. a wedding toast, a recipe, a cover letter"
+              autoComplete="off"
+              className="mt-2 w-full rounded-[10px] border border-[var(--primary)] bg-[var(--surface)] p-2.5 text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
+            />
           )}
-          {expandedTab === "fun" && (
-            <div
-              className="mt-2 rounded-[18px] border p-3"
-              style={{
-                background: "var(--fun-soft)",
-                borderColor: "color-mix(in srgb,var(--fun1) 28%,transparent)",
-              }}
-            >
-              <p className="mb-2 text-xs text-[var(--text-dim)]">
-                Let your Babble off the leash.
-              </p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {funTypes.map((o) => (
-                  <OptionCard
-                    key={o.id}
-                    label={o.label}
-                    active={outputType === o.id}
-                    onClick={() => pickStyle(o.id)}
-                    fun
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
+        </Accordion>
 
         {/* Voice: Tone, Accent, Character — pick any, they stack */}
         <Accordion
@@ -603,12 +544,11 @@ export default function RambleBabbleApp({
           open={openVoice === "tone"}
           onToggle={() => setOpenVoice((v) => (v === "tone" ? null : "tone"))}
         >
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {TONES.map((t) => (
-              <TonePill
+              <Chip
                 key={t.id}
                 label={t.label}
-                hint={t.hint}
                 active={tone === t.id}
                 onClick={() => pickTone(t.id)}
               />
@@ -623,18 +563,13 @@ export default function RambleBabbleApp({
           open={openVoice === "accent"}
           onToggle={() => setOpenVoice((v) => (v === "accent" ? null : "accent"))}
         >
-          <div className="flex flex-wrap gap-2">
-            {ACCENTS.map((a) => (
-              <TonePill
-                key={a.id}
-                label={a.label}
-                hint={a.hint}
-                accent="fun"
-                active={accent === a.id}
-                onClick={() => pickAccent(a.id)}
-              />
-            ))}
-          </div>
+          <GroupedChips
+            groups={ACCENT_GROUPS}
+            options={ACCENTS}
+            value={accent}
+            onPick={pickAccent}
+            fun
+          />
         </Accordion>
 
         <Accordion
@@ -646,18 +581,13 @@ export default function RambleBabbleApp({
             setOpenVoice((v) => (v === "character" ? null : "character"))
           }
         >
-          <div className="flex flex-wrap gap-2">
-            {PERSONAS.map((p) => (
-              <TonePill
-                key={p.id}
-                label={p.label}
-                hint={p.hint}
-                accent="fun"
-                active={persona === p.id}
-                onClick={() => pickPersona(p.id)}
-              />
-            ))}
-          </div>
+          <GroupedChips
+            groups={PERSONA_GROUPS}
+            options={PERSONAS}
+            value={persona}
+            onPick={pickPersona}
+            fun
+          />
         </Accordion>
 
         {/* Custom vocabulary — collapsible */}
@@ -977,6 +907,88 @@ export default function RambleBabbleApp({
   );
 }
 
+function GroupHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-1.5 mt-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
+      {children}
+    </div>
+  );
+}
+
+function Chip({
+  label,
+  active,
+  fun,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  fun?: boolean;
+  onClick: () => void;
+}) {
+  const accent = fun ? "var(--fun1)" : "var(--primary)";
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-md border px-2.5 py-1 text-[12px] font-medium transition active:scale-95"
+      style={
+        active
+          ? {
+              borderColor: accent,
+              background: fun ? "var(--fun-soft)" : "var(--primary-soft)",
+              color: "var(--text)",
+            }
+          : {
+              borderColor: "var(--border)",
+              background: "var(--surface2)",
+              color: "var(--text-dim)",
+            }
+      }
+    >
+      {label}
+    </button>
+  );
+}
+
+function GroupedChips({
+  groups,
+  options,
+  value,
+  onPick,
+  fun,
+}: {
+  groups: OptionGroup[];
+  options: Option[];
+  value: string;
+  onPick: (id: string) => void;
+  fun?: boolean;
+}) {
+  return (
+    <>
+      {groups.map((g) => (
+        <div key={g.label}>
+          <GroupHeader>{g.label}</GroupHeader>
+          <div className="flex flex-wrap gap-1.5">
+            {g.ids.map((id) => {
+              const o = options.find((x) => x.id === id);
+              if (!o) return null;
+              return (
+                <Chip
+                  key={id}
+                  label={o.label}
+                  active={value === id}
+                  fun={fun}
+                  onClick={() => onPick(id)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 function Accordion({
   label,
   value,
@@ -993,16 +1005,16 @@ function Accordion({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-3">
+    <section>
       <button
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-left transition hover:border-[var(--border-strong)]"
+        className="flex w-full items-center justify-between gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-left transition hover:border-[var(--border-strong)]"
       >
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-dim)]">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--text-dim)]">
             {label}
           </div>
-          <div className="truncate text-[15px] font-semibold text-[var(--text)]">
+          <div className="truncate text-[13px] font-semibold text-[var(--text)]">
             {value}
           </div>
           {sub && (
@@ -1023,102 +1035,11 @@ function Accordion({
   );
 }
 
-function TonePill({
-  label,
-  hint,
-  active,
-  onClick,
-  accent = "brand",
-}: {
-  label: string;
-  hint: string;
-  active: boolean;
-  onClick: () => void;
-  accent?: "brand" | "fun";
-}) {
-  const activeStyle =
-    accent === "fun"
-      ? {
-          background: "var(--fun1)",
-          color: "#fff",
-          boxShadow: "0 8px 20px -8px var(--fun-glow)",
-        }
-      : {
-          background: "var(--primary)",
-          color: "var(--primary-ink)",
-          boxShadow: "0 8px 20px -8px var(--glow1)",
-        };
-  return (
-    <button
-      onClick={onClick}
-      title={hint}
-      className="rounded-full px-4 py-2.5 text-[15px] font-semibold transition"
-      style={
-        active
-          ? activeStyle
-          : { background: "var(--surface2)", color: "var(--text-dim)" }
-      }
-    >
-      {label}
-    </button>
-  );
-}
-
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <span className="text-[15px] font-semibold uppercase tracking-[0.06em] text-[var(--text-dim)]">
       {children}
     </span>
-  );
-}
-
-function OptionCard({
-  label,
-  active,
-  onClick,
-  dotColor,
-  fun = false,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  dotColor?: string;
-  fun?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex min-h-[58px] items-center gap-2.5 rounded-[15px] border px-3.5 py-3 text-left text-[15.5px] font-semibold transition"
-      style={{
-        background: active
-          ? fun
-            ? "var(--fun-soft)"
-            : "var(--primary-soft)"
-          : "var(--surface2)",
-        borderColor: active
-          ? fun
-            ? "var(--fun1)"
-            : "var(--primary)"
-          : "var(--border)",
-        boxShadow: active
-          ? `inset 0 0 0 1px ${fun ? "var(--fun1)" : "var(--primary)"}`
-          : "none",
-        color: "var(--text)",
-      }}
-    >
-      <span
-        className="h-2.5 w-2.5 shrink-0 rounded-full"
-        style={
-          fun
-            ? {
-                backgroundImage:
-                  "linear-gradient(135deg,var(--fun1),var(--fun2))",
-              }
-            : { background: dotColor }
-        }
-      />
-      {label}
-    </button>
   );
 }
 
