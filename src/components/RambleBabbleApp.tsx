@@ -7,8 +7,12 @@ import type { SavedRamble } from "./MyRambles";
 import {
   OUTPUT_TYPES,
   TONES,
+  ACCENTS,
+  PERSONAS,
   DEFAULT_OUTPUT_TYPE,
   DEFAULT_TONE,
+  getAccent,
+  getPersona,
 } from "@/lib/options";
 import {
   MAX_RECORDING_SECONDS,
@@ -53,8 +57,10 @@ export default function RambleBabbleApp({
   const [vocabulary, setVocabulary] = useState("");
   const [vocabOpen, setVocabOpen] = useState(false);
   const [expandedTab, setExpandedTab] = useState<"work" | "fun" | null>(null);
-  const [expandedTone, setExpandedTone] = useState<
-    "standard" | "character" | null
+  const [accent, setAccent] = useState("");
+  const [persona, setPersona] = useState("");
+  const [openVoice, setOpenVoice] = useState<
+    "tone" | "accent" | "character" | null
   >(null);
   const [customInstruction, setCustomInstruction] = useState("");
 
@@ -143,12 +149,9 @@ export default function RambleBabbleApp({
 
   const workTypes = OUTPUT_TYPES.filter((o) => o.group !== "fun");
   const funTypes = OUTPUT_TYPES.filter((o) => o.group === "fun");
-  const seriousTones = TONES.filter((t) => t.group !== "fun");
-  const characterTones = TONES.filter((t) => t.group === "fun");
-  // "Fun" styling for the action button = a fun format OR a character voice.
+  // "Fun" = a fun format OR any accent/character is set.
   const selectedIsFun =
-    funTypes.some((o) => o.id === outputType) ||
-    characterTones.some((t) => t.id === tone);
+    funTypes.some((o) => o.id === outputType) || !!accent || !!persona;
 
   const selectedStyle =
     outputType === "custom"
@@ -158,6 +161,8 @@ export default function RambleBabbleApp({
         }
       : OUTPUT_TYPES.find((o) => o.id === outputType);
   const selectedTone = TONES.find((t) => t.id === tone);
+  const selectedAccent = getAccent(accent);
+  const selectedPersona = getPersona(persona);
 
   const handleStart = useCallback(() => {
     setError(null);
@@ -183,7 +188,8 @@ export default function RambleBabbleApp({
         return;
       }
       const selected = OUTPUT_TYPES.find((o) => o.id === outputType);
-      const kind: "work" | "fun" = selected?.group === "fun" ? "fun" : "work";
+      const kind: "work" | "fun" =
+        selected?.group === "fun" || !!accent || !!persona ? "fun" : "work";
       const label =
         outputType === "custom"
           ? customInstruction.trim()
@@ -205,6 +211,8 @@ export default function RambleBabbleApp({
             customInstruction:
               outputType === "custom" ? customInstruction.trim() : undefined,
             tone,
+            accent: accent || undefined,
+            persona: persona || undefined,
             vocabulary: vocabulary.trim() || undefined,
             modifier,
           }),
@@ -239,7 +247,16 @@ export default function RambleBabbleApp({
         setCleaning(false);
       }
     },
-    [inputText, outputType, customInstruction, tone, vocabulary, userId],
+    [
+      inputText,
+      outputType,
+      customInstruction,
+      tone,
+      accent,
+      persona,
+      vocabulary,
+      userId,
+    ],
   );
 
   const copyText = useCallback(
@@ -294,8 +311,10 @@ export default function RambleBabbleApp({
   };
   const pickTone = (id: string) => {
     setTone(id);
-    setExpandedTone(null);
+    setOpenVoice(null);
   };
+  const pickAccent = (id: string) => setAccent((a) => (a === id ? "" : id));
+  const pickPersona = (id: string) => setPersona((p) => (p === id ? "" : id));
 
   return (
     <div
@@ -492,7 +511,7 @@ export default function RambleBabbleApp({
                 } as React.CSSProperties
               }
             >
-              Get It Done
+              Useful
               <span className="text-xs opacity-70">
                 {expandedTab === "work" ? "▴" : "▾"}
               </span>
@@ -512,7 +531,7 @@ export default function RambleBabbleApp({
                 } as React.CSSProperties
               }
             >
-              <span>Just for Fun</span>
+              <span>Fun</span>
               <span className="text-xs opacity-70">
                 {expandedTab === "fun" ? "▴" : "▾"}
               </span>
@@ -576,87 +595,70 @@ export default function RambleBabbleApp({
           )}
         </section>
 
-        {/* Tone — two collapsible column bars, matching the format section */}
-        <section className="mt-6">
-          <Label>Tone</Label>
-          <div className="mt-2 grid grid-cols-2 gap-2.5">
-            <button
-              onClick={() =>
-                setExpandedTone((t) => (t === "standard" ? null : "standard"))
-              }
-              className="rb-pulseglow flex items-center justify-between rounded-[14px] border-2 px-4 py-3.5 text-sm font-bold transition active:scale-[0.99]"
-              style={
-                {
-                  borderColor: "var(--primary)",
-                  background:
-                    expandedTone === "standard"
-                      ? "var(--primary)"
-                      : "var(--primary-soft)",
-                  color:
-                    expandedTone === "standard"
-                      ? "var(--primary-ink)"
-                      : "var(--text)",
-                  "--pulse-color": "rgba(123,92,255,0.45)",
-                } as React.CSSProperties
-              }
-            >
-              Standard
-              <span className="text-xs opacity-70">
-                {expandedTone === "standard" ? "▴" : "▾"}
-              </span>
-            </button>
-            <button
-              onClick={() =>
-                setExpandedTone((t) => (t === "character" ? null : "character"))
-              }
-              className="rb-pulseglow flex items-center justify-between rounded-[14px] border-2 px-4 py-3.5 text-sm font-bold transition active:scale-[0.99]"
-              style={
-                {
-                  borderColor: "var(--fun1)",
-                  background:
-                    expandedTone === "character"
-                      ? "var(--fun1)"
-                      : "var(--fun-soft)",
-                  color: expandedTone === "character" ? "#fff" : "var(--fun1)",
-                  "--pulse-color": "rgba(255,77,157,0.45)",
-                } as React.CSSProperties
-              }
-            >
-              <span>Character Voices</span>
-              <span className="text-xs opacity-70">
-                {expandedTone === "character" ? "▴" : "▾"}
-              </span>
-            </button>
+        {/* Voice: Tone, Accent, Character — pick any, they stack */}
+        <Accordion
+          label="Tone"
+          value={selectedTone?.label ?? "None"}
+          sub="how formal or casual"
+          open={openVoice === "tone"}
+          onToggle={() => setOpenVoice((v) => (v === "tone" ? null : "tone"))}
+        >
+          <div className="flex flex-wrap gap-2">
+            {TONES.map((t) => (
+              <TonePill
+                key={t.id}
+                label={t.label}
+                hint={t.hint}
+                active={tone === t.id}
+                onClick={() => pickTone(t.id)}
+              />
+            ))}
           </div>
+        </Accordion>
 
-          {expandedTone === "standard" && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {seriousTones.map((t) => (
-                <TonePill
-                  key={t.id}
-                  label={t.label}
-                  hint={t.hint}
-                  active={tone === t.id}
-                  onClick={() => pickTone(t.id)}
-                />
-              ))}
-            </div>
-          )}
-          {expandedTone === "character" && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {characterTones.map((t) => (
-                <TonePill
-                  key={t.id}
-                  label={t.label}
-                  hint={t.hint}
-                  accent="fun"
-                  active={tone === t.id}
-                  onClick={() => pickTone(t.id)}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+        <Accordion
+          label="Accent"
+          value={selectedAccent?.label ?? "None"}
+          sub="how it sounds"
+          open={openVoice === "accent"}
+          onToggle={() => setOpenVoice((v) => (v === "accent" ? null : "accent"))}
+        >
+          <div className="flex flex-wrap gap-2">
+            {ACCENTS.map((a) => (
+              <TonePill
+                key={a.id}
+                label={a.label}
+                hint={a.hint}
+                accent="fun"
+                active={accent === a.id}
+                onClick={() => pickAccent(a.id)}
+              />
+            ))}
+          </div>
+        </Accordion>
+
+        <Accordion
+          label="Character"
+          value={selectedPersona?.label ?? "None"}
+          sub="who's saying it"
+          open={openVoice === "character"}
+          onToggle={() =>
+            setOpenVoice((v) => (v === "character" ? null : "character"))
+          }
+        >
+          <div className="flex flex-wrap gap-2">
+            {PERSONAS.map((p) => (
+              <TonePill
+                key={p.id}
+                label={p.label}
+                hint={p.hint}
+                accent="fun"
+                active={persona === p.id}
+                onClick={() => pickPersona(p.id)}
+              />
+            ))}
+          </div>
+        </Accordion>
 
         {/* Custom vocabulary — collapsible */}
         <Accordion
@@ -705,9 +707,15 @@ export default function RambleBabbleApp({
               <span className="font-display text-[19px] font-bold">
                 {cleaning ? "Working…" : "Babble it"}
               </span>
-              <span className="text-xs font-semibold opacity-80">
-                {selectedStyle?.label}
-                {selectedTone ? ` · ${selectedTone.label}` : ""}
+              <span className="px-2 text-center text-xs font-semibold opacity-80">
+                {[
+                  selectedStyle?.label,
+                  selectedTone?.label,
+                  selectedAccent?.label,
+                  selectedPersona?.label,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
             </button>
           </aside>
