@@ -64,9 +64,6 @@ export default function RambleBabbleApp({
   const [vocabOpen, setVocabOpen] = useState(false);
   const [accent, setAccent] = useState("");
   const [persona, setPersona] = useState("");
-  const [openVoice, setOpenVoice] = useState<
-    "format" | "tone" | "accent" | "character" | null
-  >("format");
   const [customInstruction, setCustomInstruction] = useState("");
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
@@ -308,17 +305,8 @@ export default function RambleBabbleApp({
     !inputText.trim() ||
     (outputType === "custom" && !customInstruction.trim());
 
-  const pickStyle = (id: string) => {
-    setOutputType(id);
-    // Close the picker once a choice is made (custom keeps it open to type).
-    if (id !== "custom") setOpenVoice(null);
-  };
-  const pickTone = (id: string) => {
-    setTone(id);
-    setOpenVoice(null);
-  };
-  const pickAccent = (id: string) => setAccent((a) => (a === id ? "" : id));
-  const pickPersona = (id: string) => setPersona((p) => (p === id ? "" : id));
+  const pickStyle = (id: string) => setOutputType(id);
+  const pickTone = (id: string) => setTone(id);
 
   return (
     <div
@@ -376,10 +364,10 @@ export default function RambleBabbleApp({
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-12 pt-2">
-        {/* App shell: control rail (left) + workspace (right) */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start">
-          {/* SIDEBAR: record + all controls */}
-          <aside className="flex flex-col gap-3 lg:sticky lg:top-20">
+        {/* Translator layout: control bar on top, two panels below */}
+        <div className="flex flex-col gap-5">
+          {/* CONTROL BAR */}
+          <aside className="flex flex-wrap items-end gap-3 rounded-[18px] border border-[var(--border)] bg-[color:var(--surface)]/60 p-3 backdrop-blur">
             {/* Record */}
             <section className="flex flex-col items-center gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-4">
           {idle ? (
@@ -490,105 +478,61 @@ export default function RambleBabbleApp({
         </section>
 
         {/* Controls */}
-        <div className="space-y-2.5">
+        <div className="flex flex-1 flex-wrap items-end gap-3">
         {/* Format */}
-        <Accordion
+        <Picker
           label="Format"
-          value={
-            outputType === "custom"
-              ? "Something else"
-              : (selectedStyle?.label ?? "None")
-          }
           sub="what it becomes"
-          open={openVoice === "format"}
-          onToggle={() =>
-            setOpenVoice((v) => (v === "format" ? null : "format"))
-          }
+          value={outputType}
+          onChange={(e) => pickStyle(e.target.value)}
         >
-          <GroupedChips
-            groups={USEFUL_GROUPS}
-            options={OUTPUT_TYPES}
-            value={outputType}
-            onPick={pickStyle}
+          <OptGroups groups={USEFUL_GROUPS} options={OUTPUT_TYPES} prefix="Useful" />
+          <OptGroups groups={FUN_GROUPS} options={OUTPUT_TYPES} prefix="Fun" />
+          <option value="custom">Something else...</option>
+        </Picker>
+        {outputType === "custom" && (
+          <input
+            type="text"
+            value={customInstruction}
+            onChange={(e) => setCustomInstruction(e.target.value)}
+            placeholder="e.g. a wedding toast, a recipe, a cover letter"
+            autoComplete="off"
+            className="w-full rounded-[10px] border border-[var(--primary)] bg-[var(--surface)] p-2.5 text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
           />
-          <GroupedChips
-            groups={FUN_GROUPS}
-            options={OUTPUT_TYPES}
-            value={outputType}
-            onPick={pickStyle}
-            fun
-          />
-          <GroupHeader>Custom</GroupHeader>
-          <Chip
-            label="Something else"
-            active={outputType === "custom"}
-            onClick={() => pickStyle("custom")}
-          />
-          {outputType === "custom" && (
-            <input
-              type="text"
-              value={customInstruction}
-              onChange={(e) => setCustomInstruction(e.target.value)}
-              placeholder="e.g. a wedding toast, a recipe, a cover letter"
-              autoComplete="off"
-              className="mt-2 w-full rounded-[10px] border border-[var(--primary)] bg-[var(--surface)] p-2.5 text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
-            />
-          )}
-        </Accordion>
+        )}
 
-        {/* Voice: Tone, Accent, Character — pick any, they stack */}
-        <Accordion
+        <Picker
           label="Tone"
-          value={selectedTone?.label ?? "None"}
           sub="how formal or casual"
-          open={openVoice === "tone"}
-          onToggle={() => setOpenVoice((v) => (v === "tone" ? null : "tone"))}
+          value={tone}
+          onChange={(e) => pickTone(e.target.value)}
         >
-          <div className="flex flex-wrap gap-1.5">
-            {TONES.map((t) => (
-              <Chip
-                key={t.id}
-                label={t.label}
-                active={tone === t.id}
-                onClick={() => pickTone(t.id)}
-              />
-            ))}
-          </div>
-        </Accordion>
+          {TONES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </Picker>
 
-        <Accordion
+        <Picker
           label="Accent"
-          value={selectedAccent?.label ?? "None"}
           sub="how it sounds"
-          open={openVoice === "accent"}
-          onToggle={() => setOpenVoice((v) => (v === "accent" ? null : "accent"))}
+          value={accent}
+          onChange={(e) => setAccent(e.target.value)}
         >
-          <GroupedChips
-            groups={ACCENT_GROUPS}
-            options={ACCENTS}
-            value={accent}
-            onPick={pickAccent}
-            fun
-          />
-        </Accordion>
+          <option value="">None</option>
+          <OptGroups groups={ACCENT_GROUPS} options={ACCENTS} />
+        </Picker>
 
-        <Accordion
+        <Picker
           label="Character"
-          value={selectedPersona?.label ?? "None"}
           sub="who's saying it"
-          open={openVoice === "character"}
-          onToggle={() =>
-            setOpenVoice((v) => (v === "character" ? null : "character"))
-          }
+          value={persona}
+          onChange={(e) => setPersona(e.target.value)}
         >
-          <GroupedChips
-            groups={PERSONA_GROUPS}
-            options={PERSONAS}
-            value={persona}
-            onPick={pickPersona}
-            fun
-          />
-        </Accordion>
+          <option value="">None</option>
+          <OptGroups groups={PERSONA_GROUPS} options={PERSONAS} />
+        </Picker>
 
         {/* Custom vocabulary — collapsible */}
         <Accordion
@@ -616,7 +560,7 @@ export default function RambleBabbleApp({
             <button
               onClick={() => runCleanup()}
               disabled={polishDisabled}
-              className="flex w-full shrink-0 flex-col items-center justify-center gap-0.5 rounded-[16px] px-4 py-4 transition active:scale-[0.99]"
+              className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-[16px] px-6 py-3 transition active:scale-[0.99]"
               style={
                 polishDisabled
                   ? { background: "var(--surface3)", color: "var(--text-faint)" }
@@ -650,8 +594,8 @@ export default function RambleBabbleApp({
             </button>
           </aside>
 
-          {/* WORKSPACE: your words in, polished words out */}
-          <main className="min-w-0 space-y-5">
+          {/* WORKSPACE: ramble in (left), babble out (right) */}
+          <main className="grid gap-5 lg:grid-cols-2">
             <section>
               <div className="mb-2 flex items-center justify-between">
                 <Label>Your Ramble</Label>
@@ -670,9 +614,10 @@ export default function RambleBabbleApp({
                 placeholder="Your transcript appears here, or paste messy text to polish."
                 rows={5}
                 autoComplete="off"
-                className="min-h-[140px] w-full resize-y rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-4 text-[17px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--primary)]"
+                className="min-h-[300px] w-full resize-y rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-4 text-[17px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--primary)]"
               />
             </section>
+            <div className="min-w-0 space-y-5">
             {error && (
           <p
             className="mt-5 rounded-[14px] border px-4 py-3 text-sm"
@@ -866,6 +811,7 @@ export default function RambleBabbleApp({
                 right here.
               </div>
             )}
+            </div>
           </main>
         </div>
 
@@ -907,85 +853,68 @@ export default function RambleBabbleApp({
   );
 }
 
-function GroupHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-1.5 mt-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-faint)]">
-      {children}
-    </div>
-  );
-}
-
-function Chip({
-  label,
-  active,
-  fun,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  fun?: boolean;
-  onClick: () => void;
-}) {
-  const accent = fun ? "var(--fun1)" : "var(--primary)";
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition active:scale-95 hover:brightness-110"
-      style={
-        active
-          ? {
-              borderColor: accent,
-              background: fun ? "var(--fun-soft)" : "var(--primary-soft)",
-              color: fun ? "var(--fun1)" : "var(--primary)",
-            }
-          : {
-              borderColor: "var(--border-strong)",
-              background: "var(--surface3)",
-              color: "var(--text)",
-            }
-      }
-    >
-      {label}
-    </button>
-  );
-}
-
-function GroupedChips({
+function OptGroups({
   groups,
   options,
-  value,
-  onPick,
-  fun,
+  prefix,
 }: {
   groups: OptionGroup[];
   options: Option[];
-  value: string;
-  onPick: (id: string) => void;
-  fun?: boolean;
+  prefix?: string;
 }) {
   return (
     <>
       {groups.map((g) => (
-        <div key={g.label}>
-          <GroupHeader>{g.label}</GroupHeader>
-          <div className="flex flex-wrap gap-1.5">
-            {g.ids.map((id) => {
-              const o = options.find((x) => x.id === id);
-              if (!o) return null;
-              return (
-                <Chip
-                  key={id}
-                  label={o.label}
-                  active={value === id}
-                  fun={fun}
-                  onClick={() => onPick(id)}
-                />
-              );
-            })}
-          </div>
-        </div>
+        <optgroup
+          key={g.label}
+          label={prefix ? `${prefix}: ${g.label}` : g.label}
+        >
+          {g.ids.map((id) => {
+            const o = options.find((x) => x.id === id);
+            return o ? (
+              <option key={id} value={id}>
+                {o.label}
+              </option>
+            ) : null;
+          })}
+        </optgroup>
       ))}
     </>
+  );
+}
+
+function Picker({
+  label,
+  sub,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  sub?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="min-w-[150px] flex-1">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-faint)]">
+        {label}
+      </span>
+      <div className="relative mt-1">
+        <select
+          title={sub}
+          value={value}
+          onChange={onChange}
+          className="w-full cursor-pointer appearance-none rounded-[11px] border border-[var(--border-strong)] bg-[var(--surface2)] py-2.5 pl-3 pr-9 text-[13px] font-semibold text-[var(--text)] outline-none transition hover:border-[var(--primary)] focus:border-[var(--primary)]"
+        >
+          {children}
+        </select>
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-faint)]">
+          ▾
+        </span>
+      </div>
+    </label>
   );
 }
 
