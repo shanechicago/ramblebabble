@@ -316,7 +316,7 @@ export default function RambleBabbleApp({
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-30 mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-3 backdrop-blur-sm">
+      <header className="sticky top-0 z-30 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3 backdrop-blur-sm">
         <div className="font-display flex items-center gap-2 text-[28px] font-bold">
           <span
             className="rb-blink h-2.5 w-2.5 rounded-full"
@@ -352,50 +352,40 @@ export default function RambleBabbleApp({
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-36 pt-2 lg:pb-12">
-        {/* AI badge */}
-        <div className="mb-5 flex justify-center">
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
-            style={{
-              borderColor: "var(--border)",
-              background: "var(--primary-soft)",
-              color: "var(--primary)",
-            }}
-          >
-            Powered by AI
-          </span>
-        </div>
-
-        {/* Record hero */}
-        <section className="flex flex-col items-center gap-4 py-2">
+      <main className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-12 pt-2">
+        {/* App shell: control rail (left) + workspace (right) */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[330px_minmax(0,1fr)] lg:items-start">
+          {/* SIDEBAR: record + all controls */}
+          <aside className="flex flex-col gap-4 lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
+            {/* Record */}
+            <section className="flex flex-col items-center gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-4">
           {idle ? (
             <>
               <button
                 onClick={handleStart}
                 disabled={transcribing}
                 aria-label="Record ramble"
-                className="rb-breathe relative flex h-44 w-44 items-center justify-center rounded-full text-white shadow-2xl transition active:scale-[0.98] disabled:opacity-60"
+                className="rb-breathe relative flex h-20 w-20 items-center justify-center rounded-full text-white shadow-xl transition active:scale-[0.98] disabled:opacity-60"
                 style={{
                   background:
                     "linear-gradient(150deg,var(--primary),color-mix(in srgb,var(--primary) 55%,#000))",
-                  boxShadow: "0 20px 60px -12px var(--glow1)",
+                  boxShadow: "0 14px 40px -12px var(--glow1)",
                 }}
               >
-                <MicIcon size={46} />
+                <MicIcon size={30} />
               </button>
               <div className="text-center">
-                <p className="font-display text-[23px] font-semibold">
-                  {transcribing ? "Transcribing…" : "Ramble It"}
+                <p className="font-display text-[16px] font-semibold">
+                  {transcribing ? "Transcribing…" : "Tap to record"}
                 </p>
-                <p className="mt-1 text-sm text-[var(--text-dim)]">
-                  Tap and just start talking · up to {MAX_MINUTES} min
+                <p className="mt-0.5 text-xs text-[var(--text-dim)]">
+                  up to {MAX_MINUTES} min, or paste
                 </p>
               </div>
             </>
           ) : (
             <div className="flex w-full flex-col items-center gap-5">
-              <div className="relative flex h-44 w-44 items-center justify-center">
+              <div className="relative flex h-20 w-20 items-center justify-center">
                 {[0, 0.8, 1.6].map((d) => (
                   <span
                     key={d}
@@ -407,7 +397,7 @@ export default function RambleBabbleApp({
                   />
                 ))}
                 <div
-                  className="font-mono-timer flex h-40 w-40 items-center justify-center rounded-full text-[30px] font-bold"
+                  className="font-mono-timer flex h-[72px] w-[72px] items-center justify-center rounded-full text-[18px] font-bold"
                   style={{ background: "var(--signal)", color: "var(--signal-ink)" }}
                 >
                   {formatTime(recorder.seconds)}
@@ -477,39 +467,10 @@ export default function RambleBabbleApp({
           )}
         </section>
 
-        {/* Two-pane work area: inputs on the left, output on the right (desktop) */}
-        <div className="mt-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
-          <div className="min-w-0">
-            {/* Transcript */}
-            <section className="mt-6">
-          <div className="mb-2 flex items-center justify-between">
-            <Label>Your Ramble</Label>
-            {inputText.trim() && (
-              <button
-                onClick={handleClear}
-                className="text-xs font-semibold text-[var(--text-dim)] underline-offset-2 hover:underline"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Your transcript appears here, or paste messy text to polish."
-            rows={5}
-            autoComplete="off"
-            className="min-h-[130px] w-full resize-y rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-4 text-[17px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--primary)]"
-          />
-          {!inputText.trim() && (
-            <p className="mt-2 text-xs text-[var(--text-faint)]">
-              No judgment. No blank page. Just better words.
-            </p>
-          )}
-        </section>
-
+        {/* Scrollable controls between the record card and the Babble button */}
+        <div className="flex-1 space-y-4 overflow-y-auto pr-1">
         {/* Format — always-visible tabs so BOTH sides are obvious */}
-        <section className="mt-5">
+        <section>
           <Label>Turn it into…</Label>
           <div className="mt-2 grid grid-cols-2 gap-2.5">
             <button
@@ -718,12 +679,13 @@ export default function RambleBabbleApp({
             We&apos;ll keep these spelled exactly right in your polished text.
           </p>
         </Accordion>
+        </div>
 
-            {/* Babble button inline on desktop (mobile keeps the fixed bottom bar) */}
+            {/* Babble it — pinned at the bottom of the control rail */}
             <button
               onClick={() => runCleanup()}
               disabled={polishDisabled}
-              className="mt-6 hidden w-full flex-col items-center justify-center gap-0.5 rounded-[16px] px-4 py-4 transition active:scale-[0.99] lg:flex"
+              className="flex w-full shrink-0 flex-col items-center justify-center gap-0.5 rounded-[16px] px-4 py-4 transition active:scale-[0.99]"
               style={
                 polishDisabled
                   ? { background: "var(--surface3)", color: "var(--text-faint)" }
@@ -749,10 +711,31 @@ export default function RambleBabbleApp({
                 {selectedTone ? ` · ${selectedTone.label}` : ""}
               </span>
             </button>
-          </div>
+          </aside>
 
-          {/* Right column: the polished output */}
-          <div className="lg:sticky lg:top-20">
+          {/* WORKSPACE: your words in, polished words out */}
+          <main className="min-w-0 space-y-5">
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <Label>Your Ramble</Label>
+                {inputText.trim() && (
+                  <button
+                    onClick={handleClear}
+                    className="text-xs font-semibold text-[var(--text-dim)] underline-offset-2 hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Your transcript appears here, or paste messy text to polish."
+                rows={5}
+                autoComplete="off"
+                className="min-h-[140px] w-full resize-y rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-4 text-[17px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--primary)]"
+              />
+            </section>
             {error && (
           <p
             className="mt-5 rounded-[14px] border px-4 py-3 text-sm"
@@ -939,14 +922,14 @@ export default function RambleBabbleApp({
           </section>
         )}
 
-            {/* Empty output state (desktop only) */}
+            {/* Empty output state */}
             {!cleaned && !transcribing && !cleaning && !error && (
-              <div className="mt-6 hidden rounded-[18px] border border-dashed border-[var(--border-strong)] p-10 text-center text-sm text-[var(--text-faint)] lg:block">
+              <div className="rounded-[18px] border border-dashed border-[var(--border-strong)] p-12 text-center text-sm text-[var(--text-faint)]">
                 Pick a style, then hit Babble it. Your polished version shows up
                 right here.
               </div>
             )}
-          </div>
+          </main>
         </div>
 
         <footer className="mt-10 text-center text-xs text-[var(--text-faint)]">
@@ -963,40 +946,7 @@ export default function RambleBabbleApp({
         </footer>
       </main>
 
-      {/* Sticky action bar — always present; shows the live style + tone. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border)] bg-[color:var(--bg)]/85 px-5 py-3 backdrop-blur lg:hidden">
-        <div className="mx-auto w-full max-w-[480px]">
-          <button
-            onClick={() => runCleanup()}
-            disabled={polishDisabled}
-            className="flex w-full flex-col items-center justify-center gap-0.5 rounded-[16px] px-4 py-3 transition active:scale-[0.99]"
-            style={
-              polishDisabled
-                ? { background: "var(--surface3)", color: "var(--text-faint)" }
-                : selectedIsFun
-                  ? {
-                      backgroundImage:
-                        "linear-gradient(120deg,var(--fun1),var(--fun2))",
-                      color: "#fff",
-                      boxShadow: "0 14px 34px -10px var(--fun-glow)",
-                    }
-                  : {
-                      background: "var(--signal)",
-                      color: "var(--signal-ink)",
-                      boxShadow: "0 14px 34px -10px var(--glow2)",
-                    }
-            }
-          >
-            <span className="font-display text-[19px] font-bold">
-              {cleaning ? "Working…" : "Babble it"}
-            </span>
-            <span className="text-xs font-semibold opacity-80">
-              {selectedStyle?.label}
-              {selectedTone ? ` · ${selectedTone.label}` : ""}
-            </span>
-          </button>
-        </div>
-      </div>
+      {/* The Babble button now lives in the sidebar control rail. */}
 
       {/* Floating Copy — always reachable while a result is on screen */}
       {cleaned && resultGroup && !cleaning && (
