@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
-import { getOutputType, getTone } from "@/lib/options";
+import { getOutputType, getTone, getAccent, getPersona } from "@/lib/options";
 import { stripBanned, stripBannedList } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
       outputType?: string;
       customInstruction?: string;
       tone?: string;
+      accent?: string;
+      persona?: string;
+      targetLanguage?: string;
       vocabulary?: string;
       modifier?: string;
     };
@@ -27,23 +30,21 @@ export async function POST(req: NextRequest) {
     }
     if (transcript.length > MAX_CHARS) {
       return NextResponse.json(
-        { error: "That's a lot of text — please trim it down a bit." },
+        { error: "That's a lot of text, please trim it down a bit." },
         { status: 413 },
       );
     }
 
-    const tone = getTone(body.tone || "");
-    if (!tone) {
-      return NextResponse.json({ error: "Invalid tone." }, { status: 400 });
-    }
+    // The four optional voice axes. Any combination is allowed; an accent or a
+    // persona makes the whole thing playful ("fun").
+    const tone = body.tone ? getTone(body.tone) : undefined;
+    const accent = body.accent ? getAccent(body.accent) : undefined;
+    const persona = body.persona ? getPersona(body.persona) : undefined;
+    const hasCharacter = !!accent || !!persona;
 
-    // Resolve the output instruction + kind. "custom" lets the user type their
-    // own target format (e.g. "a wedding toast").
-    // A character voice (fun tone) makes the whole thing playful, even on a
-    // serious format.
-    const funTone = tone.group === "fun";
+    // Resolve the output format. "custom" lets the user type their own target.
     let outputInstruction: string;
-    let kind: "work" | "fun";
+    let formatIsFun = false;
     if (body.outputType === "custom") {
       const custom = (body.customInstruction || "").trim();
       if (!custom) {
@@ -53,7 +54,6 @@ export async function POST(req: NextRequest) {
         );
       }
       outputInstruction = `Rewrite this as: ${custom}. Produce exactly that, formatted appropriately.`;
-      kind = funTone ? "fun" : "work";
     } else {
       const outputType = getOutputType(body.outputType || "");
       if (!outputType) {
@@ -63,14 +63,19 @@ export async function POST(req: NextRequest) {
         );
       }
       outputInstruction = outputType.instruction;
-      kind = outputType.group === "fun" || funTone ? "fun" : "work";
+      formatIsFun = outputType.group === "fun";
     }
+
+    const kind: "work" | "fun" = formatIsFun || hasCharacter ? "fun" : "work";
 
     const provider = getProvider();
     const result = await provider.cleanup({
       transcript,
       outputInstruction,
-      toneInstruction: tone.instruction,
+      toneInstruction: tone?.instruction,
+      accentInstruction: accent?.instruction,
+      personaInstruction: persona?.instruction,
+      targetLanguage: body.targetLanguage?.trim() || undefined,
       vocabulary: body.vocabulary,
       kind,
       modifier: typeof body.modifier === "string" ? body.modifier : undefined,

@@ -18,8 +18,14 @@ export interface CleanupInput {
   transcript: string;
   /** Instruction describing the desired output format. */
   outputInstruction: string;
-  /** Instruction describing the desired tone. */
-  toneInstruction: string;
+  /** Instruction describing the desired tone (register). */
+  toneInstruction?: string;
+  /** Optional dialect/accent instruction (how it should sound). */
+  accentInstruction?: string;
+  /** Optional persona/character instruction (who is saying it). */
+  personaInstruction?: string;
+  /** Optional target language for the output, e.g. "Spanish". */
+  targetLanguage?: string;
   /** Optional terms to preserve or correct exactly. */
   vocabulary?: string;
   /** "work" = practical/useful output, "fun" = playful output. */

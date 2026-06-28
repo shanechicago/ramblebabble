@@ -354,7 +354,7 @@ export default function RambleBabbleApp({
 
       <main className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-12 pt-2">
         {/* App shell: control rail (left) + workspace (right) */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[330px_minmax(0,1fr)] lg:items-start">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start">
           {/* SIDEBAR: record + all controls */}
           <aside className="flex flex-col gap-4 lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
             {/* Record */}
@@ -365,14 +365,13 @@ export default function RambleBabbleApp({
                 onClick={handleStart}
                 disabled={transcribing}
                 aria-label="Record ramble"
-                className="rb-breathe relative flex h-20 w-20 items-center justify-center rounded-full text-white shadow-xl transition active:scale-[0.98] disabled:opacity-60"
+                className="relative flex h-14 w-14 items-center justify-center rounded-full text-white transition active:scale-[0.96] disabled:opacity-60"
                 style={{
-                  background:
-                    "linear-gradient(150deg,var(--primary),color-mix(in srgb,var(--primary) 55%,#000))",
-                  boxShadow: "0 14px 40px -12px var(--glow1)",
+                  background: "var(--primary)",
+                  boxShadow: "0 6px 18px -8px var(--glow1)",
                 }}
               >
-                <MicIcon size={30} />
+                <MicIcon size={22} />
               </button>
               <div className="text-center">
                 <p className="font-display text-[16px] font-semibold">
