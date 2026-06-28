@@ -66,7 +66,7 @@ export default function RambleBabbleApp({
   const [persona, setPersona] = useState("");
   const [openVoice, setOpenVoice] = useState<
     "format" | "tone" | "accent" | "character" | null
-  >(null);
+  >("format");
   const [customInstruction, setCustomInstruction] = useState("");
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
@@ -379,7 +379,7 @@ export default function RambleBabbleApp({
         {/* App shell: control rail (left) + workspace (right) */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start">
           {/* SIDEBAR: record + all controls */}
-          <aside className="flex flex-col gap-4 lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
+          <aside className="flex flex-col gap-3 lg:sticky lg:top-20">
             {/* Record */}
             <section className="flex flex-col items-center gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-4">
           {idle ? (
@@ -489,8 +489,8 @@ export default function RambleBabbleApp({
           )}
         </section>
 
-        {/* Scrollable controls between the record card and the Babble button */}
-        <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+        {/* Controls */}
+        <div className="space-y-2.5">
         {/* Format */}
         <Accordion
           label="Format"
@@ -930,18 +930,18 @@ function Chip({
   return (
     <button
       onClick={onClick}
-      className="rounded-md border px-2.5 py-1 text-[12px] font-medium transition active:scale-95"
+      className="rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition active:scale-95 hover:brightness-110"
       style={
         active
           ? {
               borderColor: accent,
               background: fun ? "var(--fun-soft)" : "var(--primary-soft)",
-              color: "var(--text)",
+              color: fun ? "var(--fun1)" : "var(--primary)",
             }
           : {
-              borderColor: "var(--border)",
-              background: "var(--surface2)",
-              color: "var(--text-dim)",
+              borderColor: "var(--border-strong)",
+              background: "var(--surface3)",
+              color: "var(--text)",
             }
       }
     >
