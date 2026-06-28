@@ -1,0 +1,75 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase/client";
+import AuthScreen from "./AuthScreen";
+import RambleBabbleApp from "./RambleBabbleApp";
+import MyRambles, { type SavedRamble } from "./MyRambles";
+
+export default function RambleBabbleRoot() {
+  const [user, setUser] = useState<User | null>(null);
+  const [ready, setReady] = useState(false);
+  const [screen, setScreen] = useState<"main" | "history">("main");
+  const [reopen, setReopen] = useState<SavedRamble | null>(null);
+  const [reopenSeq, setReopenSeq] = useState(0);
+
+  useEffect(() => {
+    const supabase = getSupabase();
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await getSupabase().auth.signOut();
+    setScreen("main");
+  }, []);
+
+  const handleReopen = useCallback((r: SavedRamble) => {
+    setReopen(r);
+    setReopenSeq((s) => s + 1); // bump the key to remount with this ramble loaded
+    setScreen("main");
+  }, []);
+
+  if (!ready) {
+    return (
+      <div
+        data-theme="dark"
+        data-accent="coral"
+        className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--text-dim)]"
+      >
+        Loading...
+      </div>
+    );
+  }
+
+  if (!user) return <AuthScreen />;
+
+  if (screen === "history") {
+    return (
+      <div
+        data-theme="dark"
+        data-accent="coral"
+        className="min-h-screen bg-[var(--bg)] text-[var(--text)]"
+      >
+        <MyRambles onBack={() => setScreen("main")} onReopen={handleReopen} />
+      </div>
+    );
+  }
+
+  return (
+    <RambleBabbleApp
+      key={reopenSeq}
+      userId={user.id}
+      onOpenHistory={() => setScreen("history")}
+      onSignOut={signOut}
+      reopen={reopen}
+    />
+  );
+}
