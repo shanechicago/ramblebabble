@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
 import { getOutputType, getTone, getAccent, getPersona } from "@/lib/options";
-import { stripBanned, stripBannedList } from "@/lib/sanitize";
+import { stripBanned, stripBannedList, stripMarkdown } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -81,9 +81,10 @@ export async function POST(req: NextRequest) {
       modifier: typeof body.modifier === "string" ? body.modifier : undefined,
     });
 
-    // Hard-enforce the non-negotiable rules (no em dashes, no emojis).
+    // Hard-enforce the non-negotiable rules (no em dashes, no emojis, no
+    // leaked Markdown) before anything reaches the user.
     return NextResponse.json({
-      cleaned: stripBanned(result.cleaned),
+      cleaned: stripBanned(stripMarkdown(result.cleaned)),
       keyPoints: stripBannedList(result.keyPoints),
       followUps: stripBannedList(result.followUps),
     });

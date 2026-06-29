@@ -84,7 +84,8 @@ export const TONES: Option[] = [
   { id: "warm", label: "Warm", hint: "Kind and personal", instruction: "Use a warm, kind, encouraging tone that feels personal and genuine." },
   { id: "persuasive", label: "Persuasive", hint: "Win them over", instruction: "Use a persuasive tone: lead with benefits, build a convincing case, and motivate the reader toward the desired action." },
   { id: "flirty", label: "Flirty", hint: "Playful and teasing", instruction: "Use a flirtatious, playful, teasing tone: charming, suggestive, warm, with winking innuendo and a confident cheeky edge. Lean into the chemistry. Keep it suggestive and tasteful rather than graphic." },
-  { id: "sultry", label: "Sultry", hint: "Smoldering and seductive", instruction: "Use a sultry, seductive, smoldering tone: slow, intimate, charged with tension and double meaning, dripping with allure. Lean fully into the heat while staying suggestive and evocative rather than explicit." },
+  { id: "sultry", label: "Sultry", hint: "Smoldering and seductive", instruction: "Use a sultry, seductive, smoldering tone: slow, intimate, breathy, charged with tension and double meaning, dripping with allure. Every line should feel like a whisper in the ear. Lean ALL the way into the heat and the romance while staying suggestive and evocative rather than sexually explicit. This sultriness must saturate the whole piece, never just one line." },
+  { id: "romantic", label: "Romantic", hint: "Tender and heartfelt", instruction: "Use a deeply romantic, affectionate, heartfelt tone: tender, warm, emotionally expressive, swept up in longing, devotion, and sweeping feeling. Court the reader with earnest, adoring, poetic language that makes their heart flutter. Passionate and loving rather than sexually explicit, and the romance must carry through the entire piece." },
   { id: "uptight", label: "Uptight", hint: "Stiff and wound too tight", instruction: "Deliver it extremely uptight, rigid, and wound too tight: stiff, prim, humorless, tense, buttoned all the way up, and faintly disapproving. Every line should sound delivered through clenched teeth, allergic to fun, slang, or anything loose. Maximum starch." },
   { id: "robotic", label: "Robotic", hint: "Cold mechanical monotone", instruction: "Deliver it as a cold, mechanical robot in flat monotone: stiff, clipped, literal, and utterly emotionless. Drop contractions, speak in blunt declarative statements, and let machine-speak slip in (PROCESSING. AFFIRMATIVE. DOES NOT COMPUTE. BEEP BOOP.). Treat everything as data and logic. Zero warmth, fully artificial." },
   { id: "concise", label: "Concise", hint: "Every word earns it", instruction: "Use a tight, economical tone: short sentences, no filler, every word earning its place." },
@@ -174,7 +175,7 @@ export const TONE_GROUPS: OptionGroup[] = [
   { label: "Professional", ids: ["professional", "direct", "confident", "concise", "persuasive"] },
   { label: "Friendly", ids: ["friendly", "warm"] },
   { label: "Polished", ids: ["proper", "eloquent"] },
-  { label: "Spicy", ids: ["flirty", "sultry"] },
+  { label: "Spicy", ids: ["flirty", "sultry", "romantic"] },
   { label: "Character", ids: ["uptight", "robotic"] },
   { label: "Your voice", ids: ["keep"] },
 ];

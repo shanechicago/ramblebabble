@@ -1056,9 +1056,15 @@ export default function RambleBabbleApp({
                 </button>
                 <span
                   className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] lg:inline"
-                  style={{ color: hasResult ? ACCENT : t.inkDim }}
+                  style={{
+                    color: hasResult || inputText.trim() ? ACCENT : t.inkDim,
+                  }}
                 >
-                  {hasResult ? metaLabel : "your Babble lands here"}
+                  {hasResult
+                    ? metaLabel
+                    : inputText.trim()
+                      ? "ready — tap to generate"
+                      : "your Babble lands here"}
                 </span>
               </div>
               <button
@@ -1075,7 +1081,7 @@ export default function RambleBabbleApp({
               {!hasResult && !cleaning ? (
                 <div className="flex h-full flex-col items-center justify-center text-center">
                   <span
-                    className="font-serif-i text-[80px] leading-none"
+                    className="font-serif-i text-[64px] leading-none"
                     style={{ color: ACCENT }}
                   >
                     b
@@ -1084,9 +1090,36 @@ export default function RambleBabbleApp({
                     className="mt-3 max-w-xs text-[15px]"
                     style={{ color: t.inkDim }}
                   >
-                    Your cleaned-up, organized result lands right here. Stack a
-                    few choices, then hit Babble it.
+                    Your cleaned-up, organized result lands right here.
                   </p>
+                  {/* Unmistakable generate button so nobody hunts for it. */}
+                  <button
+                    onClick={() => runCleanup()}
+                    disabled={cleaning}
+                    className="rb-glowpulse mt-6 flex items-center gap-2.5 px-8 py-4 text-[16px] font-bold uppercase tracking-[0.1em] text-white transition hover:brightness-110 active:translate-y-px"
+                    style={{
+                      backgroundImage: GRADIENT,
+                      boxShadow: "0 18px 44px -10px rgba(123,92,255,0.9)",
+                    }}
+                  >
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden
+                    >
+                      <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
+                    </svg>
+                    Babble it
+                    <span aria-hidden>&rarr;</span>
+                  </button>
+                  <span
+                    className="font-mono-label mt-3 text-[10px] uppercase tracking-[0.16em]"
+                    style={{ color: t.inkFaint }}
+                  >
+                    tap to generate your result
+                  </span>
                 </div>
               ) : (
                 <div>

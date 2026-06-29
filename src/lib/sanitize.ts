@@ -21,3 +21,18 @@ export function stripBanned(text: string): string {
 export function stripBannedList(items: string[]): string[] {
   return items.map(stripBanned).filter(Boolean);
 }
+
+// Outputs are plain text meant to be pasted into Word/email/texts, so any
+// Markdown the model leaks (### headings, **bold**, etc.) must be flattened.
+// Standalone "#hashtag" (no space) is left alone so social-post hashtags survive.
+export function stripMarkdown(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/^[ \t]{0,3}#{1,6}[ \t]+/gm, "") // "### Heading" -> "Heading"
+    .replace(/^[ \t]{0,3}>[ \t]?/gm, "") // "> quote" -> "quote"
+    .replace(/^([ \t]*)\*[ \t]+/gm, "$1- ") // "* bullet" -> "- bullet"
+    .replace(/^\s*([-*_])(?:\s*\1){2,}\s*$/gm, "") // "---"/"***" rules -> gone
+    .replace(/\*\*([^*\n]+?)\*\*/g, "$1") // **bold** -> bold
+    .replace(/__([^_\n]+?)__/g, "$1") // __bold__ -> bold
+    .replace(/`([^`\n]+?)`/g, "$1"); // `code` -> code
+}
