@@ -471,7 +471,7 @@ export default function RambleBabbleApp({
         <header className="flex items-center justify-between px-8 py-3">
           <Wordmark color={t.cInk} />
           <div className="flex items-center gap-4">
-            {navBtn("Refinery", true, () => {})}
+            {navBtn("Home", true, () => {})}
             {navBtn("Archive", false, onOpenHistory)}
             <button
               onClick={() => setOverlay("upgrade")}

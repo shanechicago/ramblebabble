@@ -99,7 +99,7 @@ export default function MyRambles({
             className="font-mono-label text-[12px] uppercase tracking-[0.14em]"
             style={{ color: C_DIM }}
           >
-            Refinery
+            Home
           </button>
           <span
             className="font-mono-label text-[12px] uppercase tracking-[0.14em]"

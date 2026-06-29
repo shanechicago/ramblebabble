@@ -76,6 +76,26 @@ body {
   line-height: 1.5;
 }
 
+/* Status-quo affordance: anything clickable shows the hand cursor and lifts
+   slightly on hover, so nothing ever reads as a dead link. (Tailwind v4 ships
+   buttons with the default arrow cursor, which is the bug Shane caught.) */
+button:not(:disabled),
+a,
+[role="button"],
+summary,
+select,
+label:has(> input[type="checkbox"]) {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+button:not(:disabled):hover,
+a:hover,
+[role="button"]:hover {
+  filter: brightness(1.07);
+}
+
 .font-display {
   font-family: "Space Grotesk", system-ui, sans-serif;
   letter-spacing: -0.02em;
