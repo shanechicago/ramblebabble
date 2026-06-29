@@ -29,7 +29,9 @@ const MARQUEE =
   "EMAIL · TALL TALE · RAP VERSE · SUMMARY · SPICY TEXT · AI PROMPT · MEETING NOTES · POEM · CONSPIRACY THEORY · MOVIE TRAILER · TO DO LIST · HAIKU · BREAKING NEWS · ";
 
 export default function AuthScreen() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  // New visitors land on "Create" (never greeted "Welcome back"); only people
+  // who've signed in before on this device default to "Sign in".
+  const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,15 @@ export default function AuthScreen() {
 
   const comingSoon = (provider: string) =>
     setError(`${provider} sign-in is coming soon. Make a username for now.`);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("rb_returning")
+    ) {
+      setMode("signin");
+    }
+  }, []);
 
   useEffect(() => {
     const id = setInterval(
@@ -76,6 +87,11 @@ export default function AuthScreen() {
         email: usernameToEmail(u),
         password,
       });
+      if (!signInError && typeof window !== "undefined") {
+        // Remember this device has an account, so next time we greet "Welcome
+        // back" instead of dropping them on the Create tab.
+        window.localStorage.setItem("rb_returning", "1");
+      }
       if (signInError) {
         setError(
           mode === "signin"
@@ -95,9 +111,9 @@ export default function AuthScreen() {
       className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
       style={{ background: CANVAS }}
     >
-      {/* LEFT: void-black canvas */}
+      {/* LEFT: void-black landing hero (now visible on phones too) */}
       <div
-        className="relative hidden flex-col justify-between overflow-hidden px-[60px] py-[52px] lg:flex"
+        className="relative flex flex-col justify-between gap-10 overflow-hidden px-7 py-10 lg:gap-0 lg:px-[60px] lg:py-[52px]"
         style={{
           background: CANVAS,
           color: CANVAS_INK,
@@ -169,10 +185,6 @@ export default function AuthScreen() {
         style={{ background: PANEL, color: INK }}
       >
         <form onSubmit={submit} className="w-full max-w-[380px]">
-          <div className="mb-8 lg:hidden">
-            <Wordmark inkColor={INK} />
-          </div>
-
           <div
             className="font-mono-label text-[11px] uppercase tracking-[0.2em]"
             style={{ color: INK_DIM }}
