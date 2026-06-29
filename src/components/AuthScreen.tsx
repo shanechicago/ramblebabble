@@ -401,11 +401,13 @@ function Wordmark({ inkColor }: { inkColor: string }) {
       <span className="font-bric font-extrabold" style={{ letterSpacing: "-0.02em" }}>
         Ramble
       </span>
-      <span
-        className="rb-shake font-babble inline-block bg-clip-text text-transparent"
-        style={{ backgroundImage: GRADIENT, fontSize: "1.4em" }}
-      >
-        Babble
+      <span className="inline-block" style={{ transform: "rotate(-7deg)" }}>
+        <span
+          className="rb-shake font-babble inline-block bg-clip-text text-transparent"
+          style={{ backgroundImage: GRADIENT, fontSize: "1.75em" }}
+        >
+          Babble
+        </span>
       </span>
     </div>
   );

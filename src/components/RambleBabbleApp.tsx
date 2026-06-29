@@ -118,17 +118,23 @@ function formatTime(total: number): string {
 
 export default function RambleBabbleApp({
   userId,
+  userEmail,
   onOpenHistory,
   onSignOut,
   reopen,
 }: {
   userId: string;
+  userEmail: string;
   onOpenHistory: () => void;
   onSignOut: () => void;
   reopen: SavedRamble | null;
 }) {
   const [theme, setTheme] = useState<Theme>("night");
   const t = THEMES[theme];
+
+  // Display name + initial for the account avatar (from the signed-in user).
+  const accountName = (userEmail || "").split("@")[0] || "you";
+  const accountInitial = (accountName[0] || "Y").toUpperCase();
 
   const [inputText, setInputText] = useState(reopen?.transcript ?? "");
   const [outputType, setOutputType] = useState(reopen?.output_type ?? "");
@@ -483,34 +489,50 @@ export default function RambleBabbleApp({
             >
               Upgrade
             </button>
-            <button
-              onClick={() => setTheme((th) => (th === "night" ? "day" : "night"))}
-              title={theme === "night" ? "Switch to Day (light)" : "Switch to Night (dark)"}
-              className="font-mono-label flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition"
-              style={{
-                background: theme === "night" ? "#f3f5f7" : "#14161b",
-                color: theme === "night" ? "#14161b" : "#f3f5f7",
-              }}
+            {/* Day / Night as a two-icon switch: click the sun for day, the
+                moon for night. No words, no which-way-does-it-go confusion. */}
+            <div
+              className="flex items-center overflow-hidden"
+              style={{ border: `1px solid ${t.cLineStrong}` }}
             >
-              {theme === "day" ? (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <button
+                onClick={() => setTheme("day")}
+                aria-label="Day mode"
+                title="Day mode (light)"
+                className="flex h-7 w-9 items-center justify-center transition"
+                style={{
+                  background: theme === "day" ? "#f3f5f7" : "transparent",
+                  color: theme === "day" ? "#14161b" : t.cDim,
+                  borderRight: `1px solid ${t.cLineStrong}`,
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M12 17a5 5 0 100-10 5 5 0 000 10zm0-13a1 1 0 011 1v1a1 1 0 11-2 0V5a1 1 0 011-1zm0 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM4 12a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm14 0a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zM6.3 6.3a1 1 0 011.4 0l.7.7A1 1 0 117 8.4l-.7-.7a1 1 0 010-1.4zm9.6 9.6a1 1 0 011.4 0l.7.7a1 1 0 11-1.4 1.4l-.7-.7a1 1 0 010-1.4zm1.4-9.6a1 1 0 010 1.4l-.7.7A1 1 0 0115.9 7l.7-.7a1 1 0 011.4 0zM7 15.9a1 1 0 010 1.4l-.7.7a1 1 0 01-1.4-1.4l.7-.7a1 1 0 011.4 0z" />
                 </svg>
-              ) : (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              </button>
+              <button
+                onClick={() => setTheme("night")}
+                aria-label="Night mode"
+                title="Night mode (dark)"
+                className="flex h-7 w-9 items-center justify-center transition"
+                style={{
+                  background: theme === "night" ? "#14161b" : "transparent",
+                  color: theme === "night" ? "#f3f5f7" : t.cDim,
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
                 </svg>
-              )}
-              {theme === "night" ? "Night" : "Day"}
-            </button>
+              </button>
+            </div>
             <div className="relative">
               <button
                 onClick={() => setAccountOpen((o) => !o)}
-                title="Account"
-                className="font-mono-label flex h-8 w-8 items-center justify-center text-[12px] font-bold text-white transition active:translate-y-px"
+                title={`Account (${accountName})`}
+                className="font-mono-label flex h-8 w-8 items-center justify-center text-[13px] font-bold text-white transition active:translate-y-px"
                 style={{ background: ACCENT }}
               >
-                R
+                {accountInitial}
               </button>
               {accountOpen && (
                 <>
@@ -519,13 +541,38 @@ export default function RambleBabbleApp({
                     onClick={() => setAccountOpen(false)}
                   />
                   <div
-                    className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden"
+                    className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden"
                     style={{
                       background: t.panel,
                       border: `1px solid ${t.lineStrong}`,
                       boxShadow: "0 24px 50px -16px rgba(0,0,0,0.5)",
                     }}
                   >
+                    <div
+                      className="flex items-center gap-2.5 px-4 py-3"
+                      style={{ borderBottom: `1px solid ${t.lineStrong}` }}
+                    >
+                      <span
+                        className="font-mono-label flex h-7 w-7 items-center justify-center text-[12px] font-bold text-white"
+                        style={{ background: ACCENT }}
+                      >
+                        {accountInitial}
+                      </span>
+                      <span className="min-w-0">
+                        <span
+                          className="block truncate text-[13px] font-semibold"
+                          style={{ color: t.ink }}
+                        >
+                          {accountName}
+                        </span>
+                        <span
+                          className="font-mono-label block text-[9px] uppercase tracking-[0.14em]"
+                          style={{ color: t.inkFaint }}
+                        >
+                          signed in
+                        </span>
+                      </span>
+                    </div>
                     <AccountItem
                       t={t}
                       label="Settings"
@@ -1043,10 +1090,10 @@ export default function RambleBabbleApp({
                     </span>
                   ) : (
                     <span
-                      className="rb-glowpulse font-babble inline-block bg-clip-text text-transparent"
+                      className="rb-babbleit font-babble inline-block bg-clip-text text-transparent"
                       style={{
                         backgroundImage: GRADIENT,
-                        fontSize: 30,
+                        fontSize: 32,
                         lineHeight: 1.15,
                       }}
                     >
@@ -1297,15 +1344,21 @@ type T = (typeof THEMES)[Theme];
 
 function Wordmark({ color }: { color: string }) {
   return (
-    <div className="flex items-center gap-2 text-[24px]" style={{ color }}>
+    <div className="flex items-center gap-2.5 text-[24px]" style={{ color }}>
       <span className="font-bric font-extrabold" style={{ letterSpacing: "-0.02em" }}>
         Ramble
       </span>
+      {/* Bigger and tilted (b dips low, e kicks up), still vibrating. */}
       <span
-        className="rb-shake font-babble inline-block bg-clip-text text-transparent"
-        style={{ backgroundImage: GRADIENT, fontSize: "1.4em" }}
+        className="inline-block"
+        style={{ transform: "rotate(-7deg)", transformOrigin: "center" }}
       >
-        Babble
+        <span
+          className="rb-shake font-babble inline-block bg-clip-text text-transparent"
+          style={{ backgroundImage: GRADIENT, fontSize: "1.75em" }}
+        >
+          Babble
+        </span>
       </span>
     </div>
   );

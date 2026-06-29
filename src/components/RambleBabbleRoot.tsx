@@ -69,6 +69,7 @@ export default function RambleBabbleRoot() {
     <RambleBabbleApp
       key={reopenSeq}
       userId={user.id}
+      userEmail={user.email ?? ""}
       onOpenHistory={() => setScreen("history")}
       onSignOut={signOut}
       reopen={reopen}

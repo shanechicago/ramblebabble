@@ -338,6 +338,26 @@ a:hover,
   animation: rb-glowpulse 2.6s ease-in-out infinite;
 }
 
+/* "Babble it" header wordmark — glow + jiggle + pulse all at once, so it's
+   unmistakably alive and clickable. */
+@keyframes rb-babbleit {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1px rgba(123, 92, 255, 0.4))
+      drop-shadow(0 0 5px rgba(123, 92, 255, 0.22));
+    transform: rotate(-1.5deg) scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(255, 77, 157, 0.75))
+      drop-shadow(0 0 18px rgba(123, 92, 255, 0.55));
+    transform: rotate(1.5deg) scale(1.06);
+  }
+}
+.rb-babbleit {
+  display: inline-block;
+  animation: rb-babbleit 2.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
