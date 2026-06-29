@@ -214,11 +214,6 @@ export default function RambleBabbleApp({
   const selectedTone = TONES.find((x) => x.id === tone);
   const selectedAccent = getAccent(accent);
   const selectedPersona = getPersona(persona);
-  const polishDisabled =
-    busy ||
-    !inputText.trim() ||
-    !outputType ||
-    (outputType === "custom" && !customInstruction.trim());
 
   const startReveal = useCallback((final: string) => {
     if (revealRef.current) clearInterval(revealRef.current);
@@ -257,7 +252,11 @@ export default function RambleBabbleApp({
   const runCleanup = useCallback(
     async (modifier?: string) => {
       if (!inputText.trim()) {
-        setError("Record or paste something first.");
+        setError("Record or paste your ramble first, then babble it.");
+        return;
+      }
+      if (!outputType) {
+        setError("Pick a format first — what should your ramble become?");
         return;
       }
       if (outputType === "custom" && !customInstruction.trim()) {
@@ -654,36 +653,6 @@ export default function RambleBabbleApp({
             >
               Reset
             </button>
-            <button
-              onClick={() => runCleanup()}
-              disabled={polishDisabled}
-              className="group flex items-center gap-2 px-6 py-3 text-[14px] font-semibold text-white transition active:translate-y-px"
-              style={{
-                backgroundImage: polishDisabled ? undefined : GRADIENT,
-                background: polishDisabled ? t.panel2 : undefined,
-                color: polishDisabled ? t.inkFaint : "#fff",
-                boxShadow: polishDisabled
-                  ? "none"
-                  : "0 12px 30px -12px rgba(123,92,255,0.7)",
-              }}
-            >
-              {cleaning ? (
-                <>
-                  <span
-                    className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
-                    style={{ borderColor: "rgba(255,255,255,0.4)", borderTopColor: "#fff" }}
-                  />
-                  {loadingWord}
-                </>
-              ) : (
-                <>
-                  Babble it{" "}
-                  <span className="transition-all group-hover:ml-1" aria-hidden>
-                    &rarr;
-                  </span>
-                </>
-              )}
-            </button>
           </div>
         </div>
 
@@ -696,8 +665,8 @@ export default function RambleBabbleApp({
           </p>
         )}
 
-        {/* Two panels */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        {/* Two panels + the Babble it trigger between them (ramble -> babble) */}
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
           {/* RAMBLE (input) */}
           <section
             className="relative flex min-h-[460px] flex-col"
@@ -708,14 +677,20 @@ export default function RambleBabbleApp({
               style={{ borderBottom: `1px solid ${t.line}` }}
             >
               <span
-                className="font-mono-label flex items-center gap-2 text-[12px] uppercase tracking-[0.18em]"
-                style={{ color: t.inkDim }}
+                className="font-mono-label flex items-baseline gap-2 text-[15px] font-bold uppercase tracking-[0.18em]"
+                style={{ color: t.ink }}
               >
                 <span
-                  className="h-1.5 w-1.5 rounded-full"
+                  className="self-center h-2 w-2 rounded-full"
                   style={{ background: recording ? "#ff5a3c" : t.inkFaint }}
                 />
                 Ramble
+                <span
+                  className="text-[10px] font-normal tracking-[0.12em]"
+                  style={{ color: t.inkFaint }}
+                >
+                  your words in
+                </span>
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -734,18 +709,29 @@ export default function RambleBabbleApp({
                 <button
                   onClick={recording ? handleStop : handleStart}
                   disabled={transcribing}
-                  className="font-mono-label flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] transition disabled:opacity-60"
+                  className="font-mono-label flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.14em] transition active:translate-y-px disabled:opacity-60"
                   style={
                     recording
-                      ? { background: ACCENT, color: "#fff" }
-                      : { border: `1px solid ${t.line}`, color: t.ink }
+                      ? {
+                          background: "#ff3b30",
+                          color: "#fff",
+                          boxShadow: "0 10px 26px -10px rgba(255,59,48,0.85)",
+                        }
+                      : {
+                          background: t.ink,
+                          color: t.panel,
+                          boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)",
+                        }
                   }
                 >
                   <span
-                    className="inline-block h-2 w-2"
+                    className={recording ? "" : "rb-blink"}
                     style={{
-                      borderRadius: recording ? 1 : 999,
-                      background: recording ? "#fff" : ACCENT,
+                      display: "inline-block",
+                      height: 11,
+                      width: 11,
+                      borderRadius: recording ? 2 : 999,
+                      background: recording ? "#fff" : "#ff3b30",
                     }}
                   />
                   {transcribing ? loadingWord : recording ? "Stop" : "Record"}
@@ -848,6 +834,42 @@ export default function RambleBabbleApp({
             )}
           </section>
 
+          {/* BABBLE IT — the trigger, between ramble and babble, on the dark
+              canvas so it can never go tone-on-tone. */}
+          <div className="flex items-center justify-center py-1 lg:w-[160px] lg:py-0">
+            <button
+              onClick={() => runCleanup()}
+              disabled={cleaning}
+              className="flex w-full flex-col items-center justify-center gap-2 px-6 py-7 text-[17px] font-bold text-white transition active:translate-y-px disabled:opacity-80"
+              style={{
+                backgroundImage: GRADIENT,
+                boxShadow: "0 18px 44px -10px rgba(123,92,255,0.9)",
+              }}
+            >
+              {cleaning ? (
+                <>
+                  <span
+                    className="rb-spin inline-block h-6 w-6 rounded-full border-2"
+                    style={{
+                      borderColor: "rgba(255,255,255,0.4)",
+                      borderTopColor: "#fff",
+                    }}
+                  />
+                  <span className="text-[12px] uppercase tracking-[0.1em]">
+                    {loadingWord}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>Babble it</span>
+                  <span className="rotate-90 text-[30px] leading-none lg:rotate-0" aria-hidden>
+                    &rarr;
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+
           {/* BABBLE (output) */}
           <section
             className="flex min-h-[460px] flex-col"
@@ -858,10 +880,16 @@ export default function RambleBabbleApp({
               style={{ borderBottom: `1px solid ${t.line}` }}
             >
               <span
-                className="font-mono-label text-[12px] uppercase tracking-[0.18em]"
+                className="font-mono-label flex items-baseline gap-2 text-[15px] font-bold uppercase tracking-[0.18em]"
                 style={{ color: ACCENT }}
               >
                 Babble
+                <span
+                  className="text-[10px] font-normal tracking-[0.12em]"
+                  style={{ color: t.inkFaint }}
+                >
+                  the result out
+                </span>
               </span>
               <span
                 className="font-mono-label truncate pl-3 text-[11px] uppercase tracking-[0.1em]"
