@@ -20,8 +20,10 @@ export default function RambleBabbleRoot() {
       setUser(data.session?.user ?? null);
       setReady(true);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      // Always land on the main workspace right after signing in.
+      if (event === "SIGNED_IN") setScreen("main");
     });
     return () => sub.subscription.unsubscribe();
   }, []);
