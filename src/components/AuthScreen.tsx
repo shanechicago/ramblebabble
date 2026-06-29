@@ -35,6 +35,10 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hw, setHw] = useState(0);
+  const [remember, setRemember] = useState(true);
+
+  const comingSoon = (provider: string) =>
+    setError(`${provider} sign-in is coming soon. Make a username for now.`);
 
   useEffect(() => {
     const id = setInterval(
@@ -242,6 +246,35 @@ export default function AuthScreen() {
             className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#9094a0] focus:border-[#7b5cff]"
           />
 
+          <div className="mt-4 flex items-center justify-between">
+            <label
+              className="flex cursor-pointer select-none items-center gap-2 text-[13px]"
+              style={{ color: INK_DIM }}
+            >
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 accent-[#7b5cff]"
+              />
+              Stay signed in
+            </label>
+            {mode === "signin" && (
+              <button
+                type="button"
+                onClick={() =>
+                  setError(
+                    "Password reset is coming soon. For now your browser can save it, or make a new username.",
+                  )
+                }
+                className="text-[13px] font-semibold"
+                style={{ color: VIOLET }}
+              >
+                Forgot password?
+              </button>
+            )}
+          </div>
+
           {error && (
             <p className="mt-4 text-[14px]" style={{ color: "#c8312f" }}>
               {error}
@@ -277,17 +310,50 @@ export default function AuthScreen() {
             <span className="h-px flex-1" style={{ background: "rgba(19,22,26,0.18)" }} />
           </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              setError("Google sign-in is coming soon. Make a username for now.")
-            }
-            className="flex w-full items-center justify-center gap-2.5 border px-4 py-3 text-[14px] font-semibold transition hover:bg-[#14161b] hover:text-[#e9ebf0]"
-            style={{ borderColor: "rgba(19,22,26,0.34)", color: INK }}
-          >
-            <span className="font-bric font-bold">G</span>
-            Continue with Google
-          </button>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => comingSoon("Google")}
+              className="flex items-center justify-center gap-2 px-3 py-3 text-[13px] font-semibold transition hover:bg-[#14161b] hover:text-[#e9ebf0]"
+              style={{ border: "1px solid rgba(19,22,26,0.34)", color: INK }}
+            >
+              <span className="font-bric font-bold">G</span>
+              Google
+            </button>
+            <button
+              type="button"
+              onClick={() => comingSoon("Apple")}
+              className="flex items-center justify-center gap-2 px-3 py-3 text-[13px] font-semibold transition hover:bg-[#14161b] hover:text-[#e9ebf0]"
+              style={{ border: "1px solid rgba(19,22,26,0.34)", color: INK }}
+            >
+              <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
+                &#63743;
+              </span>
+              Apple
+            </button>
+            <button
+              type="button"
+              onClick={() => comingSoon("Microsoft")}
+              className="flex items-center justify-center gap-2 px-3 py-3 text-[13px] font-semibold transition hover:bg-[#14161b] hover:text-[#e9ebf0]"
+              style={{ border: "1px solid rgba(19,22,26,0.34)", color: INK }}
+            >
+              <span
+                aria-hidden
+                className="inline-grid"
+                style={{
+                  gridTemplateColumns: "6px 6px",
+                  gridTemplateRows: "6px 6px",
+                  gap: 1.5,
+                }}
+              >
+                <span style={{ background: "#f25022" }} />
+                <span style={{ background: "#7fba00" }} />
+                <span style={{ background: "#00a4ef" }} />
+                <span style={{ background: "#ffb900" }} />
+              </span>
+              Microsoft
+            </button>
+          </div>
 
           <p
             className="font-mono-label mt-7 text-center text-[11px] uppercase tracking-[0.14em]"

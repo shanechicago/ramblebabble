@@ -284,7 +284,7 @@ export default function RambleBabbleApp({
   const runCleanup = useCallback(
     async (modifier?: string) => {
       if (!inputText.trim()) {
-        setError("Record or paste your ramble first, then babble it.");
+        setError("Record or paste your ramble first, then Babble it.");
         return;
       }
       if (!outputType) {
@@ -468,6 +468,16 @@ export default function RambleBabbleApp({
             {navBtn("Refinery", true, () => {})}
             {navBtn("Archive", false, onOpenHistory)}
             <button
+              onClick={() => setOverlay("upgrade")}
+              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px"
+              style={{
+                backgroundImage: GRADIENT,
+                boxShadow: "0 8px 20px -8px rgba(123,92,255,0.85)",
+              }}
+            >
+              Upgrade
+            </button>
+            <button
               onClick={() => setTheme((th) => (th === "night" ? "day" : "night"))}
               title={theme === "night" ? "Switch to Day (light)" : "Switch to Night (dark)"}
               className="font-mono-label flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition"
@@ -567,7 +577,7 @@ export default function RambleBabbleApp({
               className="font-mono-label max-w-xl text-[11px] uppercase leading-[1.6] tracking-[0.08em]"
               style={{ color: t.cDim }}
             >
-              Record on the left, babble on the right. Pick a Format (try
+              Record on the left, Babble on the right. Pick a Format (try
               &ldquo;Clean it up&rdquo;). Tone, character, accent are optional.
             </p>
           </div>
@@ -747,7 +757,7 @@ export default function RambleBabbleApp({
                 placeholder="Turn it into... e.g. a wedding toast, a recipe"
                 className="w-full bg-transparent px-3 py-2.5 text-[14px] outline-none"
                 style={{
-                  background: t.control,
+                  background: t.panel,
                   borderTop: `1px solid ${t.lineStrong}`,
                   borderBottom: `2px solid ${ACCENT}`,
                   color: t.ink,
@@ -755,10 +765,10 @@ export default function RambleBabbleApp({
               />
             )}
 
-            {/* Keep-words + Reset — one thin row */}
+            {/* Keep-words + Reset — white cell, distinct from the gray selectors */}
             <div
-              className="flex flex-wrap items-center gap-3 px-3 py-2"
-              style={{ background: t.control, borderTop: `1px solid ${t.lineStrong}` }}
+              className="flex flex-wrap items-center gap-3 px-3 py-2.5"
+              style={{ background: t.panel, borderTop: `1px solid ${t.lineStrong}` }}
             >
               <span
                 className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
@@ -810,9 +820,10 @@ export default function RambleBabbleApp({
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
-              className="sticky z-10 flex items-center justify-between gap-2 px-4 py-3"
+              className="sticky z-10 flex items-center justify-between gap-2 px-4 py-2"
               style={{
                 top: topH,
+                minHeight: 60,
                 background: t.panel2,
                 borderBottom: `1px solid ${t.lineStrong}`,
               }}
@@ -890,7 +901,7 @@ export default function RambleBabbleApp({
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Talk or paste your messy thoughts here, the texts you shouldn't send yet. That is the point."
+                placeholder="Ramble in, Babble out. Spill your messiest rambles right here, the voice memos, the half-baked ideas, the texts you definitely shouldn't send yet. That's the whole point."
                 className="h-full min-h-[340px] w-full resize-none bg-transparent p-4 text-[17px] leading-[1.6] outline-none"
                 style={{ color: t.ink }}
               />
@@ -981,16 +992,18 @@ export default function RambleBabbleApp({
             )}
           </section>
 
-          {/* BABBLE (output) — the prize. Faint accent-lavender body + accent
-              header so it reads distinct from the neutral Ramble box. */}
-          <section
-            className="flex min-h-[540px] flex-col"
-            style={{ background: "#f5f3fb", border: `1px solid ${t.lineStrong}` }}
-          >
+          {/* BABBLE (output) — the prize. The whole box wears the brand-gradient
+              outline so it reads as the result, distinct from the Ramble box. */}
+          <div className="flex" style={{ backgroundImage: GRADIENT, padding: 2 }}>
+            <section
+              className="flex min-h-[540px] flex-1 flex-col"
+              style={{ background: "#f5f3fb" }}
+            >
             <div
               className="sticky z-10 flex items-center justify-between gap-2 px-4 py-2"
               style={{
                 top: topH,
+                minHeight: 60,
                 background: "#e7e4f6",
                 borderBottom: `1px solid ${t.lineStrong}`,
               }}
@@ -1039,7 +1052,7 @@ export default function RambleBabbleApp({
                   className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] lg:inline"
                   style={{ color: hasResult ? ACCENT : t.inkDim }}
                 >
-                  {hasResult ? metaLabel : "your babble lands here"}
+                  {hasResult ? metaLabel : "your Babble lands here"}
                 </span>
               </div>
               <button
@@ -1065,8 +1078,8 @@ export default function RambleBabbleApp({
                     className="mt-3 max-w-xs text-[15px]"
                     style={{ color: t.inkDim }}
                   >
-                    Your refined or babbled text lands here. Stack a few choices,
-                    then babble it.
+                    Your cleaned-up, organized result lands right here. Stack a
+                    few choices, then hit Babble it.
                   </p>
                 </div>
               ) : (
@@ -1158,7 +1171,8 @@ export default function RambleBabbleApp({
                 </ActionBtn>
               </div>
             )}
-          </section>
+            </section>
+          </div>
         </div>
       </main>
 
@@ -1200,7 +1214,7 @@ export default function RambleBabbleApp({
       {overlay === "upgrade" && (
         <Overlay t={t} title="Upgrade" onClose={() => setOverlay(null)}>
           <p className="mb-5 text-[14px]" style={{ color: t.inkDim }}>
-            Pick how much you want to babble. Final pricing is still being locked
+            Pick how much you want to Babble. Final pricing is still being locked
             in, these are placeholders.
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -1208,7 +1222,7 @@ export default function RambleBabbleApp({
               t={t}
               name="Free"
               price="$0"
-              line="A handful of babbles a month to try it out."
+              line="A few Babbles a month to try it out."
               cta="Current plan"
               disabled
             />
@@ -1216,7 +1230,7 @@ export default function RambleBabbleApp({
               t={t}
               name="Plus"
               price="$6/mo"
-              line="Plenty of babbles for everyday use."
+              line="Lots more Babbles for everyday use."
               cta="Choose Plus"
               highlight
             />
