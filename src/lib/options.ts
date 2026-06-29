@@ -21,7 +21,7 @@ export interface Option {
 // ---------- FORMAT: what it becomes ----------
 export const OUTPUT_TYPES: Option[] = [
   // ===== Useful =====
-  { id: "note", label: "Cleaned note", hint: "Tidy, readable version", example: "Your words tidied into a clear, readable note.", instruction: "Rewrite as a clean, well-structured note. Keep all the substance, remove filler and repetition, organize into short paragraphs or bullets where it helps readability. Do NOT format it as an email or message: no 'Subject:' line, no greeting, and no sign-off. It is a standalone note." },
+  { id: "note", label: "Clean it up", hint: "Tidy, concise, structured", example: "Your ramble tidied into clear, concise, structured text.", instruction: "Rewrite as a clean, well-structured version of what they said: tidy, concise, and clearly organized. Keep all the substance, remove filler and repetition, organize into short paragraphs or bullets where it helps readability. Do NOT format it as an email or message: no 'Subject:' line, no greeting, and no sign-off. It is a standalone cleaned-up version, ready to read, paste, or speak." },
   { id: "email", label: "Email", hint: "Ready-to-send message", example: "A ready-to-send email with subject, greeting, body, sign-off.", instruction: "Rewrite as a complete email with a greeting, clear body, and sign-off. Infer a reasonable subject line and place it on the first line prefixed with 'Subject: '. Do not invent specific names; use neutral placeholders only if truly needed." },
   { id: "reply", label: "Reply", hint: "Draft a response", example: "A clear response drafted from what you want to say back.", instruction: "Draft a clear, direct reply based on what the speaker said they want to communicate back. Write only the message body: no 'Subject:' line and no sign-off. A short greeting is fine only if it reads like a natural reply." },
   { id: "followup", label: "Follow-up", hint: "Nudge for a response", example: "A polite nudge that references the last message.", instruction: "Rewrite as a brief, courteous follow-up message that gently references the prior thread and nudges for a response or the next step. Keep it short and easy to reply to." },
@@ -154,7 +154,7 @@ export interface OptionGroup {
 
 export const USEFUL_GROUPS: OptionGroup[] = [
   { label: "Messages", ids: ["email", "reply", "followup", "text", "dm"] },
-  { label: "Work", ids: ["note", "summary", "tldr", "meeting", "agenda", "status", "todo", "outline", "memo", "bug", "idea", "proposal", "pitch", "prompt"] },
+  { label: "Work", ids: ["summary", "tldr", "meeting", "agenda", "status", "todo", "outline", "memo", "bug", "idea", "proposal", "pitch", "prompt"] },
   { label: "Writing", ids: ["letter", "coverletter", "thankyou", "apology", "complaint", "review", "howto", "speech", "blog", "caption", "bio", "journal"] },
   { label: "Social", ids: ["linkedin", "social"] },
 ];

@@ -118,7 +118,7 @@ export default function RambleBabbleApp({
   const t = THEMES[theme];
 
   const [inputText, setInputText] = useState(reopen?.transcript ?? "");
-  const [outputType, setOutputType] = useState(reopen?.output_type ?? "");
+  const [outputType, setOutputType] = useState(reopen?.output_type ?? "note");
   const [tone, setTone] = useState(reopen?.tone ?? "");
   const [vocabulary, setVocabulary] = useState("");
   const [accent, setAccent] = useState("");
@@ -367,7 +367,7 @@ export default function RambleBabbleApp({
   }, [recorder]);
 
   const resetChoices = () => {
-    setOutputType("");
+    setOutputType("note");
     setTone("");
     setAccent("");
     setPersona("");
@@ -450,12 +450,12 @@ export default function RambleBabbleApp({
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-[1180px] px-7 py-8">
+      <main className="relative z-10 mx-auto w-full max-w-[1240px] px-7 pb-10">
         {/* Page title */}
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-3 pb-4 pt-7">
           <h1
             className="font-bric font-extrabold leading-[0.95]"
-            style={{ fontSize: "clamp(34px,4.4vw,56px)", letterSpacing: "-0.04em" }}
+            style={{ fontSize: "clamp(32px,4vw,52px)", letterSpacing: "-0.04em" }}
           >
             Refine a{" "}
             <span className="font-serif-i" style={{ color: ACCENT }}>
@@ -463,115 +463,155 @@ export default function RambleBabbleApp({
             </span>
           </h1>
           <p
-            className="font-mono-label max-w-xs text-[11px] uppercase leading-[1.7] tracking-[0.1em]"
+            className="font-mono-label max-w-sm text-[11px] uppercase leading-[1.7] tracking-[0.1em]"
             style={{ color: t.cDim }}
           >
-            Talk or paste your ramble on the left. Stack the controls. Babble it.
+            Record on the left, babble on the right. Format is the only must-pick
+            (set to Clean it up). Tone, character, accent are optional.
           </p>
         </div>
 
-        {/* Control console */}
-        <div
-          className="relative mb-5 p-4"
-          style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
-        >
-          <div className="grid grid-cols-2 gap-px lg:grid-cols-4" style={{ background: t.line }}>
-            <Selector
-              t={t}
-              index="01"
-              label="Format"
-              value={
-                outputType === "custom"
-                  ? "Something else"
-                  : (selectedStyle?.label ?? "")
-              }
-              placeholder="Choose a format"
-              open={openDropdown === "format"}
-              onToggle={() =>
-                setOpenDropdown((d) => (d === "format" ? null : "format"))
-              }
-            >
-              <GroupedOptions
-                t={t}
-                heading="Practical"
-                groups={USEFUL_GROUPS}
-                options={OUTPUT_TYPES}
-                value={outputType}
-                onPick={(id) => {
-                  setOutputType(id);
-                  setOpenDropdown(null);
-                }}
-              />
-              <GroupedOptions
-                t={t}
-                heading="Fun"
-                groups={FUN_GROUPS}
-                options={OUTPUT_TYPES}
-                value={outputType}
-                onPick={(id) => {
-                  setOutputType(id);
-                  setOpenDropdown(null);
-                }}
-              />
-              <OptionRow
-                t={t}
-                label="Something else"
-                active={outputType === "custom"}
-                onClick={() => {
-                  setOutputType("custom");
-                  setOpenDropdown(null);
-                }}
-              />
-            </Selector>
+        {/* Control console — sticky so your highlighted choices stay in view
+            while you scroll the ramble and the babble. */}
+        <div className="sticky top-[56px] z-20 pb-4" style={{ background: t.canvas }}>
+          <div
+            className="p-4"
+            style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span
+                className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
+                style={{ color: t.inkDim }}
+              >
+                Stack your style — a highlighted control is selected
+              </span>
+              <button
+                onClick={resetChoices}
+                className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
+                style={{ color: t.inkDim }}
+              >
+                Reset choices
+              </button>
+            </div>
 
-            <Selector
-              t={t}
-              index="02"
-              label="Tone"
-              value={selectedTone?.label ?? ""}
-              placeholder="Choose a tone"
-              open={openDropdown === "tone"}
-              onToggle={() => setOpenDropdown((d) => (d === "tone" ? null : "tone"))}
+            <div
+              className="grid grid-cols-2 gap-px lg:grid-cols-4"
+              style={{ background: t.lineStrong }}
             >
-              <FlatOptions
+              <Selector
                 t={t}
-                options={TONES}
-                value={tone}
-                allowNone
-                noneLabel="No set tone"
-                onPick={(id) => {
-                  setTone(id);
-                  setOpenDropdown(null);
-                }}
-              />
-            </Selector>
+                index="01"
+                label="Format"
+                value={
+                  outputType === "custom"
+                    ? "Something else"
+                    : (selectedStyle?.label ?? "")
+                }
+                placeholder="Choose a format"
+                open={openDropdown === "format"}
+                onToggle={() =>
+                  setOpenDropdown((d) => (d === "format" ? null : "format"))
+                }
+              >
+                <div
+                  className="font-mono-label px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em]"
+                  style={{ color: ACCENT }}
+                >
+                  Just refine
+                </div>
+                <OptionRow
+                  t={t}
+                  label="Clean it up"
+                  active={outputType === "note"}
+                  onClick={() => {
+                    setOutputType("note");
+                    setOpenDropdown(null);
+                  }}
+                />
+                <GroupedOptions
+                  t={t}
+                  heading="Practical"
+                  groups={USEFUL_GROUPS}
+                  options={OUTPUT_TYPES}
+                  value={outputType}
+                  onPick={(id) => {
+                    setOutputType(id);
+                    setOpenDropdown(null);
+                  }}
+                />
+                <GroupedOptions
+                  t={t}
+                  heading="Fun"
+                  groups={FUN_GROUPS}
+                  options={OUTPUT_TYPES}
+                  value={outputType}
+                  onPick={(id) => {
+                    setOutputType(id);
+                    setOpenDropdown(null);
+                  }}
+                />
+                <OptionRow
+                  t={t}
+                  label="Something else"
+                  active={outputType === "custom"}
+                  onClick={() => {
+                    setOutputType("custom");
+                    setOpenDropdown(null);
+                  }}
+                />
+              </Selector>
 
-            <Selector
-              t={t}
-              index="03"
-              label="Character"
-              value={selectedPersona?.label ?? ""}
-              placeholder="Add a character"
-              open={openDropdown === "character"}
-              onToggle={() =>
-                setOpenDropdown((d) => (d === "character" ? null : "character"))
-              }
-            >
-              <FlatOptions
+              <Selector
                 t={t}
-                options={PERSONAS}
-                value={persona}
-                allowNone
-                noneLabel="No character"
-                onPick={(id) => {
-                  setPersona(id);
-                  setOpenDropdown(null);
-                }}
-              />
-            </Selector>
+                index="02"
+                label="Tone"
+                optional
+                value={selectedTone?.label ?? ""}
+                placeholder="Choose a tone"
+                open={openDropdown === "tone"}
+                onToggle={() => setOpenDropdown((d) => (d === "tone" ? null : "tone"))}
+              >
+                <FlatOptions
+                  t={t}
+                  options={TONES}
+                  value={tone}
+                  allowNone
+                  noneLabel="No set tone"
+                  onPick={(id) => {
+                    setTone(id);
+                    setOpenDropdown(null);
+                  }}
+                />
+              </Selector>
 
-            <Selector
-              t={t}
+              <Selector
+                t={t}
+                index="03"
+                label="Character"
+                optional
+                value={selectedPersona?.label ?? ""}
+                placeholder="Add a character"
+                open={openDropdown === "character"}
+                onToggle={() =>
+                  setOpenDropdown((d) => (d === "character" ? null : "character"))
+                }
+              >
+                <FlatOptions
+                  t={t}
+                  options={PERSONAS}
+                  value={persona}
+                  allowNone
+                  noneLabel="No character"
+                  onPick={(id) => {
+                    setPersona(id);
+                    setOpenDropdown(null);
+                  }}
+                />
+              </Selector>
+
+              <Selector
+                t={t}
+                optional
               index="04"
               label="Accent"
               value={selectedAccent?.label ?? ""}
@@ -628,31 +668,26 @@ export default function RambleBabbleApp({
             />
           )}
 
-          {/* Bottom row */}
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <span
-              className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
-              style={{ color: t.inkDim }}
-            >
-              05 Vocabulary
-            </span>
-            <input
-              value={vocabulary}
-              onChange={(e) => setVocabulary(e.target.value)}
-              placeholder="names, brands, jargon to keep right"
-              className="min-w-[180px] flex-1 bg-transparent px-3 py-2 text-[14px] outline-none"
-              style={{
-                borderBottom: `1px solid ${t.line}`,
-                color: t.ink,
-              }}
-            />
-            <button
-              onClick={resetChoices}
-              className="font-mono-label text-[12px] uppercase tracking-[0.12em]"
-              style={{ color: t.inkDim }}
-            >
-              Reset
-            </button>
+            {/* Vocabulary (optional) */}
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <span
+                className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
+                style={{ color: t.inkDim }}
+              >
+                05 Vocabulary{" "}
+                <span style={{ color: t.inkFaint }}>optional</span>
+              </span>
+              <input
+                value={vocabulary}
+                onChange={(e) => setVocabulary(e.target.value)}
+                placeholder="names, brands, jargon to keep right"
+                className="min-w-[180px] flex-1 bg-transparent px-3 py-2 text-[14px] outline-none"
+                style={{
+                  borderBottom: `1px solid ${t.lineStrong}`,
+                  color: t.ink,
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -665,51 +700,23 @@ export default function RambleBabbleApp({
           </p>
         )}
 
-        {/* Two panels + the Babble it trigger between them (ramble -> babble) */}
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
+        {/* Two panels. Record is the action on the Ramble box (left); Babble it
+            mirrors it on the Babble box (right). Output gets the most room. */}
+        <div className="grid gap-4 lg:grid-cols-[1fr_1.25fr] lg:items-stretch">
           {/* RAMBLE (input) */}
           <section
-            className="relative flex min-h-[460px] flex-col"
+            className="relative flex min-h-[520px] flex-col"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
-              className="flex items-center justify-between px-4 py-3"
+              className="flex items-center justify-between gap-2 px-4 py-3"
               style={{ borderBottom: `1px solid ${t.line}` }}
             >
-              <span
-                className="font-mono-label flex items-baseline gap-2 text-[15px] font-bold uppercase tracking-[0.18em]"
-                style={{ color: t.ink }}
-              >
-                <span
-                  className="self-center h-2 w-2 rounded-full"
-                  style={{ background: recording ? "#ff5a3c" : t.inkFaint }}
-                />
-                Ramble
-                <span
-                  className="text-[10px] font-normal tracking-[0.12em]"
-                  style={{ color: t.inkFaint }}
-                >
-                  your words in
-                </span>
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={pasteIn}
-                  className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] transition hover:bg-[var(--h)]"
-                  style={
-                    {
-                      border: `1px solid ${t.line}`,
-                      color: t.ink,
-                      ["--h" as string]: t.panel2,
-                    } as React.CSSProperties
-                  }
-                >
-                  Paste
-                </button>
+              <div className="flex items-center gap-3">
                 <button
                   onClick={recording ? handleStop : handleStart}
                   disabled={transcribing}
-                  className="font-mono-label flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.14em] transition active:translate-y-px disabled:opacity-60"
+                  className="font-mono-label flex items-center gap-2.5 px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-60"
                   style={
                     recording
                       ? {
@@ -734,9 +741,26 @@ export default function RambleBabbleApp({
                       background: recording ? "#fff" : "#ff3b30",
                     }}
                   />
-                  {transcribing ? loadingWord : recording ? "Stop" : "Record"}
+                  {transcribing
+                    ? loadingWord
+                    : recording
+                      ? "Stop"
+                      : "Record a ramble"}
                 </button>
+                <span
+                  className="font-mono-label hidden text-[10px] uppercase tracking-[0.14em] sm:inline"
+                  style={{ color: t.inkFaint }}
+                >
+                  your words in
+                </span>
               </div>
+              <button
+                onClick={pasteIn}
+                className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] transition"
+                style={{ border: `1px solid ${t.lineStrong}`, color: t.ink }}
+              >
+                Paste
+              </button>
             </div>
 
             <div className="relative flex-1">
@@ -834,69 +858,60 @@ export default function RambleBabbleApp({
             )}
           </section>
 
-          {/* BABBLE IT — the trigger, between ramble and babble, on the dark
-              canvas so it can never go tone-on-tone. */}
-          <div className="flex items-center justify-center py-1 lg:w-[160px] lg:py-0">
-            <button
-              onClick={() => runCleanup()}
-              disabled={cleaning}
-              className="flex w-full flex-col items-center justify-center gap-2 px-6 py-7 text-[17px] font-bold text-white transition active:translate-y-px disabled:opacity-80"
-              style={{
-                backgroundImage: GRADIENT,
-                boxShadow: "0 18px 44px -10px rgba(123,92,255,0.9)",
-              }}
-            >
-              {cleaning ? (
-                <>
-                  <span
-                    className="rb-spin inline-block h-6 w-6 rounded-full border-2"
-                    style={{
-                      borderColor: "rgba(255,255,255,0.4)",
-                      borderTopColor: "#fff",
-                    }}
-                  />
-                  <span className="text-[12px] uppercase tracking-[0.1em]">
-                    {loadingWord}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span>Babble it</span>
-                  <span className="rotate-90 text-[30px] leading-none lg:rotate-0" aria-hidden>
-                    &rarr;
-                  </span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* BABBLE (output) */}
+          {/* BABBLE (output) — the prize. Babble it is the action button here,
+              mirroring Record on the Ramble box. */}
           <section
-            className="flex min-h-[460px] flex-col"
+            className="flex min-h-[520px] flex-col"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
-              className="flex items-center justify-between px-4 py-3"
+              className="flex items-center justify-between gap-2 px-4 py-3"
               style={{ borderBottom: `1px solid ${t.line}` }}
             >
-              <span
-                className="font-mono-label flex items-baseline gap-2 text-[15px] font-bold uppercase tracking-[0.18em]"
-                style={{ color: ACCENT }}
-              >
-                Babble
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  onClick={() => runCleanup()}
+                  disabled={cleaning}
+                  className="font-mono-label flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition active:translate-y-px disabled:opacity-80"
+                  style={{
+                    backgroundImage: GRADIENT,
+                    boxShadow: "0 10px 26px -10px rgba(123,92,255,0.85)",
+                  }}
+                >
+                  {cleaning ? (
+                    <>
+                      <span
+                        className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                        style={{
+                          borderColor: "rgba(255,255,255,0.4)",
+                          borderTopColor: "#fff",
+                        }}
+                      />
+                      {loadingWord}
+                    </>
+                  ) : (
+                    <>
+                      Babble it{" "}
+                      <span aria-hidden>&rarr;</span>
+                    </>
+                  )}
+                </button>
                 <span
-                  className="text-[10px] font-normal tracking-[0.12em]"
+                  className="font-mono-label hidden truncate text-[10px] uppercase tracking-[0.14em] sm:inline"
                   style={{ color: t.inkFaint }}
                 >
-                  the result out
+                  {hasResult ? metaLabel : "the result out"}
                 </span>
-              </span>
-              <span
-                className="font-mono-label truncate pl-3 text-[11px] uppercase tracking-[0.1em]"
-                style={{ color: t.inkDim }}
-              >
-                {cleaning ? "decoding..." : hasResult ? metaLabel : ""}
-              </span>
+              </div>
+              {hasResult && !revealing && (
+                <button
+                  onClick={handleCopy}
+                  className="font-mono-label shrink-0 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition"
+                  style={{ background: t.ink, color: t.panel }}
+                >
+                  {copyLabel}
+                </button>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-5">
@@ -1032,6 +1047,7 @@ function Selector({
   label,
   value,
   placeholder,
+  optional,
   open,
   onToggle,
   children,
@@ -1041,31 +1057,47 @@ function Selector({
   label: string;
   value: string;
   placeholder: string;
+  optional?: boolean;
   open: boolean;
   onToggle: () => void;
   children: React.ReactNode;
 }) {
+  const set = !!value;
   return (
     <div className="relative" style={{ background: t.panel }}>
       <button
         onClick={onToggle}
         className="flex w-full flex-col gap-1 px-3.5 py-3 text-left transition"
-        style={{ background: open ? t.panel2 : t.panel }}
+        style={{
+          background: open
+            ? "rgba(123,92,255,0.12)"
+            : set
+              ? "rgba(123,92,255,0.07)"
+              : t.panel,
+          boxShadow: set ? `inset 0 -3px 0 ${ACCENT}` : "none",
+        }}
       >
         <span
           className="font-mono-label flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em]"
           style={{ color: t.inkDim }}
         >
           {index} {label}
-          {value && (
-            <span style={{ color: ACCENT }} className="ml-auto">
-              SET
+          {set ? (
+            <span style={{ color: ACCENT }} className="ml-auto font-bold">
+              ● selected
             </span>
-          )}
+          ) : optional ? (
+            <span style={{ color: t.inkFaint }} className="ml-auto">
+              optional
+            </span>
+          ) : null}
         </span>
         <span
           className="truncate text-[18px]"
-          style={{ color: value ? t.ink : t.inkFaint }}
+          style={{
+            color: set ? t.ink : t.inkDim,
+            fontWeight: set ? 600 : 400,
+          }}
         >
           {value || placeholder}
         </span>
