@@ -1,10 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { usernameToEmail } from "@/lib/auth";
 
-const PRIMARY_GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
+const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
+const VIOLET = "#7b5cff";
+
+// Editorial palette (de-muted per Shane: void black, clean bright mist gray,
+// true white, no bone/cream).
+const CANVAS = "#0b0c0f";
+const CANVAS_INK = "#f3f5f7";
+const CANVAS_DIM = "#9097a2";
+const PANEL = "#e9ebf0";
+const INK = "#14161b";
+const INK_DIM = "#565d63";
+
+const HERO_WORDS = [
+  "refined",
+  "ridiculous",
+  "sendable",
+  "sharper",
+  "unhinged",
+  "poetic",
+];
+
+const MARQUEE =
+  "EMAIL · TALL TALE · RAP VERSE · SUMMARY · SPICY TEXT · AI PROMPT · MEETING NOTES · POEM · CONSPIRACY THEORY · MOVIE TRAILER · TO DO LIST · HAIKU · BREAKING NEWS · ";
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -12,11 +34,19 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hw, setHw] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(
+      () => setHw((h) => (h + 1) % HERO_WORDS.length),
+      2200,
+    );
+    return () => clearInterval(id);
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
     const u = username.trim();
     if (u.length < 3) return setError("Username must be at least 3 characters.");
     if (password.length < 4)
@@ -38,7 +68,6 @@ export default function AuthScreen() {
           return;
         }
       }
-
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: usernameToEmail(u),
         password,
@@ -50,7 +79,6 @@ export default function AuthScreen() {
             : "Account made, but sign-in failed. Try signing in.",
         );
         setLoading(false);
-        return;
       }
     } catch {
       setError("Something went wrong. Try again.");
@@ -60,72 +88,98 @@ export default function AuthScreen() {
 
   return (
     <div
-      data-theme="dark"
-      data-accent="coral"
-      className="grid min-h-screen w-full grid-cols-1 bg-[var(--bg)] text-[var(--text)] lg:grid-cols-[1.05fr_0.95fr]"
+      className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
+      style={{ background: CANVAS }}
     >
-      {/* Left: brand / story */}
+      {/* LEFT: void-black canvas */}
       <div
-        className="relative hidden flex-col justify-between overflow-hidden border-r border-[var(--border)] px-[60px] py-[56px] lg:flex"
+        className="relative hidden flex-col justify-between overflow-hidden px-[60px] py-[52px] lg:flex"
         style={{
-          backgroundImage:
-            "linear-gradient(150deg,rgba(123,92,255,0.16),rgba(255,77,157,0.1) 50%,rgba(255,111,97,0.12))",
+          background: CANVAS,
+          color: CANVAS_INK,
+          borderRight: "1px solid rgba(243,245,247,0.13)",
         }}
       >
-        <div
-          aria-hidden
-          className="rb-floaty pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full blur-3xl"
-          style={{ background: "rgba(123,92,255,0.4)" }}
-        />
-        <div
-          aria-hidden
-          className="rb-floaty pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full blur-3xl"
-          style={{ background: "rgba(255,77,157,0.25)", animationDelay: "-6s" }}
-        />
+        <Wordmark inkColor={CANVAS_INK} />
 
-        <Wordmark size={30} />
-
-        <div className="relative z-10 max-w-lg">
-          <h1 className="font-display text-[42px] font-bold leading-[1.05] sm:text-[52px]">
-            Ramble in.
+        <div className="relative z-10 max-w-xl">
+          <div
+            className="font-mono-label text-[12px] uppercase tracking-[0.22em]"
+            style={{ color: VIOLET }}
+          >
+            [ the thought refinery ]
+          </div>
+          <h1
+            className="font-bric mt-6 font-extrabold leading-[0.98]"
+            style={{ fontSize: "clamp(40px,5vw,66px)", letterSpacing: "-0.04em" }}
+          >
+            Say it messy.
             <br />
-            Brilliance out...
-            <br />
-            <WackyText />
+            Get it{" "}
+            <span
+              className="font-serif-i"
+              style={{
+                backgroundImage: GRADIENT,
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              {HERO_WORDS[hw]}
+            </span>
+            .
           </h1>
-          <p className="mt-5 max-w-md text-[17px] leading-[1.6] text-[var(--text-dim)]">
+          <p
+            className="mt-6 max-w-md text-[16px] leading-[1.62]"
+            style={{ color: CANVAS_DIM }}
+          >
             Dump in the voice-to-text chaos, the almost-genius ideas, and the
-            texts you probably shouldn&apos;t send yet. Watch the mess turn into
-            clean messages, useful notes, AI prompts, or spicy little
+            texts you probably shouldn&apos;t send yet. Watch the mess resolve
+            into clean messages, useful notes, AI prompts, or spicy little
             masterpieces with a personality disorder.
           </p>
-
-          <ul className="mt-7 space-y-3">
-            <Bullet color="#7b5cff">
-              Voice-to-text chaos in, polished words out
-            </Bullet>
-            <Bullet color="#ff4d9d">
-              Stack format, tone, character, and accent
-            </Bullet>
-            <Bullet color="#ff6f61">
-              Clean messages, work notes, AI prompts, or chaos
-            </Bullet>
-          </ul>
         </div>
 
-        <p className="relative z-10 text-[13px] text-[var(--text-faint)]">
-          No setup. No clutter. Just ramble.
-        </p>
+        <div
+          className="relative z-10 overflow-hidden"
+          style={{
+            maskImage:
+              "linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)",
+            WebkitMaskImage:
+              "linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)",
+          }}
+        >
+          <div
+            className="rb-marquee font-mono-label text-[12px] uppercase tracking-[0.18em]"
+            style={{ color: "#5d646c" }}
+          >
+            {MARQUEE}
+            {MARQUEE}
+          </div>
+        </div>
       </div>
 
-      {/* Right: form */}
-      <div className="flex items-center justify-center px-6 py-12">
+      {/* RIGHT: clean mist-gray panel */}
+      <div
+        className="flex items-center justify-center px-7 py-12"
+        style={{ background: PANEL, color: INK }}
+      >
         <form onSubmit={submit} className="w-full max-w-[380px]">
-          <div className="mb-7 lg:hidden">
-            <Wordmark size={26} />
+          <div className="mb-8 lg:hidden">
+            <Wordmark inkColor={INK} />
           </div>
 
-          <div className="mb-7 inline-flex rounded-[13px] bg-[var(--surface2)] p-1">
+          <div
+            className="font-mono-label text-[11px] uppercase tracking-[0.2em]"
+            style={{ color: INK_DIM }}
+          >
+            enter the refinery
+          </div>
+
+          <div
+            className="mt-3 inline-flex"
+            style={{ border: "1px solid rgba(19,22,26,0.34)" }}
+          >
             <ToggleTab
               active={mode === "signin"}
               onClick={() => {
@@ -142,18 +196,26 @@ export default function AuthScreen() {
                 setError(null);
               }}
             >
-              Create account
+              Create
             </ToggleTab>
           </div>
 
-          <h2 className="font-display text-[30px] font-bold">
-            {mode === "signin" ? "Welcome back" : "Let's get you set up"}
+          <h2
+            className="font-bric mt-6 text-[30px] font-bold"
+            style={{ letterSpacing: "-0.02em" }}
+          >
+            {mode === "signin" ? "Welcome back" : "Make an account"}
           </h2>
-          <p className="mt-1.5 text-[15px] text-[var(--text-dim)]">
-            No judgment. No blank page. Just better words.
+          <p className="mt-1.5 text-[14px]" style={{ color: INK_DIM }}>
+            {mode === "signin"
+              ? "No judgment. No blank page. Just better words."
+              : "Set it up once, then ramble forever."}
           </p>
 
-          <label className="mt-7 block text-[13px] font-semibold text-[var(--text-dim)]">
+          <label
+            className="font-mono-label mt-8 block text-[11px] uppercase tracking-[0.16em]"
+            style={{ color: INK_DIM }}
+          >
             Username
           </label>
           <input
@@ -162,10 +224,13 @@ export default function AuthScreen() {
             placeholder="yourname"
             autoComplete="username"
             autoCapitalize="none"
-            className="mt-2 w-full rounded-[13px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 text-[15px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--primary)]"
+            className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#9094a0] focus:border-[#7b5cff]"
           />
 
-          <label className="mt-5 block text-[13px] font-semibold text-[var(--text-dim)]">
+          <label
+            className="font-mono-label mt-6 block text-[11px] uppercase tracking-[0.16em]"
+            style={{ color: INK_DIM }}
+          >
             Password
           </label>
           <input
@@ -174,11 +239,11 @@ export default function AuthScreen() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="at least eight characters"
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
-            className="mt-2 w-full rounded-[13px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 text-[15px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--primary)]"
+            className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#9094a0] focus:border-[#7b5cff]"
           />
 
           {error && (
-            <p className="mt-3 text-[14px]" style={{ color: "var(--danger)" }}>
+            <p className="mt-4 text-[14px]" style={{ color: "#c8312f" }}>
               {error}
             </p>
           )}
@@ -186,66 +251,53 @@ export default function AuthScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-7 flex w-full items-center justify-center gap-2 rounded-[13px] px-4 py-3.5 text-[15px] font-semibold text-white transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+            className="mt-8 flex w-full items-center justify-center gap-2 px-4 py-3.5 text-[15px] font-semibold text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-60"
             style={{
-              backgroundImage: PRIMARY_GRADIENT,
-              boxShadow: "0 12px 34px -10px rgba(123,92,255,0.8)",
+              backgroundImage: GRADIENT,
+              boxShadow: "0 12px 30px -12px rgba(123,92,255,0.75)",
             }}
           >
             {loading ? (
               "One moment..."
             ) : (
               <>
-                <MicGlyph />
                 {mode === "signin"
                   ? "Sign in and start rambling"
-                  : "Create account and start rambling"}
+                  : "Create account"}
+                <span aria-hidden>&rarr;</span>
               </>
             )}
           </button>
 
-          <p className="mt-6 text-center text-[12px] text-[var(--text-faint)]">
-            By continuing you agree to talk a little messy.
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1" style={{ background: "rgba(19,22,26,0.18)" }} />
+            <span className="font-mono-label text-[11px]" style={{ color: INK_DIM }}>
+              or
+            </span>
+            <span className="h-px flex-1" style={{ background: "rgba(19,22,26,0.18)" }} />
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setError("Google sign-in is coming soon. Make a username for now.")
+            }
+            className="flex w-full items-center justify-center gap-2.5 border px-4 py-3 text-[14px] font-semibold transition hover:bg-[#14161b] hover:text-[#e9ebf0]"
+            style={{ borderColor: "rgba(19,22,26,0.34)", color: INK }}
+          >
+            <span className="font-bric font-bold">G</span>
+            Continue with Google
+          </button>
+
+          <p
+            className="font-mono-label mt-7 text-center text-[11px] uppercase tracking-[0.14em]"
+            style={{ color: "#9094a0" }}
+          >
+            No setup. No clutter. Just ramble.
           </p>
         </form>
       </div>
     </div>
-  );
-}
-
-function WackyText() {
-  const words = ["sometimes", "wildly", "wacky."];
-  return (
-    <span className="rb-wacky font-babble" style={{ fontSize: "1.18em" }}>
-      {words.map((w, i) => (
-        <span
-          key={w}
-          className="rb-wacky-word"
-          style={{
-            animationDelay: `${0.5 + i * 0.22}s`,
-            marginRight: i < words.length - 1 ? "0.22em" : 0,
-            backgroundImage: "linear-gradient(100deg,#22d3ee,#67e8f9,#38bdf8)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-          }}
-        >
-          {w}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function Bullet({ color, children }: { color: string; children: React.ReactNode }) {
-  return (
-    <li className="flex items-center gap-3 text-[15px] text-[var(--text-dim)]">
-      <span
-        className="h-2 w-2 shrink-0 rounded-full"
-        style={{ background: color, boxShadow: `0 0 10px ${color}` }}
-      />
-      {children}
-    </li>
   );
 }
 
@@ -262,11 +314,11 @@ function ToggleTab({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-[10px] px-5 py-2 text-[14px] font-semibold transition"
+      className="font-mono-label px-6 py-2 text-[12px] uppercase tracking-[0.12em] transition"
       style={
         active
-          ? { background: "var(--surface)", color: "var(--text)" }
-          : { color: "var(--text-faint)" }
+          ? { background: INK, color: PANEL }
+          : { background: "transparent", color: INK_DIM }
       }
     >
       {children}
@@ -274,47 +326,20 @@ function ToggleTab({
   );
 }
 
-function MicGlyph() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-      <line x1="12" y1="19" x2="12" y2="23" />
-    </svg>
-  );
-}
-
-function Wordmark({ size = 30 }: { size?: number }) {
+function Wordmark({ inkColor }: { inkColor: string }) {
   return (
     <div
-      className="font-display relative z-10 flex items-center gap-2 font-bold"
-      style={{ fontSize: size }}
+      className="relative z-10 flex items-center gap-2 text-[28px]"
+      style={{ color: inkColor }}
     >
+      <span className="font-bric font-extrabold" style={{ letterSpacing: "-0.02em" }}>
+        Ramble
+      </span>
       <span
-        className="rb-blink rounded-full"
-        style={{ background: "var(--signal)", width: 9, height: 9 }}
-      />
-      <span>
-        Ramble{" "}
-        <span
-          className="rb-shake font-babble inline-block bg-clip-text text-transparent"
-          style={{
-            backgroundImage: PRIMARY_GRADIENT,
-            fontSize: size * 1.35,
-          }}
-        >
-          Babble
-        </span>
+        className="rb-shake font-babble inline-block bg-clip-text text-transparent"
+        style={{ backgroundImage: GRADIENT, fontSize: "1.4em" }}
+      >
+        Babble
       </span>
     </div>
   );

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',sans-serif;-webkit-font-smoothing:antialiased;transition:background .5s ease,color .5s ease}
+  :root{
+    --bg:#0b0c0f; --bg-2:#c6cccf; --surface:#d6dbde;
+    --ink:#13161a; --ink-dim:#565d63; --ink-faint:#878d93;
+    --line:rgba(19,22,26,0.16); --line-strong:rgba(19,22,26,0.34);
+    --canvas-ink:#eef1f3; --canvas-dim:#8b929b; --canvas-line:rgba(238,241,243,0.13); --canvas-line-strong:rgba(238,241,243,0.30);
+    --accent:#1f2bff; --cobalt:#ff5a2a;
+    --darkpanel:#0b0c0f; --darkpaper:#eef1f3;
+  }
+  [data-theme="ink"]{
+    --bg:#070809; --bg-2:#1e2127; --surface:#16181d;
+    --ink:#eef1f3; --ink-dim:#9097a0; --ink-faint:#646b72;
+    --line:rgba(238,241,243,0.12); --line-strong:rgba(238,241,243,0.26);
+    --canvas-ink:#eef1f3; --canvas-dim:#8b929b; --canvas-line:rgba(238,241,243,0.11); --canvas-line-strong:rgba(238,241,243,0.24);
+    --accent:#1f2bff; --cobalt:#ff5a2a;
+    --darkpanel:#070809; --darkpaper:#eef1f3;
+  }
+  ::selection{background:var(--accent);color:#fff}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:0}
+  textarea,input,button{font-family:inherit}
+  textarea::placeholder,input::placeholder{color:var(--ink-faint)}
+  @keyframes rb-marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes rb-eq{0%,100%{transform:scaleY(0.25)}50%{transform:scaleY(1)}}
+  @keyframes rb-spin{to{transform:rotate(360deg)}}
+  @keyframes rb-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+
+<div style="position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0.045;mix-blend-mode:overlay;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E')"></div>
+<div id="rb-spot" style="position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(440px circle at var(--mx,50%) var(--my,28%), color-mix(in srgb,var(--accent) 22%,transparent), transparent 64%);transition:opacity .4s"></div>
+
+<div style="position:relative;z-index:2;min-height:100vh">
+
+  <sc-if value="{{showHeader}}" hint-placeholder-val="{{true}}">
+    <header style="position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:18px 34px;border-bottom:1px solid var(--canvas-line);background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(10px)">
+      <button onClick="{{goWorkspace}}" style="display:flex;align-items:baseline;gap:3px;background:none;border:none;cursor:pointer;padding:0;color:var(--canvas-ink)">
+        <span style="font-size:23px;font-weight:800;letter-spacing:-0.04em">Ramble</span>
+        <span style="font-family:'Instrument Serif',serif;font-style:italic;font-size:27px;line-height:0.8;color:var(--accent)">babble</span>
+      </button>
+      <nav style="display:flex;align-items:center;gap:4px">
+        <button onClick="{{goWorkspace}}" style="position:relative;padding:8px 14px;border:none;background:none;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:{{navWorkColor}}">Refinery</button>
+        <button onClick="{{goRambles}}" style="position:relative;padding:8px 14px;border:none;background:none;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:{{navArchColor}}">Archive</button>
+        <button onClick="{{toggleTheme}}" style="margin-left:8px;padding:8px 13px;border:1px solid var(--canvas-line-strong);background:none;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--canvas-ink);transition:all .18s" style-hover="background:var(--canvas-ink);color:var(--bg)">{{themeLabel}}</button>
+        <button onClick="{{goSignin}}" title="Account" style="margin-left:4px;width:36px;height:36px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">R</button>
+      </nav>
+    </header>
+  </sc-if>
+
+  <!-- ================= SIGN IN ================= -->
+  <sc-if value="{{isSignin}}" hint-placeholder-val="{{false}}">
+    <div style="display:grid;grid-template-columns:1.1fr 0.9fr;min-height:100vh">
+      <div style="position:relative;overflow:hidden;background:var(--darkpanel);color:var(--darkpaper);padding:46px 52px;display:flex;flex-direction:column;justify-content:space-between">
+        <div style="display:flex;align-items:baseline;gap:4px">
+          <span style="font-size:26px;font-weight:800;letter-spacing:-0.04em">Ramble</span>
+          <span style="font-family:'Instrument Serif',serif;font-style:italic;font-size:32px;color:var(--accent)">babble</span>
+        </div>
+        <div style="max-width:620px">
+          <div style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px">[ The thought refinery ]</div>
+          <h1 style="font-size:clamp(52px,6.6vw,108px);line-height:0.92;font-weight:700;letter-spacing:-0.045em;margin:0">
+            <span style="display:block">Say it messy.</span>
+            <span style="display:block">Get it <span style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--accent)">{{heroWord}}</span></span>
+          </h1>
+          <p style="font-size:18px;line-height:1.5;color:rgba(238,241,243,0.68);max-width:430px;margin:30px 0 0">Dump in the voice-to-text chaos, the almost-genius ideas, and the texts you probably shouldn't send yet. Watch the mess resolve into clean messages, useful notes, AI prompts, or spicy little masterpieces with a personality disorder.</p>
+        </div>
+        <div style="overflow:hidden;width:100%;border-top:1px solid rgba(238,241,243,0.16);padding-top:16px;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)">
+          <div style="display:flex;white-space:nowrap;font-family:'Space Mono',monospace;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(238,241,243,0.42);animation:rb-marq 34s linear infinite">
+            <span>EMAIL&nbsp;&nbsp;&middot;&nbsp;&nbsp;TALL TALE&nbsp;&nbsp;&middot;&nbsp;&nbsp;AI PROMPT&nbsp;&nbsp;&middot;&nbsp;&nbsp;RAP VERSE&nbsp;&nbsp;&middot;&nbsp;&nbsp;MEETING NOTES&nbsp;&nbsp;&middot;&nbsp;&nbsp;CONSPIRACY&nbsp;&nbsp;&middot;&nbsp;&nbsp;SPICY TEXT&nbsp;&nbsp;&middot;&nbsp;&nbsp;HAIKU&nbsp;&nbsp;&middot;&nbsp;&nbsp;PIRATE&nbsp;&nbsp;&middot;&nbsp;&nbsp;SHAKESPEARE&nbsp;&nbsp;&middot;&nbsp;&nbsp;BREAKING NEWS&nbsp;&nbsp;&middot;&nbsp;&nbsp;</span>
+            <span>EMAIL&nbsp;&nbsp;&middot;&nbsp;&nbsp;TALL TALE&nbsp;&nbsp;&middot;&nbsp;&nbsp;AI PROMPT&nbsp;&nbsp;&middot;&nbsp;&nbsp;RAP VERSE&nbsp;&nbsp;&middot;&nbsp;&nbsp;MEETING NOTES&nbsp;&nbsp;&middot;&nbsp;&nbsp;CONSPIRACY&nbsp;&nbsp;&middot;&nbsp;&nbsp;SPICY TEXT&nbsp;&nbsp;&middot;&nbsp;&nbsp;HAIKU&nbsp;&nbsp;&middot;&nbsp;&nbsp;PIRATE&nbsp;&nbsp;&middot;&nbsp;&nbsp;SHAKESPEARE&nbsp;&nbsp;&middot;&nbsp;&nbsp;BREAKING NEWS&nbsp;&nbsp;&middot;&nbsp;&nbsp;</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:center;padding:40px 46px;background:var(--surface)">
+        <div style="width:100%;max-width:360px">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:28px">Enter the refinery</div>
+          <div style="display:flex;border:1px solid var(--line-strong);margin-bottom:30px">
+            <button onClick="{{setSignIn}}" style="flex:1;padding:11px;border:none;cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;transition:all .2s;background:{{signInTabBg}};color:{{signInTabColor}}">Sign in</button>
+            <button onClick="{{setCreate}}" style="flex:1;padding:11px;border:none;border-left:1px solid var(--line-strong);cursor:pointer;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;transition:all .2s;background:{{createTabBg}};color:{{createTabColor}}">Create</button>
+          </div>
+          <h2 style="font-size:38px;font-weight:700;letter-spacing:-0.035em;line-height:1;margin:0 0 8px;color:var(--ink)">{{authTitle}}</h2>
+          <p style="font-size:15px;color:var(--ink-dim);margin:0 0 30px">{{authSub}}</p>
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">Username</div>
+          <input type="text" placeholder="sunny_talker" style="width:100%;padding:13px 2px;margin-bottom:24px;background:none;border:none;border-bottom:1px solid var(--line-strong);color:var(--ink);font-size:17px;outline:none;transition:border-color .18s" style-focus="border-color:var(--accent)">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:9px">Password</div>
+          <input type="password" placeholder="at least four characters" style="width:100%;padding:13px 2px;margin-bottom:32px;background:none;border:none;border-bottom:1px solid var(--line-strong);color:var(--ink);font-size:17px;outline:none;transition:border-color .18s" style-focus="border-color:var(--accent)">
+          <button onClick="{{goWorkspace}}" style="width:100%;padding:17px;border:none;cursor:pointer;background:linear-gradient(120deg,var(--accent),color-mix(in srgb,var(--accent) 52%,#000));color:#fff;font-size:16px;font-weight:700;letter-spacing:-0.01em;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .16s,letter-spacing .2s,filter .2s" style-hover="transform:translateY(-2px);letter-spacing:0.01em;filter:brightness(1.08)">{{authCTA}} <span style="font-size:18px">&rarr;</span></button>
+          <div style="display:flex;align-items:center;gap:14px;margin:22px 0"><span style="flex:1;height:1px;background:var(--line)"></span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-faint)">or</span><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <button onClick="{{goWorkspace}}" style="width:100%;padding:14px;border:1px solid var(--line-strong);background:none;color:var(--ink);cursor:pointer;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .18s,color .18s" style-hover="background:var(--ink);color:var(--surface)"><span style="font-family:'Space Mono',monospace;font-weight:700">G</span>Continue with Google</button>
+          <p style="font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-faint);margin:26px 0 0;letter-spacing:0.04em">No setup. No clutter. Just ramble.</p>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ================= WORKSPACE ================= -->
+  <sc-if value="{{isWorkspace}}" hint-placeholder-val="{{false}}">
+    <main style="max-width:1400px;margin:0 auto;padding:30px 34px 64px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px">
+        <h1 style="font-size:clamp(40px,5vw,72px);line-height:0.9;font-weight:700;letter-spacing:-0.045em;margin:0;color:var(--canvas-ink)">Refine a <span style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--accent)">ramble</span></h1>
+        <div style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--canvas-dim);max-width:300px;text-align:right">Talk or paste your ramble on the left. Stack the controls. Babble it.</div>
+      </div>
+
+      <!-- CONTROL CONSOLE -->
+      <div style="border:1px solid var(--line-strong);background:var(--surface);margin-bottom:18px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);">
+          <sc-for list="{{selectors}}" as="s" hint-placeholder-count="4">
+            <div style="position:relative;border-right:1px solid var(--line)">
+              <button onClick="{{s.onToggle}}" style="width:100%;text-align:left;padding:15px 16px;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;gap:7px;transition:background .16s" style-hover="background:var(--bg-2)">
+                <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-faint);display:flex;justify-content:space-between"><span>{{s.index}} {{s.label}}</span><span style="color:{{s.markColor}}">{{s.mark}}</span></span>
+                <span style="font-size:19px;font-weight:600;letter-spacing:-0.02em;color:{{s.valueColor}}">{{s.display}}</span>
+              </button>
+              <sc-if value="{{s.isOpen}}" hint-placeholder-val="{{false}}">
+                <div style="position:absolute;top:100%;left:-1px;right:-1px;z-index:50;max-height:300px;overflow-y:auto;background:var(--surface);border:1px solid var(--line-strong);box-shadow:0 30px 60px -20px rgba(0,0,0,0.55);animation:rb-up .22s ease both">
+                  <sc-for list="{{s.groups}}" as="g" hint-placeholder-count="1">
+                    <sc-if value="{{g.hasLabel}}" hint-placeholder-val="{{false}}">
+                      <div style="padding:11px 14px 5px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent)">{{g.label}}</div>
+                    </sc-if>
+                    <sc-for list="{{g.items}}" as="it" hint-placeholder-count="6">
+                      <button onClick="{{it.onSelect}}" style="width:100%;text-align:left;padding:10px 14px;background:{{it.bg}};border:none;border-top:1px solid var(--line);color:{{it.color}};font-size:15px;font-weight:500;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .14s,padding-left .14s" style-hover="background:var(--ink);color:var(--surface);padding-left:20px"><span>{{it.name}}</span><sc-if value="{{it.isActive}}" hint-placeholder-val="{{false}}"><span style="color:var(--accent);font-family:'Space Mono',monospace">&bull;</span></sc-if></button>
+                    </sc-for>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:stretch;border-top:1px solid var(--line)">
+          <div style="flex:1;display:flex;align-items:center;gap:12px;padding:0 16px">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-faint);white-space:nowrap">05 Vocabulary</span>
+            <input value="{{customVocab}}" onChange="{{onVocab}}" placeholder="names, brands, jargon to keep exact" style="flex:1;padding:14px 2px;background:none;border:none;color:var(--ink);font-size:15px;outline:none">
+          </div>
+          <button onClick="{{resetSelectors}}" style="padding:0 18px;border:none;border-left:1px solid var(--line);background:none;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-dim);transition:color .16s" style-hover="color:var(--accent)">Reset</button>
+          <button onClick="{{doBabble}}" style="padding:0 34px;border:none;background:linear-gradient(120deg,var(--accent),color-mix(in srgb,var(--accent) 52%,#000));color:#fff;cursor:pointer;font-size:16px;font-weight:700;letter-spacing:0.01em;display:flex;align-items:center;gap:10px;transition:gap .18s,filter .18s" style-hover="gap:16px;filter:brightness(1.1)">
+            <sc-if value="{{isBabbling}}" hint-placeholder-val="{{false}}"><span style="display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:rb-spin .7s linear infinite"></span></sc-if>
+            {{babbleLabel}} <span>&rarr;</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PANELS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch">
+        <!-- RAMBLE (input) -->
+        <section style="display:flex;flex-direction:column;border:1px solid var(--line-strong);background:var(--surface);min-height:480px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)">
+            <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-dim)">Ramble</span>
+            <div style="display:flex;gap:8px">
+              <button onClick="{{doPaste}}" style="padding:7px 13px;border:1px solid var(--line-strong);background:none;color:var(--ink);cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;transition:all .16s" style-hover="background:var(--ink);color:var(--surface)">Paste</button>
+              <button onClick="{{toggleRecord}}" style="padding:7px 13px;border:1px solid {{recordBorder}};background:{{recordBg}};color:{{recordColor}};cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;display:flex;align-items:center;gap:7px;transition:all .16s"><span style="width:8px;height:8px;border-radius:{{recordDotRadius}};background:currentColor;display:inline-block"></span>{{recordLabel}}</button>
+            </div>
+          </div>
+          <div style="position:relative;flex:1;display:flex">
+            <textarea value="{{inputText}}" onChange="{{onInput}}" placeholder="Hit record and just talk, or paste the chaos here. The half thoughts, the almost-genius ideas, the texts you shouldn't send yet. That is the point." style="flex:1;width:100%;resize:none;border:none;outline:none;background:none;color:var(--ink);font-size:17px;line-height:1.6;padding:20px;font-family:'Bricolage Grotesque',sans-serif"></textarea>
+            <sc-if value="{{isRecording}}" hint-placeholder-val="{{false}}">
+              <div style="position:absolute;inset:0;background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px">
+                <div style="display:flex;align-items:flex-end;gap:5px;height:48px">
+                  <span style="width:6px;height:100%;background:var(--accent);transform-origin:bottom;animation:rb-eq .85s ease-in-out infinite"></span>
+                  <span style="width:6px;height:100%;background:var(--ink);transform-origin:bottom;animation:rb-eq .85s ease-in-out infinite .12s"></span>
+                  <span style="width:6px;height:100%;background:var(--cobalt);transform-origin:bottom;animation:rb-eq .85s ease-in-out infinite .24s"></span>
+                  <span style="width:6px;height:100%;background:var(--ink);transform-origin:bottom;animation:rb-eq .85s ease-in-out infinite .36s"></span>
+                  <span style="width:6px;height:100%;background:var(--accent);transform-origin:bottom;animation:rb-eq .85s ease-in-out infinite .48s"></span>
+                </div>
+                <div style="font-family:'Space Mono',monospace;font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)">{{recordTime}}</div>
+                <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim)">Listening. Tap stop when done.</div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--line);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;color:var(--ink-faint)">
+            <span>{{inputWords}} WORDS / {{inputCount}} CHARS</span>
+            <button onClick="{{clearInput}}" style="background:none;border:none;color:var(--ink-faint);font-family:inherit;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:color .16s" style-hover="color:var(--accent)">Clear</button>
+          </div>
+        </section>
+
+        <!-- BABBLE (output) -->
+        <section style="display:flex;flex-direction:column;border:1px solid var(--line-strong);background:var(--surface);min-height:480px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)">
+            <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent)">Babble</span>
+            <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-faint)">{{resultMeta}}</span>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:22px">
+            <sc-if value="{{isIdle}}" hint-placeholder-val="{{true}}">
+              <div style="height:100%;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px">
+                <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:64px;color:var(--accent);line-height:0.8">b</div>
+                <div style="font-size:16px;color:var(--ink-dim);max-width:260px;line-height:1.5">Your refined or ridiculous text resolves right here. Stack a few controls, then babble it.</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{hasOutput}}" hint-placeholder-val="{{false}}">
+              <div style="font-family:'Instrument Serif',serif;font-size:23px;line-height:1.5;white-space:pre-wrap;color:var(--ink);letter-spacing:0.005em">{{outputText}}</div>
+              <sc-if value="{{isDone}}" hint-placeholder-val="{{false}}">
+                <div style="margin-top:26px;border-top:1px solid var(--line);padding-top:18px;animation:rb-up .5s ease both">
+                  <button onClick="{{toggleKey}}" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:4px 0;background:none;border:none;cursor:pointer;color:var(--ink)">
+                    <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase">Key points</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-faint)">{{keyToggle}}</span>
+                  </button>
+                  <sc-if value="{{keyOpen}}" hint-placeholder-val="{{true}}">
+                    <div style="margin-top:14px;display:flex;flex-direction:column;gap:13px">
+                      <sc-for list="{{keyPoints}}" as="k" hint-placeholder-count="4">
+                        <div style="display:flex;gap:14px;align-items:baseline"><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);flex:none">{{k.n}}</span><span style="font-size:15px;line-height:1.45;color:var(--ink-dim)">{{k.text}}</span></div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="margin-top:20px;border-top:1px solid var(--line);padding-top:18px;animation:rb-up .5s ease both .08s">
+                  <button onClick="{{toggleFollow}}" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:4px 0;background:none;border:none;cursor:pointer;color:var(--ink)">
+                    <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase">Suggested follow ups</span>
+                    <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-faint)">{{followToggle}}</span>
+                  </button>
+                  <sc-if value="{{followOpen}}" hint-placeholder-val="{{true}}">
+                    <div style="margin-top:12px;display:flex;flex-direction:column">
+                      <sc-for list="{{followups}}" as="f" hint-placeholder-count="3">
+                        <button onClick="{{f.onClick}}" style="text-align:left;padding:12px 0;background:none;border:none;border-top:1px solid var(--line);color:var(--ink-dim);font-size:15px;line-height:1.4;cursor:pointer;display:flex;gap:12px;align-items:baseline;transition:color .16s,padding-left .16s" style-hover="color:var(--accent);padding-left:8px"><span style="color:var(--accent)">&rarr;</span>{{f.text}}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </sc-if>
+          </div>
+          <sc-if value="{{isDone}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;border-top:1px solid var(--line)">
+              <button onClick="{{doCopy}}" style="flex:1;padding:14px;border:none;border-right:1px solid var(--line);background:none;color:var(--ink);cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;transition:all .16s" style-hover="background:var(--ink);color:var(--surface)">{{copyLabel}}</button>
+              <button onClick="{{doShare}}" style="flex:1;padding:14px;border:none;border-right:1px solid var(--line);background:none;color:var(--ink);cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;transition:all .16s" style-hover="background:var(--ink);color:var(--surface)">{{shareLabel}}</button>
+              <button onClick="{{doTryAgain}}" style="flex:1;padding:14px;border:none;border-right:1px solid var(--line);background:none;color:var(--ink);cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;transition:all .16s" style-hover="background:var(--ink);color:var(--surface)">Try again</button>
+              <button onClick="{{clearOutput}}" style="flex:1;padding:14px;border:none;background:none;color:var(--ink-faint);cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;transition:color .16s" style-hover="color:var(--accent)">Clear</button>
+            </div>
+          </sc-if>
+        </section>
+      </div>
+    </main>
+  </sc-if>
+
+  <!-- ================= ARCHIVE ================= -->
+  <sc-if value="{{isRambles}}" hint-placeholder-val="{{false}}">
+    <main style="max-width:1180px;margin:0 auto;padding:40px 34px 70px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:8px">
+        <h1 style="font-size:clamp(48px,7vw,96px);line-height:0.86;font-weight:700;letter-spacing:-0.05em;margin:0;color:var(--canvas-ink)">The <span style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--accent)">archive</span></h1>
+        <button onClick="{{goWorkspace}}" style="padding:14px 22px;border:none;background:linear-gradient(120deg,var(--accent),color-mix(in srgb,var(--accent) 52%,#000));color:#fff;cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px;transition:gap .18s" style-hover="gap:16px">New ramble <span>&rarr;</span></button>
+      </div>
+      <div style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--canvas-dim);border-bottom:1px solid var(--canvas-line-strong);padding-bottom:22px;margin-bottom:0">{{ramblesCount}} saved / reopen one to keep refining</div>
+
+      <div>
+        <sc-for list="{{ramblesList}}" as="r" hint-placeholder-count="6">
+          <div style="position:relative;border-bottom:1px solid var(--canvas-line);padding:22px 4px;display:grid;grid-template-columns:64px 1fr auto;gap:22px;align-items:center;cursor:pointer;transition:background .18s,padding-left .18s" style-hover="background:var(--canvas-line);padding-left:18px">
+            <div style="font-family:'Space Mono',monospace;font-size:13px;color:var(--canvas-dim)">{{r.num}}</div>
+            <div>
+              <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px">
+                <h3 style="font-size:23px;font-weight:600;letter-spacing:-0.02em;margin:0;color:var(--canvas-ink);transition:color .18s" style-hover="color:var(--accent)">{{r.title}}</h3>
+                <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--canvas-dim)">{{r.date}}</span>
+              </div>
+              <p style="font-size:15px;line-height:1.45;color:var(--canvas-dim);margin:0 0 10px;max-width:560px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;transition:color .18s" style-hover="color:var(--canvas-ink)">{{r.snippet}}</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{r.tags}}" as="t" hint-placeholder-count="2">
+                  <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:4px 9px;border:1px solid {{t.border}};color:{{t.color}};white-space:nowrap">{{t.label}}</span>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button onClick="{{r.onReopen}}" style="padding:9px 15px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase">Open</button>
+              <button onClick="{{r.onCopy}}" style="padding:9px 13px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase">{{r.copyLabel}}</button>
+              <button onClick="{{r.onDelete}}" title="Delete" style="padding:9px 13px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-dim);cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase">Del</button>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ramblesEmpty}}" hint-placeholder-val="{{false}}">
+          <div style="text-align:center;padding:80px 20px">
+            <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:48px;color:var(--accent);margin-bottom:12px">All clear.</div>
+            <p style="font-size:15px;color:var(--canvas-dim);margin:0 0 22px">No rambles yet. Go make a mess and refine it.</p>
+            <button onClick="{{goWorkspace}}" style="padding:14px 22px;border:none;background:linear-gradient(120deg,var(--accent),color-mix(in srgb,var(--accent) 52%,#000));color:#fff;cursor:pointer;font-size:14px;font-weight:700">Start rambling</button>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1360,&quot;height&quot;:900},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;signin&quot;,&quot;workspace&quot;,&quot;rambles&quot;],&quot;default&quot;:&quot;rambles&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1f2bff&quot;,&quot;options&quot;:[&quot;#1f2bff&quot;,&quot;#ff5a2a&quot;,&quot;#c0521f&quot;,&quot;#15a06a&quot;,&quot;#0fb5b0&quot;,&quot;#e8a317&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.HERO = ["refined.", "ridiculous.", "sendable.", "sharper.", "unhinged.", "poetic."];
+    this.GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@$%&*<>/+=~";
+
+    this.SAMPLE = `You know what, I truly believe the second coming has already happened. If the Bible is real, which I don't put much faith in, it was written by humans, and humans are fallible and biased, and it could have been just a book of rules for the time it was written. It shouldn't be the all knowing oracle for our conscious choices. But aside from that, I believe the second coming has already happened. When Satan was cast from heaven, and I'm not religious at all, I avoid religion like the plague, but if Satan was cast down to earth, this is his domain, this is his world, his kingdom. No wonder it's so hard down here and goes against every fiber of my being, because this is hell. Hell isn't some place beneath our feet. It's here. It's now. It's the earth. It's our civilization. Satan reigns. This is his kingdom.`;
+
+    this.PRACTICAL_OUT = `Here is something I have been sitting with.\n\nI would not call myself religious. I keep my distance from it, and I am skeptical of the Bible as literal truth. It was written by people, and people are fallible and biased. To me it reads more like a product of its time than an authority I have to answer to.\n\nStill, one idea keeps circling back. What if the second coming already happened, and we simply missed it? And what if, the day the adversary fell, this world became his to run? It would explain why so much down here feels heavy and hard won.\n\nMaybe hell was never a place beneath our feet. Maybe it is right here, right now, the world we already live in.`;
+
+    this.FUN_OUT = `Gather close, because what I am about to tell you will sit with you long after the lights go out.\n\nI am no believer. I keep my distance from religion the way you keep your distance from a fire that has already jumped the pit. But lately a single terrible thought has wrapped itself around me and will not let go.\n\nWhat if the second coming already came and went, and nobody thought to send the invitations? What if, the day the great deceiver was thrown out of paradise, he landed right here and called it home?\n\nSuddenly every cruelty makes a horrible kind of sense. We were never waiting for hell to crack open beneath us. We have been standing in it the whole time, and we called it Tuesday.`;
+
+    this.KEY_POINTS = [
+      "Skeptical of the Bible as literal or infallible truth",
+      "Reads scripture as a product of its era, not an oracle",
+      "Proposes that the second coming may already have happened",
+      "Suggests Earth itself could be the fallen domain"
+    ];
+    this.FOLLOWUPS = [
+      "Want this reworked as a short personal essay?",
+      "Should I keep it raw, or soften the edges?",
+      "Want a version that argues the opposite case?"
+    ];
+
+    this.selectorDefs = [
+      { key:"format", label:"Format", prompt:"Choose", groups:[
+        { label:"Practical", items:["Email","Quick note","Summary","AI prompt","Meeting notes","To do list","Bullet points","Status update","Report","Outline","Tweet","LinkedIn post","Journal entry"] },
+        { label:"Fun", items:["Tall tale","Rap verse","Spicy text","Soap opera","Meme caption","Poem","Haiku","Fairy tale","Conspiracy theory","Movie trailer","Stand up bit","Greek myth","Breaking news"] }
+      ]},
+      { key:"tone", label:"Tone", prompt:"Set", groups:[
+        { label:"", items:["Professional","Friendly","Direct","Flirty","Sultry","Sarcastic","Wholesome","Deadpan","Hyped","Zen"] }
+      ]},
+      { key:"character", label:"Character", prompt:"Add", groups:[
+        { label:"", items:["Conspiracy theorist","Drama queen","Sportscaster","Pirate captain","Wise grandma","Malfunctioning robot","Noir detective","Influencer","Cult leader","Shakespeare"] }
+      ]},
+      { key:"accent", label:"Accent", prompt:"Pick", groups:[
+        { label:"", items:["Southern","Pirate","Valley girl","Posh British","New York","Australian","French","Surfer","Texan","Scottish"] }
+      ]}
+    ];
+    this.FUN_FORMATS = this.selectorDefs[0].groups[1].items;
+
+    this.state = {
+      screen: props.startScreen || "signin",
+      theme: "paper",
+      authMode: "signin",
+      heroWord: 0,
+      inputText: "",
+      customVocab: "",
+      selections: { format:null, tone:null, character:null, accent:null },
+      openDropdown: null,
+      isRecording: false,
+      recordSeconds: 0,
+      status: "idle",
+      outputText: "",
+      finalOutput: "",
+      keyOpen: true,
+      followOpen: true,
+      copyLabel: "Copy",
+      shareLabel: "Share",
+      rambles: this._seedRambles()
+    };
+    this._iv=null; this._rec=null; this._cyc=null; this._mm=null;
+  }
+
+  _seedRambles(){
+    return [
+      { id:1, title:"Standup notes nobody can follow", snippet:"Blocked on the migration, also the staging box is throwing 500s again and I keep forgetting to mention the design review.", tags:[["Meeting notes","format"],["Direct","tone"]], date:"26.06" },
+      { id:2, title:"The one about Satan running earth", snippet:"You know what, I truly believe the second coming has already happened, and if Satan was cast down here then this is his kingdom.", tags:[["Drama","format"],["Conspiracy theorist","character"]], date:"24.06" },
+      { id:3, title:"Reply to the landlord, but nice", snippet:"The radiator has been knocking for two weeks and the hot water cuts out every morning around seven.", tags:[["Email","format"],["Professional","tone"]], date:"21.06" },
+      { id:4, title:"Why my fantasy team is cursed", snippet:"Started the wrong quarterback again, benched the guy who went off, this happens every single week without fail.", tags:[["Rap verse","format"],["Sportscaster","character"]], date:"18.06" },
+      { id:5, title:"Grocery brain dump", snippet:"Oat milk, the good coffee not the cheap one, something for dinner thursday, dog food, and those crackers.", tags:[["To do list","format"],["Friendly","tone"]], date:"15.06" },
+      { id:6, title:"Pitch for the side project", snippet:"It is basically a translator but for your messy thoughts, you talk and it hands you something usable.", tags:[["Summary","format"],["Hyped","tone"]], date:"11.06" }
+    ];
+  }
+
+  componentDidMount(){
+    this._applyTheme(); this._applyAccent();
+    this._cyc = setInterval(()=>this.setState(s=>({ heroWord:(s.heroWord+1)%this.HERO.length })), 2200);
+    this._mm = (e)=>{ const el=document.getElementById('rb-spot'); if(el){ el.style.setProperty('--mx', e.clientX+'px'); el.style.setProperty('--my', e.clientY+'px'); } };
+    window.addEventListener('mousemove', this._mm);
+  }
+  componentDidUpdate(prev){
+    this._applyTheme();
+    if (prev.startScreen!==this.props.startScreen && this.props.startScreen) this.setState({ screen:this.props.startScreen });
+    if (prev.accentColor!==this.props.accentColor) this._applyAccent();
+  }
+  componentWillUnmount(){ [this._iv,this._rec,this._cyc].forEach(i=>i&&clearInterval(i)); if(this._mm) window.removeEventListener('mousemove', this._mm); }
+
+  _applyTheme(){ try{ document.documentElement.dataset.theme=this.state.theme; }catch(e){} }
+  _applyAccent(){ try{ if(this.props.accentColor) document.documentElement.style.setProperty('--accent', this.props.accentColor); }catch(e){} }
+
+  go(s){ this.setState({ screen:s, openDropdown:null }); }
+  toggleTheme(){ this.setState(st=>({ theme: st.theme==="paper"?"ink":"paper" })); }
+
+  setInput(v){ this.setState({ inputText:v }); }
+  doPaste(){ this.setState({ inputText:this.SAMPLE, openDropdown:null }); }
+  clearInput(){ this.setState({ inputText:"" }); }
+
+  toggleRecord(){
+    if (this.state.isRecording){
+      clearInterval(this._rec); this._rec=null;
+      this.setState(st=>({ isRecording:false, inputText: st.inputText || this.SAMPLE }));
+    } else {
+      this.setState({ isRecording:true, recordSeconds:0 });
+      this._rec=setInterval(()=>{ this.setState(st=>{ const n=st.recordSeconds+1; if(n>=180){ clearInterval(this._rec); this._rec=null; return { recordSeconds:180, isRecording:false, inputText: st.inputText||this.SAMPLE }; } return { recordSeconds:n }; }); },1000);
+    }
+  }
+
+  toggleDropdown(k){ this.setState(st=>({ openDropdown: st.openDropdown===k?null:k })); }
+  pick(k,v){ this.setState(st=>({ selections:{...st.selections,[k]:v}, openDropdown:null })); }
+  resetSelectors(){ this.setState({ selections:{format:null,tone:null,character:null,accent:null}, openDropdown:null }); }
+  setVocab(v){ this.setState({ customVocab:v }); }
+
+  _chosenOutput(){ const f=this.state.selections.format; return (f && this.FUN_FORMATS.includes(f)) ? this.FUN_OUT : this.PRACTICAL_OUT; }
+
+  doBabble(){ if(!this.state.inputText.trim()){ this.setState({ inputText:this.SAMPLE }); } this._run(); }
+  _run(){
+    if(this._iv) clearInterval(this._iv);
+    const full=this._chosenOutput();
+    this.setState({ status:"babbling", outputText:"", finalOutput:full, openDropdown:null, copyLabel:"Copy", shareLabel:"Share" });
+    let p=0;
+    this._iv=setInterval(()=>{
+      p+=6;
+      if(p>=full.length){ clearInterval(this._iv); this._iv=null; this.setState({ outputText:full, status:"done" }); return; }
+      let out="";
+      for(let i=0;i<full.length;i++){ const c=full[i]; if(i<p) out+=c; else if(c===" "||c==="\n") out+=c; else out+=this.GLYPHS[(Math.random()*this.GLYPHS.length)|0]; }
+      this.setState({ outputText:out });
+    },26);
+  }
+  doTryAgain(){ this._run(); }
+  clearOutput(){ if(this._iv) clearInterval(this._iv); this.setState({ status:"idle", outputText:"", finalOutput:"" }); }
+  doCopy(){ try{ navigator.clipboard.writeText(this.state.finalOutput); }catch(e){} this.setState({ copyLabel:"Copied" }); setTimeout(()=>this.setState({copyLabel:"Copy"}),1600); }
+  doShare(){ try{ navigator.clipboard.writeText(this.state.finalOutput); }catch(e){} this.setState({ shareLabel:"Link copied" }); setTimeout(()=>this.setState({shareLabel:"Share"}),1600); }
+  toggleKey(){ this.setState(st=>({ keyOpen:!st.keyOpen })); }
+  toggleFollow(){ this.setState(st=>({ followOpen:!st.followOpen })); }
+
+  reopenRamble(r){ this.setState({ screen:"workspace", inputText:r.snippet, status:"idle", outputText:"" }); }
+  copyRamble(id){ this.setState(st=>({ rambles: st.rambles.map(r=> r.id===id?{...r,_copied:true}:r) })); setTimeout(()=>this.setState(st=>({ rambles: st.rambles.map(r=> r.id===id?{...r,_copied:false}:r) })),1500); }
+  deleteRamble(id){ this.setState(st=>({ rambles: st.rambles.filter(r=>r.id!==id) })); }
+
+  _fmtTime(s){ const m=Math.floor(s/60), ss=s%60; return m+":"+(ss<10?"0":"")+ss; }
+  _pad(n){ return (n<10?"0":"")+n; }
+  _tagStyle(kind){
+    if(kind==="format") return { border:"var(--accent)", color:"var(--accent)" };
+    if(kind==="tone") return { border:"var(--cobalt)", color:"var(--cobalt)" };
+    return { border:"var(--canvas-line-strong)", color:"var(--canvas-dim)" };
+  }
+
+  renderVals(){
+    const st=this.state, sel=st.selections, screen=st.screen;
+    const selectors=this.selectorDefs.map((s,si)=>{
+      const val=sel[s.key]; const isOpen=st.openDropdown===s.key;
+      return {
+        index:this._pad(si+1), label:s.label,
+        display: val || s.prompt,
+        valueColor: val ? "var(--ink)" : "var(--ink-faint)",
+        mark: val ? "SET" : "",
+        markColor:"var(--accent)",
+        isOpen, onToggle:()=>this.toggleDropdown(s.key),
+        groups:s.groups.map(g=>({ label:g.label, hasLabel:!!g.label, items:g.items.map(it=>({
+          name:it, isActive:val===it,
+          bg: val===it ? "var(--bg-2)" : "transparent",
+          color: val===it ? "var(--ink)" : "var(--ink-dim)",
+          onSelect:()=>this.pick(s.key,it)
+        })) }))
+      };
+    });
+    const metaParts=[sel.format,sel.tone,sel.character,sel.accent].filter(Boolean);
+    const resultMeta=(st.status==="done"&&metaParts.length)?metaParts.join(" / "):(st.status==="babbling"?"decoding...":"");
+
+    return {
+      showHeader: screen!=="signin",
+      isSignin: screen==="signin", isWorkspace: screen==="workspace", isRambles: screen==="rambles",
+      goWorkspace:()=>this.go("workspace"), goRambles:()=>this.go("rambles"), goSignin:()=>this.go("signin"),
+      toggleTheme:()=>this.toggleTheme(),
+      themeLabel: st.theme==="paper" ? "Ink" : "Mist",
+      navWorkColor: screen==="workspace" ? "var(--accent)" : "var(--canvas-dim)",
+      navArchColor: screen==="rambles" ? "var(--accent)" : "var(--canvas-dim)",
+
+      heroWord: this.HERO[st.heroWord],
+
+      authTitle: st.authMode==="signin" ? "Welcome back" : "Make an account",
+      authSub: st.authMode==="signin" ? "No judgment. No blank page. Just better words." : "Set it up once, then ramble forever.",
+      authCTA: st.authMode==="signin" ? "Sign in and start rambling" : "Create account",
+      setSignIn:()=>this.setState({authMode:"signin"}), setCreate:()=>this.setState({authMode:"create"}),
+      signInTabBg: st.authMode==="signin" ? "var(--ink)" : "transparent",
+      signInTabColor: st.authMode==="signin" ? "var(--surface)" : "var(--ink-dim)",
+      createTabBg: st.authMode==="create" ? "var(--ink)" : "transparent",
+      createTabColor: st.authMode==="create" ? "var(--surface)" : "var(--ink-dim)",
+
+      inputText: st.inputText, onInput:(e)=>this.setInput(e.target.value),
+      inputCount: st.inputText.length,
+      inputWords: st.inputText.trim() ? st.inputText.trim().split(/\s+/).length : 0,
+      doPaste:()=>this.doPaste(), clearInput:()=>this.clearInput(),
+      isRecording: st.isRecording, toggleRecord:()=>this.toggleRecord(),
+      recordLabel: st.isRecording ? "Stop" : "Record",
+      recordBg: st.isRecording ? "var(--accent)" : "transparent",
+      recordColor: st.isRecording ? "#fff" : "var(--ink)",
+      recordBorder: st.isRecording ? "var(--accent)" : "var(--line-strong)",
+      recordDotRadius: st.isRecording ? "1px" : "50%",
+      recordTime: this._fmtTime(st.recordSeconds),
+
+      selectors,
+      customVocab: st.customVocab, onVocab:(e)=>this.setVocab(e.target.value),
+      resetSelectors:()=>this.resetSelectors(), doBabble:()=>this.doBabble(),
+      babbleLabel: st.status==="babbling" ? "Babbling" : "Babble it",
+      isBabbling: st.status==="babbling",
+
+      isIdle: st.status==="idle", hasOutput: st.status!=="idle", isDone: st.status==="done",
+      outputText: st.outputText, resultMeta,
+      keyPoints: this.KEY_POINTS.map((t,i)=>({ n:this._pad(i+1), text:t })),
+      followups: this.FOLLOWUPS.map(t=>({ text:t, onClick:()=>this.doTryAgain() })),
+      keyOpen: st.keyOpen, followOpen: st.followOpen,
+      keyToggle: st.keyOpen ? "[ hide ]" : "[ show ]",
+      followToggle: st.followOpen ? "[ hide ]" : "[ show ]",
+      toggleKey:()=>this.toggleKey(), toggleFollow:()=>this.toggleFollow(),
+      doCopy:()=>this.doCopy(), doShare:()=>this.doShare(), doTryAgain:()=>this.doTryAgain(), clearOutput:()=>this.clearOutput(),
+      copyLabel: st.copyLabel, shareLabel: st.shareLabel,
+
+      ramblesCount: this._pad(st.rambles.length), ramblesEmpty: st.rambles.length===0,
+      ramblesList: st.rambles.map((r,i)=>({
+        num:this._pad(i+1), title:r.title, snippet:r.snippet, date:r.date,
+        tags:r.tags.map(t=>{ const ts=this._tagStyle(t[1]); return { label:t[0], border:ts.border, color:ts.color }; }),
+        copyLabel: r._copied ? "Done" : "Copy",
+        onReopen:()=>this.reopenRamble(r), onCopy:()=>this.copyRamble(r.id), onDelete:()=>this.deleteRamble(r.id)
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

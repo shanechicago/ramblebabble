@@ -124,6 +124,31 @@ body {
   animation: rb-popin 0.55s ease-out forwards;
 }
 
+/* ----- Editorial direction: fonts + marquee ----- */
+.font-bric {
+  font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+}
+.font-serif-i {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+}
+.font-mono-label {
+  font-family: "Space Mono", ui-monospace, monospace;
+}
+@keyframes rb-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.rb-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: rb-marquee 34s linear infinite;
+}
+
 /* ----- Motion ----- */
 @keyframes rb-breathe {
   0%,
