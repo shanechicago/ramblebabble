@@ -414,34 +414,26 @@ export default function RambleBabbleApp({
               </div>
             </>
           ) : (
-            <div className="flex w-full flex-col items-center gap-5">
-              <div className="relative flex h-20 w-20 items-center justify-center">
-                {[0, 0.8, 1.6].map((d) => (
-                  <span
-                    key={d}
-                    className="rb-ring absolute inset-0 rounded-full"
-                    style={{
-                      border: "2px solid var(--signal)",
-                      animationDelay: `${d}s`,
-                    }}
-                  />
-                ))}
-                <div
-                  className="font-mono-timer flex h-[72px] w-[72px] items-center justify-center rounded-full text-[18px] font-bold"
-                  style={{ background: "var(--signal)", color: "var(--signal-ink)" }}
+            <div className="flex w-full flex-col items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="rb-blink h-2 w-2 rounded-full"
+                  style={{ background: "var(--danger)" }}
+                />
+                <span
+                  className="font-mono-timer text-[15px] font-bold"
+                  style={{ color: "var(--signal)" }}
                 >
                   {formatTime(recorder.seconds)}
-                </div>
+                </span>
               </div>
-
-              {/* Waveform */}
-              <div className="flex h-10 items-center gap-[3px]">
-                {WAVE_BARS.map((h, i) => (
+              <div className="flex h-6 items-center gap-[2px]">
+                {WAVE_BARS.slice(0, 14).map((h, i) => (
                   <span
                     key={i}
-                    className="rb-wave-bar w-1 rounded-full"
+                    className="rb-wave-bar w-[2px] rounded-full"
                     style={{
-                      height: `${h}px`,
+                      height: `${Math.round(h * 0.5)}px`,
                       background:
                         "linear-gradient(180deg,var(--signal),var(--primary))",
                       animationDuration: `${0.55 + (i % 6) * 0.08}s`,
@@ -450,35 +442,28 @@ export default function RambleBabbleApp({
                   />
                 ))}
               </div>
-
+              <button
+                onClick={handleStop}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-[13px] font-bold text-white transition active:scale-[0.97]"
+                style={{ background: "var(--danger)" }}
+              >
+                <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-white" />
+                Stop
+              </button>
+              <button
+                onClick={recorder.cancel}
+                className="text-[11px] font-semibold text-[var(--text-dim)] underline-offset-2 hover:text-[var(--text)] hover:underline"
+              >
+                Cancel
+              </button>
               {showWarning && (
                 <p
-                  className="rounded-full px-4 py-1.5 text-sm font-medium"
-                  style={{
-                    background: "var(--danger-soft)",
-                    color: "var(--danger)",
-                  }}
+                  className="text-center text-[10px] font-medium"
+                  style={{ color: "var(--danger)" }}
                 >
-                  ⏳ {WARNING_MESSAGE}
+                  {WARNING_MESSAGE}
                 </p>
               )}
-
-              <div className="flex w-full gap-3">
-                <button
-                  onClick={recorder.cancel}
-                  className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 font-semibold transition hover:border-[var(--border-strong)]"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleStop}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-[var(--primary-ink)]"
-                  style={{ background: "var(--primary)" }}
-                >
-                  <span className="inline-block h-3 w-3 rounded-[2px] bg-white" />
-                  Stop
-                </button>
-              </div>
             </div>
           )}
 
@@ -573,7 +558,7 @@ export default function RambleBabbleApp({
         {/* Custom vocabulary — collapsible */}
         <Accordion
           label="Custom vocabulary"
-          value={vocabulary.trim() ? vocabulary : "None"}
+          value={vocabulary.trim() ? vocabulary : "Optional"}
           sub="names, brands, jargon to keep right"
           open={vocabOpen}
           onToggle={() => setVocabOpen((o) => !o)}
@@ -671,8 +656,8 @@ export default function RambleBabbleApp({
           </p>
         )}
 
-        {/* Loading */}
-        {(transcribing || cleaning) && (
+        {/* Loading (babble only — transcribing shows at the recorder) */}
+        {cleaning && (
           <div className="mt-5 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-5">
             <div className="flex items-center gap-3">
               <span
@@ -680,11 +665,7 @@ export default function RambleBabbleApp({
                 style={{ borderTopColor: "var(--primary)" }}
               />
               <span className="text-sm text-[var(--text-dim)]">
-                {transcribing
-                  ? "Listening closely… turning sound into text"
-                  : selectedIsFun
-                    ? "Babbling…"
-                    : "Polishing your words…"}
+                {selectedIsFun ? "Babbling…" : "Polishing your words…"}
               </span>
             </div>
             <div className="mt-4 h-1 overflow-hidden rounded-full bg-[var(--surface3)]">

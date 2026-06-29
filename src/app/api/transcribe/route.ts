@@ -7,6 +7,38 @@ export const runtime = "nodejs";
 // Audio is never persisted — it lives only in memory for the request.
 export const dynamic = "force-dynamic";
 
+// Whisper hallucinates stock phrases on silent or near-empty audio (it learned
+// them from millions of video endings). Drop those so they never reach the user.
+const SILENCE_HALLUCINATIONS = new Set([
+  "you",
+  "thank you",
+  "thanks",
+  "thank you for watching",
+  "thanks for watching",
+  "thank you for watching!",
+  "thank you so much for watching",
+  "please subscribe",
+  "subscribe",
+  "like and subscribe",
+  "bye",
+  "ご視聴ありがとうございました",
+  "ご視聴ありがとうございます",
+  "おやすみなさい",
+  "字幕",
+]);
+
+function stripHallucinations(text: string): string {
+  const lines = text
+    .split(/\n+/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const kept = lines.filter(
+    (l) =>
+      !SILENCE_HALLUCINATIONS.has(l.toLowerCase().replace(/[.!?！？。]+$/g, "")),
+  );
+  return kept.join("\n").trim();
+}
+
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
@@ -44,7 +76,9 @@ export async function POST(req: NextRequest) {
       vocabulary,
     });
 
-    return NextResponse.json({ transcript: stripBanned(transcript) });
+    return NextResponse.json({
+      transcript: stripBanned(stripHallucinations(transcript)),
+    });
   } catch (err) {
     console.error("[transcribe] error:", err);
     return NextResponse.json(
