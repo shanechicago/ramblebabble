@@ -79,8 +79,11 @@ const THEMES = {
     cDim: "#b2b8c2",
     cLine: "rgba(243,245,247,0.16)",
     cLineStrong: "rgba(243,245,247,0.36)",
-    panel: "#e9ebf0",
-    panel2: "#d6dae1",
+    // Output boxes = bright paper. Control deck = a cooler mist gray, distinct.
+    panel: "#eef0f4",
+    panel2: "#dfe2e8",
+    control: "#cbd2da",
+    control2: "#bcc4ce",
     ink: "#14161b",
     inkDim: "#454c55",
     inkFaint: "#6a717a",
@@ -88,14 +91,17 @@ const THEMES = {
     lineStrong: "rgba(19,22,26,0.36)",
   },
   day: {
-    canvas: "#d3d8df",
-    chrome: "rgba(211,216,223,0.94)",
+    canvas: "#eef1f4",
+    chrome: "rgba(238,241,244,0.94)",
     cInk: "#14161b",
     cDim: "#454c55",
     cLine: "rgba(19,22,26,0.16)",
     cLineStrong: "rgba(19,22,26,0.32)",
+    // Boxes pure white; control deck the cool mist gray so it stands out.
     panel: "#ffffff",
     panel2: "#eceef2",
+    control: "#cbd2da",
+    control2: "#bcc4ce",
     ink: "#14161b",
     inkDim: "#454c55",
     inkFaint: "#6a717a",
@@ -501,8 +507,10 @@ export default function RambleBabbleApp({
             </p>
           </div>
 
-          {/* Flattened control console — thin and wide, edge to edge. */}
-          <div style={{ border: `1px solid ${t.lineStrong}` }}>
+          {/* Flattened control console — its own mist-gray surface, distinct
+              from the Ramble/Babble boxes, with a brand-gradient edge for life. */}
+          <div style={{ border: `1px solid ${t.lineStrong}`, background: t.control }}>
+            <div style={{ height: 3, backgroundImage: GRADIENT }} />
             <div
               className="grid grid-cols-2 gap-px lg:grid-cols-4"
               style={{ background: t.lineStrong }}
@@ -674,7 +682,7 @@ export default function RambleBabbleApp({
                 placeholder="Turn it into... e.g. a wedding toast, a recipe"
                 className="w-full bg-transparent px-3 py-2.5 text-[14px] outline-none"
                 style={{
-                  background: t.panel,
+                  background: t.control,
                   borderTop: `1px solid ${t.lineStrong}`,
                   borderBottom: `2px solid ${ACCENT}`,
                   color: t.ink,
@@ -685,7 +693,7 @@ export default function RambleBabbleApp({
             {/* Keep-words + Reset — one thin row */}
             <div
               className="flex flex-wrap items-center gap-3 px-3 py-2"
-              style={{ background: t.panel, borderTop: `1px solid ${t.lineStrong}` }}
+              style={{ background: t.control, borderTop: `1px solid ${t.lineStrong}` }}
             >
               <span
                 className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
@@ -1128,16 +1136,16 @@ function Selector({
 }) {
   const set = !!value;
   return (
-    <div className="relative" style={{ background: t.panel }}>
+    <div className="relative" style={{ background: t.control }}>
       <button
         onClick={onToggle}
         className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left transition"
         style={{
           background: open
-            ? "rgba(123,92,255,0.14)"
+            ? "rgba(123,92,255,0.18)"
             : set
-              ? "rgba(123,92,255,0.08)"
-              : t.panel,
+              ? "rgba(123,92,255,0.12)"
+              : t.control,
           boxShadow: set ? `inset 0 -3px 0 ${ACCENT}` : "none",
         }}
       >
