@@ -334,7 +334,9 @@ export default function RambleBabbleApp({
         setFollowOpen(false);
         startReveal(out);
         if (!modifier) {
-          void getSupabase()
+          // The Supabase builder is lazy: it only runs when awaited / .then'd.
+          // Calling .then here is what actually sends the insert.
+          getSupabase()
             .from("rambles")
             .insert({
               user_id: userId,
@@ -346,6 +348,10 @@ export default function RambleBabbleApp({
               key_points: Array.isArray(data.keyPoints) ? data.keyPoints : [],
               follow_ups: Array.isArray(data.followUps) ? data.followUps : [],
               is_fun: kind === "fun",
+            })
+            .then(({ error: saveError }) => {
+              if (saveError)
+                console.error("[rambles] save failed:", saveError.message);
             });
         }
       } catch (err) {
