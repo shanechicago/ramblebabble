@@ -419,81 +419,71 @@ export default function RambleBabbleApp({
         }}
       />
 
-      {/* Header */}
-      <header
-        className="sticky top-0 z-30 flex items-center justify-between px-7 py-3.5 backdrop-blur"
+      {/* STICKY TOP — the whole header stays put: the brand, the title, and
+          your highlighted choices stay visible no matter how far you scroll. */}
+      <div
+        className="sticky top-0 z-30"
         style={{
-          borderBottom: `1px solid ${t.cLine}`,
           background:
-            theme === "mist" ? "rgba(11,12,15,0.72)" : "rgba(7,8,9,0.72)",
+            theme === "mist" ? "rgba(11,12,15,0.94)" : "rgba(7,8,9,0.94)",
+          backdropFilter: "blur(10px)",
+          borderBottom: `1px solid ${t.cLine}`,
         }}
       >
-        <Wordmark color={t.cInk} />
-        <div className="flex items-center gap-5">
-          {navBtn("Refinery", true, () => {})}
-          {navBtn("Archive", false, onOpenHistory)}
-          <button
-            onClick={() => setTheme((th) => (th === "mist" ? "ink" : "mist"))}
-            className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.14em]"
-            style={{ border: `1px solid ${t.cLineStrong}`, color: t.cDim }}
-          >
-            {theme === "mist" ? "Mist" : "Ink"}
-          </button>
-          <button
-            onClick={onSignOut}
-            title="Sign out"
-            className="font-mono-label flex h-8 w-8 items-center justify-center text-[12px] font-bold text-white"
-            style={{ background: ACCENT }}
-          >
-            R
-          </button>
-        </div>
-      </header>
+        <header className="flex items-center justify-between px-8 py-3">
+          <Wordmark color={t.cInk} />
+          <div className="flex items-center gap-5">
+            {navBtn("Refinery", true, () => {})}
+            {navBtn("Archive", false, onOpenHistory)}
+            <button
+              onClick={() => setTheme((th) => (th === "mist" ? "ink" : "mist"))}
+              className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.14em]"
+              style={{ border: `1px solid ${t.cLineStrong}`, color: t.cDim }}
+            >
+              {theme === "mist" ? "Mist" : "Ink"}
+            </button>
+            <button
+              onClick={onSignOut}
+              title="Sign out"
+              className="font-mono-label flex h-8 w-8 items-center justify-center text-[12px] font-bold text-white"
+              style={{ background: ACCENT }}
+            >
+              R
+            </button>
+          </div>
+        </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-[1240px] px-7 pb-10">
-        {/* Page title */}
-        <div className="flex flex-wrap items-end justify-between gap-3 pb-4 pt-7">
-          <h1
-            className="font-bric font-extrabold leading-[0.95]"
-            style={{ fontSize: "clamp(32px,4vw,52px)", letterSpacing: "-0.04em" }}
-          >
-            Refine a{" "}
-            <span className="font-serif-i" style={{ color: ACCENT }}>
-              ramble
-            </span>
-          </h1>
-          <p
-            className="font-mono-label max-w-sm text-[11px] uppercase leading-[1.7] tracking-[0.1em]"
-            style={{ color: t.cDim }}
-          >
-            Record on the left, babble on the right. Format is the only must-pick
-            (set to Clean it up). Tone, character, accent are optional.
-          </p>
-        </div>
-
-        {/* Control console — sticky so your highlighted choices stay in view
-            while you scroll the ramble and the babble. */}
-        <div className="sticky top-[56px] z-20 pb-4" style={{ background: t.canvas }}>
-          <div
-            className="p-4"
-            style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
-          >
-            <div className="mb-3 flex items-center justify-between">
+        <div className="px-8 pb-3">
+          {/* Title — "Ramble" is the brand, so it wears the brand gradient. */}
+          <div className="mb-2.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
+            <h1
+              className="font-bric font-extrabold leading-none"
+              style={{ fontSize: "clamp(26px,2.4vw,36px)", letterSpacing: "-0.03em" }}
+            >
+              Refine a{" "}
               <span
-                className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
-                style={{ color: t.inkDim }}
+                className="font-bric"
+                style={{
+                  backgroundImage: GRADIENT,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
               >
-                Stack your style — a highlighted control is selected
+                Ramble
               </span>
-              <button
-                onClick={resetChoices}
-                className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
-                style={{ color: t.inkDim }}
-              >
-                Reset choices
-              </button>
-            </div>
+            </h1>
+            <p
+              className="font-mono-label max-w-xl text-[10px] uppercase leading-[1.6] tracking-[0.1em]"
+              style={{ color: t.cDim }}
+            >
+              Record on the left, babble on the right. Format is the only
+              must-pick (set to Clean it up). Tone, character, accent optional.
+            </p>
+          </div>
 
+          {/* Flattened control console — thin and wide, edge to edge. */}
+          <div style={{ border: `1px solid ${t.lineStrong}` }}>
             <div
               className="grid grid-cols-2 gap-px lg:grid-cols-4"
               style={{ background: t.lineStrong }}
@@ -656,20 +646,28 @@ export default function RambleBabbleApp({
                 />
               ))}
             </Selector>
-          </div>
+            </div>
 
-          {outputType === "custom" && (
-            <input
-              value={customInstruction}
-              onChange={(e) => setCustomInstruction(e.target.value)}
-              placeholder="Turn it into... e.g. a wedding toast, a recipe"
-              className="mt-3 w-full bg-transparent px-3 py-2.5 text-[14px] outline-none"
-              style={{ border: `1px solid ${ACCENT}`, color: t.ink }}
-            />
-          )}
+            {outputType === "custom" && (
+              <input
+                value={customInstruction}
+                onChange={(e) => setCustomInstruction(e.target.value)}
+                placeholder="Turn it into... e.g. a wedding toast, a recipe"
+                className="w-full bg-transparent px-3 py-2.5 text-[14px] outline-none"
+                style={{
+                  background: t.panel,
+                  borderTop: `1px solid ${t.lineStrong}`,
+                  borderBottom: `2px solid ${ACCENT}`,
+                  color: t.ink,
+                }}
+              />
+            )}
 
-            {/* Vocabulary (optional) */}
-            <div className="mt-3 flex flex-wrap items-center gap-3">
+            {/* Vocabulary + Reset — one thin row */}
+            <div
+              className="flex flex-wrap items-center gap-3 px-3 py-2"
+              style={{ background: t.panel, borderTop: `1px solid ${t.lineStrong}` }}
+            >
               <span
                 className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
                 style={{ color: t.inkDim }}
@@ -681,16 +679,25 @@ export default function RambleBabbleApp({
                 value={vocabulary}
                 onChange={(e) => setVocabulary(e.target.value)}
                 placeholder="names, brands, jargon to keep right"
-                className="min-w-[180px] flex-1 bg-transparent px-3 py-2 text-[14px] outline-none"
-                style={{
-                  borderBottom: `1px solid ${t.lineStrong}`,
-                  color: t.ink,
-                }}
+                className="min-w-[160px] flex-1 bg-transparent px-2 py-1 text-[14px] outline-none"
+                style={{ color: t.ink }}
               />
+              <button
+                onClick={resetChoices}
+                className="font-mono-label flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition"
+                style={{ border: `1px solid ${t.lineStrong}`, color: t.ink }}
+              >
+                <span aria-hidden>&#8635;</span> Reset
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
+      <main
+        className="relative z-10 mx-auto w-full px-8 pb-12 pt-5"
+        style={{ maxWidth: 1760 }}
+      >
         {error && (
           <p
             className="font-mono-label mb-4 px-3 py-2 text-[12px]"
@@ -702,17 +709,23 @@ export default function RambleBabbleApp({
 
         {/* Two panels. Record is the action on the Ramble box (left); Babble it
             mirrors it on the Babble box (right). Output gets the most room. */}
-        <div className="grid gap-4 lg:grid-cols-[1fr_1.25fr] lg:items-stretch">
-          {/* RAMBLE (input) */}
+        <div className="grid gap-4 lg:grid-cols-[1fr_1.42fr] lg:items-stretch">
+          {/* RAMBLE (input) — 06 in the numbered flow */}
           <section
-            className="relative flex min-h-[520px] flex-col"
+            className="relative flex min-h-[540px] flex-col"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
               className="flex items-center justify-between gap-2 px-4 py-3"
               style={{ borderBottom: `1px solid ${t.line}` }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="font-mono-label text-[12px] font-bold"
+                  style={{ color: ACCENT }}
+                >
+                  06
+                </span>
                 <button
                   onClick={recording ? handleStop : handleStart}
                   disabled={transcribing}
@@ -748,7 +761,7 @@ export default function RambleBabbleApp({
                       : "Record a ramble"}
                 </button>
                 <span
-                  className="font-mono-label hidden text-[10px] uppercase tracking-[0.14em] sm:inline"
+                  className="font-mono-label hidden text-[10px] uppercase tracking-[0.14em] md:inline"
                   style={{ color: t.inkFaint }}
                 >
                   your words in
@@ -759,7 +772,7 @@ export default function RambleBabbleApp({
                 className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] transition"
                 style={{ border: `1px solid ${t.lineStrong}`, color: t.ink }}
               >
-                Paste
+                Paste a ramble
               </button>
             </div>
 
@@ -861,27 +874,33 @@ export default function RambleBabbleApp({
           {/* BABBLE (output) — the prize. Babble it is the action button here,
               mirroring Record on the Ramble box. */}
           <section
-            className="flex min-h-[520px] flex-col"
+            className="flex min-h-[540px] flex-col"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
               className="flex items-center justify-between gap-2 px-4 py-3"
               style={{ borderBottom: `1px solid ${t.line}` }}
             >
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className="font-mono-label text-[12px] font-bold"
+                  style={{ color: ACCENT }}
+                >
+                  07
+                </span>
                 <button
                   onClick={() => runCleanup()}
                   disabled={cleaning}
-                  className="font-mono-label flex items-center gap-2 px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition active:translate-y-px disabled:opacity-80"
+                  className="font-mono-label flex items-center gap-2 px-6 py-2.5 text-[14px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-105 active:translate-y-px disabled:opacity-80"
                   style={{
                     backgroundImage: GRADIENT,
-                    boxShadow: "0 10px 26px -10px rgba(123,92,255,0.85)",
+                    boxShadow: "0 12px 30px -8px rgba(123,92,255,0.9)",
                   }}
                 >
                   {cleaning ? (
                     <>
                       <span
-                        className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                        className="rb-spin inline-block h-4 w-4 rounded-full border-2"
                         style={{
                           borderColor: "rgba(255,255,255,0.4)",
                           borderTopColor: "#fff",
@@ -891,8 +910,16 @@ export default function RambleBabbleApp({
                     </>
                   ) : (
                     <>
-                      Babble it{" "}
-                      <span aria-hidden>&rarr;</span>
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        aria-hidden
+                      >
+                        <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
+                      </svg>
+                      Babble it
                     </>
                   )}
                 </button>
@@ -934,8 +961,12 @@ export default function RambleBabbleApp({
               ) : (
                 <div>
                   <div
-                    className="font-serif-i whitespace-pre-wrap text-[23px] leading-[1.5]"
-                    style={{ color: t.ink }}
+                    className="whitespace-pre-wrap text-[17px] leading-[1.7]"
+                    style={{
+                      color: t.ink,
+                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                      maxWidth: "70ch",
+                    }}
                   >
                     {cleaning && !shownOutput ? "" : shownOutput}
                   </div>
@@ -1067,7 +1098,7 @@ function Selector({
     <div className="relative" style={{ background: t.panel }}>
       <button
         onClick={onToggle}
-        className="flex w-full flex-col gap-1 px-3.5 py-3 text-left transition"
+        className="flex w-full flex-col gap-0.5 px-3.5 py-2 text-left transition"
         style={{
           background: open
             ? "rgba(123,92,255,0.12)"
@@ -1093,7 +1124,7 @@ function Selector({
           ) : null}
         </span>
         <span
-          className="truncate text-[18px]"
+          className="truncate text-[16px]"
           style={{
             color: set ? t.ink : t.inkDim,
             fontWeight: set ? 600 : 400,
