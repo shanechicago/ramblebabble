@@ -58,6 +58,7 @@ export const OUTPUT_TYPES: Option[] = [
   // ===== Fun =====
   { id: "laugh", label: "Make Me Laugh", hint: "A quick comedy bit", example: "A quick joke or comedic riff from what you said.", group: "fun", instruction: "Rewrite as a short, genuinely funny take on what the speaker said: a quick joke, witty bit, or comedic riff. Punch up, never down." },
   { id: "roast", label: "Roast", hint: "Affectionate burns", example: "A playful roast of the subject or situation.", group: "fun", instruction: "Rewrite as a playful comedic roast of the subject or situation: sharp, exaggerated, affectionate burns. Punch up, keep it fun, never genuinely cruel." },
+  { id: "drama", label: "Drama", hint: "Everything's life or death", example: "Your words, but every detail is monumental.", group: "fun", instruction: "Rewrite as pure DRAMA: treat every single detail as monumental and urgent, with life-or-death stakes on everything. Breathless intensity, soaring emotional weight, the fate of the world hanging on every line. This is NOT old-timey theatrical and NOT a bratty drama queen, it's relentless, overwhelming, exhausting dramatic gravity where everything matters enormously." },
   { id: "trailer", label: "Movie Trailer", hint: "In a world…", example: "An 'In a world…' blockbuster voiceover.", group: "fun", instruction: "Rewrite as an epic movie-trailer voiceover: 'In a world…' style, dramatic pauses, building tension, ending with a title drop. Punchy and cinematic." },
   { id: "tale", label: "Tall Tale", hint: "A tiny fictional story", example: "A tiny fictional story spun from your ramble.", group: "fun", instruction: "Spin what the speaker said into a tiny fictional short story (a few sentences) with a clear beginning, middle, and end, inspired by their content." },
   { id: "bedtime", label: "Bedtime Story", hint: "Cozy little tale", example: "A cozy 'once upon a time' little tale.", group: "fun", instruction: "Rewrite as a cozy, gentle bedtime story (once upon a time), soothing and whimsical, a few short paragraphs, ending on a calm, sweet note." },
@@ -81,6 +82,8 @@ export const TONES: Option[] = [
   { id: "confident", label: "Confident", hint: "Assertive and sure", instruction: "Use a confident, self-assured tone: assertive, positive, and decisive, without arrogance." },
   { id: "warm", label: "Warm", hint: "Kind and personal", instruction: "Use a warm, kind, encouraging tone that feels personal and genuine." },
   { id: "persuasive", label: "Persuasive", hint: "Win them over", instruction: "Use a persuasive tone: lead with benefits, build a convincing case, and motivate the reader toward the desired action." },
+  { id: "flirty", label: "Flirty", hint: "Playful and teasing", instruction: "Use a flirtatious, playful, teasing tone: charming, suggestive, warm, with winking innuendo and a confident cheeky edge. Lean into the chemistry. Keep it suggestive and tasteful rather than graphic." },
+  { id: "sultry", label: "Sultry", hint: "Smoldering and seductive", instruction: "Use a sultry, seductive, smoldering tone: slow, intimate, charged with tension and double meaning, dripping with allure. Lean fully into the heat while staying suggestive and evocative rather than explicit." },
   { id: "concise", label: "Concise", hint: "Every word earns it", instruction: "Use a tight, economical tone: short sentences, no filler, every word earning its place." },
   { id: "eloquent", label: "Eloquent", hint: "Articulate and elevated", instruction: "Use lavishly elevated, eloquent language: rich vocabulary, graceful rhythm, and striking, memorable phrasing. Lean fully into eloquence." },
   { id: "proper", label: "Proper English", hint: "Formal, impeccable grammar", instruction: "Use impeccable, formal English. Do not use contractions, slang, or casual phrasing, and do not end sentences with a preposition. Favor complete, grammatically correct sentences." },
@@ -159,7 +162,7 @@ export const FUN_GROUPS: OptionGroup[] = [
   { label: "Story", ids: ["tale", "bedtime", "trailer"] },
   { label: "Music", ids: ["rap", "pop", "country", "rnb", "rockabilly"] },
   { label: "Poetry", ids: ["poem", "haiku", "nursery"] },
-  { label: "Hype", ids: ["hype"] },
+  { label: "Big energy", ids: ["hype", "drama"] },
 ];
 
 export const ACCENT_GROUPS: OptionGroup[] = [

@@ -309,17 +309,17 @@ export default function RambleBabbleApp({
     <div
       data-theme={theme}
       data-accent="coral"
-      className="relative min-h-screen w-full overflow-hidden bg-[var(--bg)] text-[var(--text)]"
+      className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text)]"
     >
       {/* Ambient glow blobs */}
       <div
         aria-hidden
-        className="rb-floaty pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full blur-3xl"
+        className="rb-floaty pointer-events-none fixed -left-32 -top-32 h-96 w-96 rounded-full blur-3xl"
         style={{ background: "var(--glow1)" }}
       />
       <div
         aria-hidden
-        className="rb-floaty pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl"
+        className="rb-floaty pointer-events-none fixed -bottom-32 -right-32 h-96 w-96 rounded-full blur-3xl"
         style={{ background: "var(--glow2)", animationDelay: "-4.5s" }}
       />
 
@@ -364,28 +364,28 @@ export default function RambleBabbleApp({
         {/* Translator layout: control bar on top, two panels below */}
         <div className="flex flex-col gap-5">
           {/* CONTROL BAR (sticky) */}
-          <aside className="sticky top-2 z-20 flex flex-wrap items-stretch gap-3 rounded-[18px] border border-[var(--border)] bg-[color:var(--surface)]/85 p-3 backdrop-blur">
+          <aside className="sticky top-3 z-20 flex flex-wrap items-stretch gap-2.5 rounded-[16px] border border-[var(--border)] bg-[color:var(--surface)]/90 p-2.5 backdrop-blur">
             {/* Record */}
-            <section className="flex w-[150px] flex-col items-center justify-center gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-4">
+            <section className="flex w-[140px] flex-col items-center justify-center gap-1.5 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] p-2.5">
           {idle ? (
             <>
               <button
                 onClick={handleStart}
                 disabled={transcribing}
                 aria-label="Record ramble"
-                className="relative flex h-14 w-14 items-center justify-center rounded-full text-white transition active:scale-[0.96] disabled:opacity-60"
+                className="relative flex h-11 w-11 items-center justify-center rounded-full text-white transition active:scale-[0.96] disabled:opacity-60"
                 style={{
                   background: "var(--primary)",
                   boxShadow: "0 6px 18px -8px var(--glow1)",
                 }}
               >
-                <MicIcon size={22} />
+                <MicIcon size={18} />
               </button>
               <div className="text-center">
-                <p className="font-display text-[16px] font-semibold">
+                <p className="font-display text-[13px] font-semibold leading-tight">
                   {transcribing ? "Transcribing…" : "Tap to record"}
                 </p>
-                <p className="mt-0.5 text-xs text-[var(--text-dim)]">
+                <p className="mt-0.5 text-[10px] text-[var(--text-dim)]">
                   up to {MAX_MINUTES} min, or paste
                 </p>
               </div>
@@ -484,7 +484,7 @@ export default function RambleBabbleApp({
           onChange={(e) => pickStyle(e.target.value)}
         >
           <option value="">Choose a format</option>
-          <OptGroups groups={USEFUL_GROUPS} options={OUTPUT_TYPES} prefix="Useful" />
+          <OptGroups groups={USEFUL_GROUPS} options={OUTPUT_TYPES} prefix="Practical" />
           <OptGroups groups={FUN_GROUPS} options={OUTPUT_TYPES} prefix="Fun" />
           <option value="custom">Something else...</option>
         </Picker>
@@ -559,7 +559,7 @@ export default function RambleBabbleApp({
             <button
               onClick={() => runCleanup()}
               disabled={polishDisabled}
-              className="flex w-[150px] shrink-0 flex-col items-center justify-center gap-1 rounded-[18px] px-4 transition active:scale-[0.99]"
+              className="flex w-[140px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] px-4 transition active:scale-[0.99]"
               style={
                 polishDisabled
                   ? { background: "var(--surface3)", color: "var(--text-faint)" }
@@ -594,9 +594,9 @@ export default function RambleBabbleApp({
           </aside>
 
           {/* WORKSPACE: ramble in (left), babble out (right) */}
-          <main className="grid gap-5 lg:grid-cols-2">
-            <section>
-              <div className="mb-2 flex items-center justify-between">
+          <main className="grid items-stretch gap-5 lg:grid-cols-2">
+            <section className="flex flex-col">
+              <div className="mb-2 flex h-7 items-center justify-between">
                 <Label>Your Ramble</Label>
                 {inputText.trim() && (
                   <button
@@ -613,10 +613,14 @@ export default function RambleBabbleApp({
                 placeholder="Your transcript appears here, or paste messy text to polish."
                 rows={5}
                 autoComplete="off"
-                className="min-h-[300px] w-full resize-y rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-4 text-[17px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--primary)]"
+                className="min-h-[300px] w-full flex-1 resize-y rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-4 text-[17px] text-[var(--text)] outline-none transition placeholder:text-[var(--text-faint)] focus:border-[var(--primary)]"
               />
             </section>
-            <div className="min-w-0 space-y-5">
+            <div className="flex min-w-0 flex-col">
+              <div className="mb-2 flex h-7 items-center">
+                <Label>Babbled</Label>
+              </div>
+              <div className="flex flex-1 flex-col space-y-5">
             {error && (
           <p
             className="mt-5 rounded-[14px] border px-4 py-3 text-sm"
@@ -805,11 +809,12 @@ export default function RambleBabbleApp({
 
             {/* Empty output state — matches the input box size */}
             {!cleaned && !transcribing && !cleaning && !error && (
-              <div className="flex min-h-[300px] items-center justify-center rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--text-faint)]">
+              <div className="flex min-h-[300px] flex-1 items-center justify-center rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--text-faint)]">
                 Pick a style, then hit Babble it. Your polished version shows up
                 right here.
               </div>
             )}
+            </div>
             </div>
           </main>
         </div>
@@ -905,7 +910,7 @@ function Picker({
           title={sub}
           value={value}
           onChange={onChange}
-          className="w-full cursor-pointer appearance-none rounded-[11px] border border-[var(--border-strong)] bg-[var(--surface2)] py-2.5 pl-3 pr-9 text-[13px] font-semibold text-[var(--text)] outline-none transition hover:border-[var(--primary)] focus:border-[var(--primary)]"
+          className="w-full cursor-pointer appearance-none rounded-[10px] border border-[var(--border-strong)] bg-[var(--surface2)] py-2 pl-3 pr-9 text-[13px] font-semibold text-[var(--text)] outline-none transition hover:border-[var(--primary)] focus:border-[var(--primary)]"
         >
           {children}
         </select>
