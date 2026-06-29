@@ -450,7 +450,7 @@ export default function RambleBabbleApp({
                 color: theme === "night" ? "#14161b" : "#f3f5f7",
               }}
             >
-              {theme === "night" ? (
+              {theme === "day" ? (
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M12 17a5 5 0 100-10 5 5 0 000 10zm0-13a1 1 0 011 1v1a1 1 0 11-2 0V5a1 1 0 011-1zm0 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM4 12a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm14 0a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zM6.3 6.3a1 1 0 011.4 0l.7.7A1 1 0 117 8.4l-.7-.7a1 1 0 010-1.4zm9.6 9.6a1 1 0 011.4 0l.7.7a1 1 0 11-1.4 1.4l-.7-.7a1 1 0 010-1.4zm1.4-9.6a1 1 0 010 1.4l-.7.7A1 1 0 0115.9 7l.7-.7a1 1 0 011.4 0zM7 15.9a1 1 0 010 1.4l-.7.7a1 1 0 01-1.4-1.4l.7-.7a1 1 0 011.4 0z" />
                 </svg>
@@ -459,7 +459,7 @@ export default function RambleBabbleApp({
                   <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
                 </svg>
               )}
-              {theme === "night" ? "Day" : "Night"}
+              {theme === "night" ? "Night" : "Day"}
             </button>
             <button
               onClick={onSignOut}
