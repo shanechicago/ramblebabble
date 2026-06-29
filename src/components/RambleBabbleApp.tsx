@@ -60,6 +60,29 @@ const LANGUAGES = [
   "Tagalog",
 ];
 
+// Playful loading verbs, picked at random on each run.
+const FUN_LOADING = [
+  "Razzle dazzling",
+  "Sauteing",
+  "Conflating",
+  "Imagining",
+  "Grooving",
+  "Lollygagging",
+  "Mulling it over",
+  "Pontificating",
+  "Enchanting",
+  "Boogeying",
+  "Reticulating",
+  "Marinating",
+  "Percolating",
+  "Noodling",
+  "Finessing",
+  "Wordsmithing",
+];
+function pickLoading(): string {
+  return FUN_LOADING[Math.floor(Math.random() * FUN_LOADING.length)];
+}
+
 export default function RambleBabbleApp({
   userId,
   onOpenHistory,
@@ -102,6 +125,7 @@ export default function RambleBabbleApp({
 
   const [transcribing, setTranscribing] = useState(false);
   const [cleaning, setCleaning] = useState(false);
+  const [loadingWord, setLoadingWord] = useState("Babbling");
   const [error, setError] = useState<string | null>(null);
   const [limitNotice, setLimitNotice] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -124,6 +148,7 @@ export default function RambleBabbleApp({
         setError(TOO_LARGE_MESSAGE);
         return;
       }
+      setLoadingWord(pickLoading());
       setTranscribing(true);
       try {
         const form = new FormData();
@@ -218,6 +243,7 @@ export default function RambleBabbleApp({
       setCopied(false);
       setEditing(false);
       setShowRaw(false);
+      setLoadingWord(pickLoading());
       setCleaning(true);
       try {
         const res = await fetch("/api/cleanup", {
@@ -406,7 +432,7 @@ export default function RambleBabbleApp({
               </button>
               <div className="text-center">
                 <p className="font-display text-[13px] font-semibold leading-tight">
-                  {transcribing ? "Transcribing…" : "Tap to record"}
+                  {transcribing ? `${loadingWord}…` : "Tap to record"}
                 </p>
                 <p className="mt-0.5 text-[10px] text-[var(--text-dim)]">
                   up to {MAX_MINUTES} min, or paste
@@ -555,7 +581,8 @@ export default function RambleBabbleApp({
           ))}
         </Picker>
 
-        {/* Custom vocabulary — collapsible */}
+        {/* Custom vocabulary — collapsible, fills the row */}
+        <div className="w-full">
         <Accordion
           label="Custom vocabulary"
           value={vocabulary.trim() ? vocabulary : "Optional"}
@@ -575,6 +602,7 @@ export default function RambleBabbleApp({
             We&apos;ll keep these spelled exactly right in your polished text.
           </p>
         </Accordion>
+        </div>
         </div>
 
             {/* Babble it — pinned at the bottom of the control rail */}
@@ -665,7 +693,7 @@ export default function RambleBabbleApp({
                 style={{ borderTopColor: "var(--primary)" }}
               />
               <span className="text-sm text-[var(--text-dim)]">
-                {selectedIsFun ? "Babbling…" : "Polishing your words…"}
+                {loadingWord}…
               </span>
             </div>
             <div className="mt-4 h-1 overflow-hidden rounded-full bg-[var(--surface3)]">
