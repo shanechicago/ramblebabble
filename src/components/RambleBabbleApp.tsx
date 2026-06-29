@@ -9,8 +9,6 @@ import {
   TONES,
   ACCENTS,
   PERSONAS,
-  DEFAULT_OUTPUT_TYPE,
-  DEFAULT_TONE,
   getAccent,
   getPersona,
   USEFUL_GROUPS,
@@ -56,10 +54,8 @@ export default function RambleBabbleApp({
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   const [inputText, setInputText] = useState(reopen?.transcript ?? "");
-  const [outputType, setOutputType] = useState(
-    reopen?.output_type ?? DEFAULT_OUTPUT_TYPE,
-  );
-  const [tone, setTone] = useState(reopen?.tone ?? DEFAULT_TONE);
+  const [outputType, setOutputType] = useState(reopen?.output_type ?? "");
+  const [tone, setTone] = useState(reopen?.tone ?? "");
   const [vocabulary, setVocabulary] = useState("");
   const [vocabOpen, setVocabOpen] = useState(false);
   const [accent, setAccent] = useState("");
@@ -303,6 +299,7 @@ export default function RambleBabbleApp({
   const polishDisabled =
     busy ||
     !inputText.trim() ||
+    !outputType ||
     (outputType === "custom" && !customInstruction.trim());
 
   const pickStyle = (id: string) => setOutputType(id);
@@ -366,10 +363,10 @@ export default function RambleBabbleApp({
       <main className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-12 pt-2">
         {/* Translator layout: control bar on top, two panels below */}
         <div className="flex flex-col gap-5">
-          {/* CONTROL BAR */}
-          <aside className="flex flex-wrap items-end gap-3 rounded-[18px] border border-[var(--border)] bg-[color:var(--surface)]/60 p-3 backdrop-blur">
+          {/* CONTROL BAR (sticky) */}
+          <aside className="sticky top-2 z-20 flex flex-wrap items-stretch gap-3 rounded-[18px] border border-[var(--border)] bg-[color:var(--surface)]/85 p-3 backdrop-blur">
             {/* Record */}
-            <section className="flex flex-col items-center gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-4">
+            <section className="flex w-[150px] flex-col items-center justify-center gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--surface)] p-4">
           {idle ? (
             <>
               <button
@@ -486,6 +483,7 @@ export default function RambleBabbleApp({
           value={outputType}
           onChange={(e) => pickStyle(e.target.value)}
         >
+          <option value="">Choose a format</option>
           <OptGroups groups={USEFUL_GROUPS} options={OUTPUT_TYPES} prefix="Useful" />
           <OptGroups groups={FUN_GROUPS} options={OUTPUT_TYPES} prefix="Fun" />
           <option value="custom">Something else...</option>
@@ -507,6 +505,7 @@ export default function RambleBabbleApp({
           value={tone}
           onChange={(e) => pickTone(e.target.value)}
         >
+          <option value="">Choose a tone</option>
           {TONES.map((t) => (
             <option key={t.id} value={t.id}>
               {t.label}
@@ -515,23 +514,23 @@ export default function RambleBabbleApp({
         </Picker>
 
         <Picker
-          label="Accent"
-          sub="how it sounds"
-          value={accent}
-          onChange={(e) => setAccent(e.target.value)}
-        >
-          <option value="">None</option>
-          <OptGroups groups={ACCENT_GROUPS} options={ACCENTS} />
-        </Picker>
-
-        <Picker
           label="Character"
           sub="who's saying it"
           value={persona}
           onChange={(e) => setPersona(e.target.value)}
         >
-          <option value="">None</option>
+          <option value="">Add a character</option>
           <OptGroups groups={PERSONA_GROUPS} options={PERSONAS} />
+        </Picker>
+
+        <Picker
+          label="Accent"
+          sub="how it sounds"
+          value={accent}
+          onChange={(e) => setAccent(e.target.value)}
+        >
+          <option value="">Add an accent</option>
+          <OptGroups groups={ACCENT_GROUPS} options={ACCENTS} />
         </Picker>
 
         {/* Custom vocabulary — collapsible */}
@@ -560,7 +559,7 @@ export default function RambleBabbleApp({
             <button
               onClick={() => runCleanup()}
               disabled={polishDisabled}
-              className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-[16px] px-6 py-3 transition active:scale-[0.99]"
+              className="flex w-[150px] shrink-0 flex-col items-center justify-center gap-1 rounded-[18px] px-4 transition active:scale-[0.99]"
               style={
                 polishDisabled
                   ? { background: "var(--surface3)", color: "var(--text-faint)" }
@@ -804,9 +803,9 @@ export default function RambleBabbleApp({
           </section>
         )}
 
-            {/* Empty output state */}
+            {/* Empty output state — matches the input box size */}
             {!cleaned && !transcribing && !cleaning && !error && (
-              <div className="rounded-[18px] border border-dashed border-[var(--border-strong)] p-12 text-center text-sm text-[var(--text-faint)]">
+              <div className="flex min-h-[300px] items-center justify-center rounded-[15px] border border-[var(--border)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--text-faint)]">
                 Pick a style, then hit Babble it. Your polished version shows up
                 right here.
               </div>
