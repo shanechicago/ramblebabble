@@ -40,6 +40,26 @@ const WAVE_BARS = Array.from({ length: 28 }, (_, i) =>
   Math.round(12 + 26 * Math.abs(Math.sin(i * 0.7))),
 );
 
+// Output languages. "" = keep the language the user rambled in (auto-detect).
+const LANGUAGES = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Portuguese",
+  "Italian",
+  "Dutch",
+  "Polish",
+  "Russian",
+  "Arabic",
+  "Hindi",
+  "Mandarin Chinese",
+  "Japanese",
+  "Korean",
+  "Vietnamese",
+  "Tagalog",
+];
+
 export default function RambleBabbleApp({
   userId,
   onOpenHistory,
@@ -60,6 +80,7 @@ export default function RambleBabbleApp({
   const [vocabOpen, setVocabOpen] = useState(false);
   const [accent, setAccent] = useState("");
   const [persona, setPersona] = useState("");
+  const [targetLanguage, setTargetLanguage] = useState("");
   const [customInstruction, setCustomInstruction] = useState("");
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
@@ -210,6 +231,7 @@ export default function RambleBabbleApp({
             tone,
             accent: accent || undefined,
             persona: persona || undefined,
+            targetLanguage: targetLanguage || undefined,
             vocabulary: vocabulary.trim() || undefined,
             modifier,
           }),
@@ -251,6 +273,7 @@ export default function RambleBabbleApp({
       tone,
       accent,
       persona,
+      targetLanguage,
       vocabulary,
       userId,
     ],
@@ -531,6 +554,20 @@ export default function RambleBabbleApp({
         >
           <option value="">Add an accent</option>
           <OptGroups groups={ACCENT_GROUPS} options={ACCENTS} />
+        </Picker>
+
+        <Picker
+          label="Language"
+          sub="output language"
+          value={targetLanguage}
+          onChange={(e) => setTargetLanguage(e.target.value)}
+        >
+          <option value="">Same as input</option>
+          {LANGUAGES.map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
         </Picker>
 
         {/* Custom vocabulary — collapsible */}
