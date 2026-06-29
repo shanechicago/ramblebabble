@@ -301,6 +301,23 @@ body {
   animation: rb-shake 2.6s ease-in-out infinite;
 }
 
+/* Slow pulsing glow for the "Babble it" wordmark — draws the eye to the
+   action without a box, out of sync with the logo's shake. */
+@keyframes rb-glowpulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1px rgba(123, 92, 255, 0.4))
+      drop-shadow(0 0 5px rgba(123, 92, 255, 0.22));
+  }
+  50% {
+    filter: drop-shadow(0 0 7px rgba(255, 77, 157, 0.7))
+      drop-shadow(0 0 16px rgba(123, 92, 255, 0.55));
+  }
+}
+.rb-glowpulse {
+  animation: rb-glowpulse 2.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

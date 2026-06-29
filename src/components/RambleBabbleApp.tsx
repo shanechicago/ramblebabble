@@ -154,8 +154,27 @@ export default function RambleBabbleApp({
   const [error, setError] = useState<string | null>(null);
   const [limitNotice, setLimitNotice] = useState<string | null>(null);
   const [copyLabel, setCopyLabel] = useState("Copy");
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [overlay, setOverlay] = useState<"settings" | "upgrade" | null>(null);
 
   const revealRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Measure the sticky top zone so the Ramble/Babble headers can stick right
+  // below it (keeping Record / Babble it / Copy reachable while scrolling).
+  const topZoneRef = useRef<HTMLDivElement>(null);
+  const [topH, setTopH] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      if (topZoneRef.current) setTopH(topZoneRef.current.offsetHeight);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    const id = setInterval(measure, 1000);
+    return () => {
+      window.removeEventListener("resize", measure);
+      clearInterval(id);
+    };
+  }, []);
 
   // Cursor spotlight (editorial signature).
   useEffect(() => {
@@ -435,6 +454,7 @@ export default function RambleBabbleApp({
       {/* STICKY TOP — the whole header stays put: the brand, the title, and
           your highlighted choices stay visible no matter how far you scroll. */}
       <div
+        ref={topZoneRef}
         className="sticky top-0 z-30"
         style={{
           background: t.chrome,
@@ -467,14 +487,59 @@ export default function RambleBabbleApp({
               )}
               {theme === "night" ? "Night" : "Day"}
             </button>
-            <button
-              onClick={onSignOut}
-              title="Sign out"
-              className="font-mono-label flex h-8 w-8 items-center justify-center text-[12px] font-bold text-white"
-              style={{ background: ACCENT }}
-            >
-              R
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setAccountOpen((o) => !o)}
+                title="Account"
+                className="font-mono-label flex h-8 w-8 items-center justify-center text-[12px] font-bold text-white transition active:translate-y-px"
+                style={{ background: ACCENT }}
+              >
+                R
+              </button>
+              {accountOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setAccountOpen(false)}
+                  />
+                  <div
+                    className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden"
+                    style={{
+                      background: t.panel,
+                      border: `1px solid ${t.lineStrong}`,
+                      boxShadow: "0 24px 50px -16px rgba(0,0,0,0.5)",
+                    }}
+                  >
+                    <AccountItem
+                      t={t}
+                      label="Settings"
+                      onClick={() => {
+                        setAccountOpen(false);
+                        setOverlay("settings");
+                      }}
+                    />
+                    <AccountItem
+                      t={t}
+                      label="Upgrade"
+                      accent
+                      onClick={() => {
+                        setAccountOpen(false);
+                        setOverlay("upgrade");
+                      }}
+                    />
+                    <div style={{ height: 1, background: t.lineStrong }} />
+                    <AccountItem
+                      t={t}
+                      label="Log out"
+                      onClick={() => {
+                        setAccountOpen(false);
+                        onSignOut();
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
@@ -745,8 +810,12 @@ export default function RambleBabbleApp({
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
-              className="flex items-center justify-between gap-2 px-4 py-3"
-              style={{ borderBottom: `1px solid ${t.line}` }}
+              className="sticky z-10 flex items-center justify-between gap-2 px-4 py-3"
+              style={{
+                top: topH,
+                background: t.panel2,
+                borderBottom: `1px solid ${t.lineStrong}`,
+              }}
             >
               <div className="flex items-center gap-2.5">
                 <span
@@ -912,17 +981,21 @@ export default function RambleBabbleApp({
             )}
           </section>
 
-          {/* BABBLE (output) — the prize. Babble it is the action button here,
-              mirroring Record on the Ramble box. */}
+          {/* BABBLE (output) — the prize. Faint accent-lavender body + accent
+              header so it reads distinct from the neutral Ramble box. */}
           <section
             className="flex min-h-[540px] flex-col"
-            style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
+            style={{ background: "#f5f3fb", border: `1px solid ${t.lineStrong}` }}
           >
             <div
-              className="flex items-center justify-between gap-2 px-4 py-3"
-              style={{ borderBottom: `1px solid ${t.line}` }}
+              className="sticky z-10 flex items-center justify-between gap-2 px-4 py-2"
+              style={{
+                top: topH,
+                background: "#e7e4f6",
+                borderBottom: `1px solid ${t.lineStrong}`,
+              }}
             >
-              <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex min-w-0 items-center gap-3">
                 <span
                   className="font-mono-label text-[12px] font-bold"
                   style={{ color: ACCENT }}
@@ -932,54 +1005,51 @@ export default function RambleBabbleApp({
                 <button
                   onClick={() => runCleanup()}
                   disabled={cleaning}
-                  className="font-mono-label flex items-center gap-2 px-6 py-2.5 text-[14px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-105 active:translate-y-px disabled:opacity-80"
-                  style={{
-                    backgroundImage: GRADIENT,
-                    boxShadow: "0 12px 30px -8px rgba(123,92,255,0.9)",
-                  }}
+                  title="Babble it"
+                  className="flex items-center gap-2 transition hover:brightness-110 active:translate-y-px disabled:opacity-70"
                 >
                   {cleaning ? (
-                    <>
+                    <span
+                      className="font-mono-label flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.12em]"
+                      style={{ color: ACCENT }}
+                    >
                       <span
                         className="rb-spin inline-block h-4 w-4 rounded-full border-2"
                         style={{
-                          borderColor: "rgba(255,255,255,0.4)",
-                          borderTopColor: "#fff",
+                          borderColor: "rgba(123,92,255,0.35)",
+                          borderTopColor: ACCENT,
                         }}
                       />
                       {loadingWord}
-                    </>
+                    </span>
                   ) : (
-                    <>
-                      <svg
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        aria-hidden
-                      >
-                        <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
-                      </svg>
+                    <span
+                      className="rb-glowpulse font-babble inline-block bg-clip-text text-transparent"
+                      style={{
+                        backgroundImage: GRADIENT,
+                        fontSize: 30,
+                        lineHeight: 1.15,
+                      }}
+                    >
                       Babble it
-                    </>
+                    </span>
                   )}
                 </button>
                 <span
-                  className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] md:inline"
+                  className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] lg:inline"
                   style={{ color: hasResult ? ACCENT : t.inkDim }}
                 >
                   {hasResult ? metaLabel : "your babble lands here"}
                 </span>
               </div>
-              {hasResult && !revealing && (
-                <button
-                  onClick={handleCopy}
-                  className="font-mono-label shrink-0 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition"
-                  style={{ background: t.ink, color: t.panel }}
-                >
-                  {copyLabel}
-                </button>
-              )}
+              <button
+                onClick={handleCopy}
+                disabled={!cleaned || revealing}
+                className="font-mono-label shrink-0 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
+                style={{ background: t.ink, color: t.panel }}
+              >
+                {copyLabel}
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5">
@@ -1091,6 +1161,81 @@ export default function RambleBabbleApp({
           </section>
         </div>
       </main>
+
+      {overlay === "settings" && (
+        <Overlay t={t} title="Settings" onClose={() => setOverlay(null)}>
+          <SettingRow t={t} label="Account">
+            <span style={{ color: t.ink }}>You&rsquo;re signed in.</span>
+          </SettingRow>
+          <SettingRow t={t} label="Appearance">
+            <button
+              onClick={() => setTheme((th) => (th === "night" ? "day" : "night"))}
+              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
+              style={{ background: ACCENT, color: "#fff" }}
+            >
+              {theme === "night" ? "Switch to Day" : "Switch to Night"}
+            </button>
+          </SettingRow>
+          <SettingRow t={t} label="Plan">
+            <button
+              onClick={() => setOverlay("upgrade")}
+              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
+              style={{ backgroundImage: GRADIENT, color: "#fff" }}
+            >
+              See upgrade options
+            </button>
+          </SettingRow>
+          <SettingRow t={t} label="Session">
+            <button
+              onClick={onSignOut}
+              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
+              style={{ background: t.ink, color: t.panel }}
+            >
+              Log out
+            </button>
+          </SettingRow>
+        </Overlay>
+      )}
+
+      {overlay === "upgrade" && (
+        <Overlay t={t} title="Upgrade" onClose={() => setOverlay(null)}>
+          <p className="mb-5 text-[14px]" style={{ color: t.inkDim }}>
+            Pick how much you want to babble. Final pricing is still being locked
+            in, these are placeholders.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <PlanCard
+              t={t}
+              name="Free"
+              price="$0"
+              line="A handful of babbles a month to try it out."
+              cta="Current plan"
+              disabled
+            />
+            <PlanCard
+              t={t}
+              name="Plus"
+              price="$6/mo"
+              line="Plenty of babbles for everyday use."
+              cta="Choose Plus"
+              highlight
+            />
+            <PlanCard
+              t={t}
+              name="Pro"
+              price="$15/mo"
+              line="Heavy use, longest rambles, every style."
+              cta="Choose Pro"
+            />
+          </div>
+          <p
+            className="font-mono-label mt-5 text-[10px] uppercase tracking-[0.12em]"
+            style={{ color: t.inkFaint }}
+          >
+            Checkout isn&rsquo;t wired up yet.
+          </p>
+        </Overlay>
+      )}
     </div>
   );
 }
@@ -1109,6 +1254,167 @@ function Wordmark({ color }: { color: string }) {
       >
         Babble
       </span>
+    </div>
+  );
+}
+
+function AccountItem({
+  t,
+  label,
+  accent,
+  onClick,
+}: {
+  t: T;
+  label: string;
+  accent?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="font-mono-label flex w-full items-center px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.1em] transition"
+      style={{ background: "transparent", color: accent ? ACCENT : t.ink }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = t.ink;
+        e.currentTarget.style.color = t.panel;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+        e.currentTarget.style.color = accent ? ACCENT : t.ink;
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function Overlay({
+  t,
+  title,
+  onClose,
+  children,
+}: {
+  t: T;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 pt-20"
+      style={{ background: "rgba(0,0,0,0.62)", backdropFilter: "blur(3px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl"
+        style={{
+          background: t.panel,
+          border: `1px solid ${t.lineStrong}`,
+          boxShadow: "0 40px 90px -20px rgba(0,0,0,0.7)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ height: 3, backgroundImage: GRADIENT }} />
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: `1px solid ${t.lineStrong}` }}
+        >
+          <h2
+            className="font-bric text-[24px] font-extrabold"
+            style={{ color: t.ink, letterSpacing: "-0.02em" }}
+          >
+            {title}
+          </h2>
+          <button
+            onClick={onClose}
+            className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
+            style={{ background: t.ink, color: t.panel }}
+          >
+            Close
+          </button>
+        </div>
+        <div className="px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function SettingRow({
+  t,
+  label,
+  children,
+}: {
+  t: T;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex flex-wrap items-center justify-between gap-3 py-3"
+      style={{ borderBottom: `1px solid ${t.line}` }}
+    >
+      <span
+        className="font-mono-label text-[11px] font-bold uppercase tracking-[0.14em]"
+        style={{ color: t.inkDim }}
+      >
+        {label}
+      </span>
+      <div className="text-[14px]">{children}</div>
+    </div>
+  );
+}
+
+function PlanCard({
+  t,
+  name,
+  price,
+  line,
+  cta,
+  highlight,
+  disabled,
+}: {
+  t: T;
+  name: string;
+  price: string;
+  line: string;
+  cta: string;
+  highlight?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <div
+      className="flex flex-col p-4"
+      style={{
+        background: t.panel2,
+        border: highlight ? `2px solid ${ACCENT}` : `1px solid ${t.lineStrong}`,
+      }}
+    >
+      <span
+        className="font-mono-label text-[11px] font-bold uppercase tracking-[0.14em]"
+        style={{ color: highlight ? ACCENT : t.inkDim }}
+      >
+        {name}
+      </span>
+      <span
+        className="font-bric mt-1 text-[28px] font-extrabold"
+        style={{ color: t.ink, letterSpacing: "-0.02em" }}
+      >
+        {price}
+      </span>
+      <span className="mt-1 flex-1 text-[13px]" style={{ color: t.inkDim }}>
+        {line}
+      </span>
+      <button
+        disabled={disabled}
+        className="font-mono-label mt-4 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-50"
+        style={
+          highlight
+            ? { backgroundImage: GRADIENT, color: "#fff" }
+            : { background: t.ink, color: t.panel }
+        }
+      >
+        {cta}
+      </button>
     </div>
   );
 }
