@@ -13,6 +13,9 @@ import {
   getPersona,
   USEFUL_GROUPS,
   FUN_GROUPS,
+  TONE_GROUPS,
+  ACCENT_GROUPS,
+  PERSONA_GROUPS,
   type Option,
   type OptionGroup,
 } from "@/lib/options";
@@ -65,35 +68,39 @@ const LANGUAGES = [
   "Tagalog",
 ];
 
-type Theme = "mist" | "ink";
+// Two genuinely different modes: NIGHT (void-black chrome, bright paper panels)
+// and DAY (light chrome, white paper panels). No tone-on-tone in either.
+type Theme = "night" | "day";
 const THEMES = {
-  mist: {
+  night: {
     canvas: "#0b0c0f",
+    chrome: "rgba(11,12,15,0.94)",
     cInk: "#f3f5f7",
-    cDim: "#9097a2",
-    cLine: "rgba(243,245,247,0.13)",
-    cLineStrong: "rgba(243,245,247,0.30)",
+    cDim: "#b2b8c2",
+    cLine: "rgba(243,245,247,0.16)",
+    cLineStrong: "rgba(243,245,247,0.36)",
     panel: "#e9ebf0",
-    panel2: "#d9dce2",
+    panel2: "#d6dae1",
     ink: "#14161b",
-    inkDim: "#565d63",
-    inkFaint: "#878d93",
+    inkDim: "#454c55",
+    inkFaint: "#6a717a",
+    line: "rgba(19,22,26,0.20)",
+    lineStrong: "rgba(19,22,26,0.36)",
+  },
+  day: {
+    canvas: "#d3d8df",
+    chrome: "rgba(211,216,223,0.94)",
+    cInk: "#14161b",
+    cDim: "#454c55",
+    cLine: "rgba(19,22,26,0.16)",
+    cLineStrong: "rgba(19,22,26,0.32)",
+    panel: "#ffffff",
+    panel2: "#eceef2",
+    ink: "#14161b",
+    inkDim: "#454c55",
+    inkFaint: "#6a717a",
     line: "rgba(19,22,26,0.16)",
     lineStrong: "rgba(19,22,26,0.30)",
-  },
-  ink: {
-    canvas: "#070809",
-    cInk: "#f3f5f7",
-    cDim: "#9097a2",
-    cLine: "rgba(243,245,247,0.12)",
-    cLineStrong: "rgba(243,245,247,0.26)",
-    panel: "#16181d",
-    panel2: "#1e2127",
-    ink: "#eef1f3",
-    inkDim: "#9097a0",
-    inkFaint: "#646b72",
-    line: "rgba(238,241,243,0.12)",
-    lineStrong: "rgba(238,241,243,0.26)",
   },
 } as const;
 
@@ -114,11 +121,11 @@ export default function RambleBabbleApp({
   onSignOut: () => void;
   reopen: SavedRamble | null;
 }) {
-  const [theme, setTheme] = useState<Theme>("mist");
+  const [theme, setTheme] = useState<Theme>("night");
   const t = THEMES[theme];
 
   const [inputText, setInputText] = useState(reopen?.transcript ?? "");
-  const [outputType, setOutputType] = useState(reopen?.output_type ?? "note");
+  const [outputType, setOutputType] = useState(reopen?.output_type ?? "");
   const [tone, setTone] = useState(reopen?.tone ?? "");
   const [vocabulary, setVocabulary] = useState("");
   const [accent, setAccent] = useState("");
@@ -367,7 +374,7 @@ export default function RambleBabbleApp({
   }, [recorder]);
 
   const resetChoices = () => {
-    setOutputType("note");
+    setOutputType("");
     setTone("");
     setAccent("");
     setPersona("");
@@ -400,8 +407,8 @@ export default function RambleBabbleApp({
   const navBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
       onClick={onClick}
-      className="font-mono-label text-[12px] uppercase tracking-[0.14em] transition"
-      style={{ color: active ? ACCENT : t.cDim }}
+      className="font-mono-label text-[12px] font-bold uppercase tracking-[0.14em] transition"
+      style={{ color: active ? ACCENT : t.cInk }}
     >
       {label}
     </button>
@@ -424,23 +431,35 @@ export default function RambleBabbleApp({
       <div
         className="sticky top-0 z-30"
         style={{
-          background:
-            theme === "mist" ? "rgba(11,12,15,0.94)" : "rgba(7,8,9,0.94)",
+          background: t.chrome,
           backdropFilter: "blur(10px)",
           borderBottom: `1px solid ${t.cLine}`,
         }}
       >
         <header className="flex items-center justify-between px-8 py-3">
           <Wordmark color={t.cInk} />
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             {navBtn("Refinery", true, () => {})}
             {navBtn("Archive", false, onOpenHistory)}
             <button
-              onClick={() => setTheme((th) => (th === "mist" ? "ink" : "mist"))}
-              className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.14em]"
-              style={{ border: `1px solid ${t.cLineStrong}`, color: t.cDim }}
+              onClick={() => setTheme((th) => (th === "night" ? "day" : "night"))}
+              title={theme === "night" ? "Switch to Day (light)" : "Switch to Night (dark)"}
+              className="font-mono-label flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition"
+              style={{
+                background: theme === "night" ? "#f3f5f7" : "#14161b",
+                color: theme === "night" ? "#14161b" : "#f3f5f7",
+              }}
             >
-              {theme === "mist" ? "Mist" : "Ink"}
+              {theme === "night" ? (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M12 17a5 5 0 100-10 5 5 0 000 10zm0-13a1 1 0 011 1v1a1 1 0 11-2 0V5a1 1 0 011-1zm0 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM4 12a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm14 0a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zM6.3 6.3a1 1 0 011.4 0l.7.7A1 1 0 117 8.4l-.7-.7a1 1 0 010-1.4zm9.6 9.6a1 1 0 011.4 0l.7.7a1 1 0 11-1.4 1.4l-.7-.7a1 1 0 010-1.4zm1.4-9.6a1 1 0 010 1.4l-.7.7A1 1 0 0115.9 7l.7-.7a1 1 0 011.4 0zM7 15.9a1 1 0 010 1.4l-.7.7a1 1 0 01-1.4-1.4l.7-.7a1 1 0 011.4 0z" />
+                </svg>
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" />
+                </svg>
+              )}
+              {theme === "night" ? "Day" : "Night"}
             </button>
             <button
               onClick={onSignOut}
@@ -474,11 +493,11 @@ export default function RambleBabbleApp({
               </span>
             </h1>
             <p
-              className="font-mono-label max-w-xl text-[10px] uppercase leading-[1.6] tracking-[0.1em]"
+              className="font-mono-label max-w-xl text-[11px] uppercase leading-[1.6] tracking-[0.08em]"
               style={{ color: t.cDim }}
             >
-              Record on the left, babble on the right. Format is the only
-              must-pick (set to Clean it up). Tone, character, accent optional.
+              Record on the left, babble on the right. Pick a Format (try
+              &ldquo;Clean it up&rdquo;). Tone, character, accent are optional.
             </p>
           </div>
 
@@ -561,11 +580,11 @@ export default function RambleBabbleApp({
                 open={openDropdown === "tone"}
                 onToggle={() => setOpenDropdown((d) => (d === "tone" ? null : "tone"))}
               >
-                <FlatOptions
+                <GroupedOptions
                   t={t}
+                  groups={TONE_GROUPS}
                   options={TONES}
                   value={tone}
-                  allowNone
                   noneLabel="No set tone"
                   onPick={(id) => {
                     setTone(id);
@@ -586,11 +605,11 @@ export default function RambleBabbleApp({
                   setOpenDropdown((d) => (d === "character" ? null : "character"))
                 }
               >
-                <FlatOptions
+                <GroupedOptions
                   t={t}
+                  groups={PERSONA_GROUPS}
                   options={PERSONAS}
                   value={persona}
-                  allowNone
                   noneLabel="No character"
                   onPick={(id) => {
                     setPersona(id);
@@ -611,11 +630,11 @@ export default function RambleBabbleApp({
                 setOpenDropdown((d) => (d === "accent" ? null : "accent"))
               }
             >
-              <FlatOptions
+              <GroupedOptions
                 t={t}
+                groups={ACCENT_GROUPS}
                 options={ACCENTS}
                 value={accent}
-                allowNone
                 noneLabel="No accent"
                 onPick={(id) => {
                   setAccent(id);
@@ -623,8 +642,8 @@ export default function RambleBabbleApp({
                 }}
               />
               <div
-                className="font-mono-label px-3 pb-2 pt-3 text-[10px] uppercase tracking-[0.16em]"
-                style={{ color: t.inkFaint }}
+                className="font-mono-label px-3 pb-1 pt-2.5 text-[10px] font-bold uppercase tracking-[0.16em]"
+                style={{ color: ACCENT }}
               >
                 Output language
               </div>
@@ -663,31 +682,33 @@ export default function RambleBabbleApp({
               />
             )}
 
-            {/* Vocabulary + Reset — one thin row */}
+            {/* Keep-words + Reset — one thin row */}
             <div
               className="flex flex-wrap items-center gap-3 px-3 py-2"
               style={{ background: t.panel, borderTop: `1px solid ${t.lineStrong}` }}
             >
               <span
-                className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
-                style={{ color: t.inkDim }}
+                className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
+                style={{ color: t.ink }}
               >
-                05 Vocabulary{" "}
-                <span style={{ color: t.inkFaint }}>optional</span>
+                05 Keep words exact{" "}
+                <span className="font-bold" style={{ color: ACCENT }}>
+                  · optional
+                </span>
               </span>
               <input
                 value={vocabulary}
                 onChange={(e) => setVocabulary(e.target.value)}
-                placeholder="names, brands, jargon to keep right"
-                className="min-w-[160px] flex-1 bg-transparent px-2 py-1 text-[14px] outline-none"
-                style={{ color: t.ink }}
+                placeholder="e.g. people's names, a company or product name to spell right"
+                className="min-w-[220px] flex-1 bg-transparent px-2 py-1 text-[14px] outline-none"
+                style={{ color: t.ink, borderBottom: `1px solid ${t.lineStrong}` }}
               />
               <button
                 onClick={resetChoices}
-                className="font-mono-label flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition"
-                style={{ border: `1px solid ${t.lineStrong}`, color: t.ink }}
+                className="font-mono-label flex items-center gap-1.5 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                style={{ background: t.ink, color: t.panel }}
               >
-                <span aria-hidden>&#8635;</span> Reset
+                <span aria-hidden>&#8635;</span> Reset choices
               </button>
             </div>
           </div>
@@ -760,20 +781,32 @@ export default function RambleBabbleApp({
                       ? "Stop"
                       : "Record a ramble"}
                 </button>
-                <span
-                  className="font-mono-label hidden text-[10px] uppercase tracking-[0.14em] md:inline"
-                  style={{ color: t.inkFaint }}
-                >
-                  your words in
-                </span>
               </div>
-              <button
-                onClick={pasteIn}
-                className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] transition"
-                style={{ border: `1px solid ${t.lineStrong}`, color: t.ink }}
-              >
-                Paste a ramble
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={pasteIn}
+                  className="font-mono-label px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  style={{ background: t.ink, color: t.panel }}
+                >
+                  Paste a ramble
+                </button>
+                <button
+                  onClick={() => {
+                    if (recorder.status === "recording") recorder.cancel();
+                    setInputText("");
+                    setError(null);
+                    setLimitNotice(null);
+                  }}
+                  disabled={!inputText}
+                  className="font-mono-label flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
+                  style={{ background: t.ink, color: t.panel }}
+                >
+                  <span aria-hidden style={{ color: "#ff6b68", fontSize: 15 }}>
+                    &times;
+                  </span>{" "}
+                  Clear
+                </button>
+              </div>
             </div>
 
             <div className="relative flex-1">
@@ -924,10 +957,10 @@ export default function RambleBabbleApp({
                   )}
                 </button>
                 <span
-                  className="font-mono-label hidden truncate text-[10px] uppercase tracking-[0.14em] sm:inline"
-                  style={{ color: t.inkFaint }}
+                  className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] md:inline"
+                  style={{ color: hasResult ? ACCENT : t.inkDim }}
                 >
-                  {hasResult ? metaLabel : "the result out"}
+                  {hasResult ? metaLabel : "your babble lands here"}
                 </span>
               </div>
               {hasResult && !revealing && (
@@ -1098,48 +1131,69 @@ function Selector({
     <div className="relative" style={{ background: t.panel }}>
       <button
         onClick={onToggle}
-        className="flex w-full flex-col gap-0.5 px-3.5 py-2 text-left transition"
+        className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left transition"
         style={{
           background: open
-            ? "rgba(123,92,255,0.12)"
+            ? "rgba(123,92,255,0.14)"
             : set
-              ? "rgba(123,92,255,0.07)"
+              ? "rgba(123,92,255,0.08)"
               : t.panel,
           boxShadow: set ? `inset 0 -3px 0 ${ACCENT}` : "none",
         }}
       >
-        <span
-          className="font-mono-label flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em]"
-          style={{ color: t.inkDim }}
-        >
-          {index} {label}
-          {set ? (
-            <span style={{ color: ACCENT }} className="ml-auto font-bold">
-              ● selected
-            </span>
-          ) : optional ? (
-            <span style={{ color: t.inkFaint }} className="ml-auto">
-              optional
-            </span>
-          ) : null}
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span
+            className="font-mono-label flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em]"
+            style={{ color: t.inkDim }}
+          >
+            {index} {label}
+            {set ? (
+              <span style={{ color: ACCENT }} className="font-bold">
+                · selected
+              </span>
+            ) : optional ? (
+              <span style={{ color: t.inkDim }} className="font-bold">
+                · optional
+              </span>
+            ) : null}
+          </span>
+          <span
+            className="truncate text-[16px]"
+            style={{
+              color: set ? t.ink : t.inkDim,
+              fontWeight: set ? 700 : 500,
+            }}
+          >
+            {value || placeholder}
+          </span>
         </span>
-        <span
-          className="truncate text-[16px]"
+        {/* caret makes it unmistakably a menu, not a text field */}
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={set ? ACCENT : t.inkDim}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
           style={{
-            color: set ? t.ink : t.inkDim,
-            fontWeight: set ? 600 : 400,
+            flexShrink: 0,
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 0.15s",
           }}
         >
-          {value || placeholder}
-        </span>
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </button>
       {open && (
         <div
-          className="absolute left-0 right-0 top-full z-40 max-h-[320px] overflow-y-auto"
+          className="absolute left-0 right-0 top-full z-40 max-h-[340px] overflow-y-auto"
           style={{
             background: t.panel,
             border: `1px solid ${t.lineStrong}`,
-            boxShadow: "0 24px 50px -16px rgba(0,0,0,0.6)",
+            boxShadow: "0 24px 50px -16px rgba(0,0,0,0.55)",
           }}
         >
           {children}
@@ -1156,74 +1210,56 @@ function GroupedOptions({
   options,
   value,
   onPick,
+  noneLabel,
 }: {
   t: T;
-  heading: string;
+  heading?: string;
   groups: OptionGroup[];
   options: Option[];
   value: string;
   onPick: (id: string) => void;
-}) {
-  return (
-    <div>
-      <div
-        className="font-mono-label px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em]"
-        style={{ color: ACCENT }}
-      >
-        {heading}
-      </div>
-      {groups.flatMap((g) =>
-        g.ids.map((id) => {
-          const o = options.find((x) => x.id === id);
-          if (!o) return null;
-          return (
-            <OptionRow
-              t={t}
-              key={id}
-              label={o.label}
-              active={value === id}
-              onClick={() => onPick(id)}
-            />
-          );
-        }),
-      )}
-    </div>
-  );
-}
-
-function FlatOptions({
-  t,
-  options,
-  value,
-  onPick,
-  allowNone,
-  noneLabel,
-}: {
-  t: T;
-  options: Option[];
-  value: string;
-  onPick: (id: string) => void;
-  allowNone?: boolean;
   noneLabel?: string;
 }) {
   return (
     <div>
-      {allowNone && (
+      {heading && (
+        <div
+          className="font-mono-label px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.18em]"
+          style={{ color: ACCENT }}
+        >
+          {heading}
+        </div>
+      )}
+      {noneLabel && (
         <OptionRow
           t={t}
-          label={noneLabel ?? "None"}
+          label={noneLabel}
           active={!value}
           onClick={() => onPick("")}
         />
       )}
-      {options.map((o) => (
-        <OptionRow
-          t={t}
-          key={o.id}
-          label={o.label}
-          active={value === o.id}
-          onClick={() => onPick(o.id)}
-        />
+      {groups.map((g) => (
+        <div key={g.label}>
+          <div
+            className="font-mono-label px-3 pb-1 pt-2.5 text-[10px] uppercase tracking-[0.16em]"
+            style={{ color: t.inkFaint }}
+          >
+            {g.label}
+          </div>
+          {g.ids.map((id) => {
+            const o = options.find((x) => x.id === id);
+            if (!o) return null;
+            return (
+              <OptionRow
+                t={t}
+                key={id}
+                label={o.label}
+                active={value === id}
+                onClick={() => onPick(id)}
+              />
+            );
+          })}
+        </div>
       ))}
     </div>
   );
