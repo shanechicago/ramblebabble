@@ -1632,7 +1632,7 @@ function Selector({
       </button>
       {open && (
         <div
-          className="absolute left-0 right-0 top-full z-40 max-h-[340px] overflow-y-auto"
+          className="absolute left-0 right-0 top-full z-40 max-h-[75vh] overflow-y-auto"
           style={{
             background: t.panel,
             border: `1px solid ${t.lineStrong}`,
