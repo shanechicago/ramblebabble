@@ -188,10 +188,28 @@ export const TONE_GROUPS: OptionGroup[] = [
   { label: "Your voice", ids: ["keep"] },
 ];
 
+// Accents are not split into sub-groups: they are all just accents. One flat,
+// neutral list (empty group label renders no header).
 export const ACCENT_GROUPS: OptionGroup[] = [
-  { label: "Southern", ids: ["hillbilly", "southern", "cowboy"] },
-  { label: "American", ids: ["newyork", "boston", "valley", "surfer", "street"] },
-  { label: "World", ids: ["british", "scottish", "irish", "australian", "shakespeare", "pirate"] },
+  {
+    label: "",
+    ids: [
+      "street",
+      "surfer",
+      "valley",
+      "pirate",
+      "newyork",
+      "boston",
+      "cowboy",
+      "hillbilly",
+      "southern",
+      "british",
+      "scottish",
+      "irish",
+      "australian",
+      "shakespeare",
+    ],
+  },
 ];
 
 export const PERSONA_GROUPS: OptionGroup[] = [

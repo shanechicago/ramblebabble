@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRecorder } from "./useRecorder";
 import { getSupabase } from "@/lib/supabase/client";
 import type { SavedRamble } from "./MyRambles";
@@ -1642,21 +1643,63 @@ function Selector({
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {open && (
-        <div
-          className="absolute left-0 right-0 top-full z-40 max-h-[70vh] overflow-y-auto overscroll-contain"
-          style={{
-            background: t.panel,
-            border: `1px solid ${t.lineStrong}`,
-            boxShadow: "0 24px 50px -16px rgba(0,0,0,0.55)",
-            overscrollBehavior: "contain",
-            WebkitOverflowScrolling: "touch",
-            touchAction: "pan-y",
-          }}
-        >
-          {children}
-        </div>
-      )}
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center"
+            role="dialog"
+            aria-modal="true"
+          >
+            {/* backdrop: dims the page and catches outside taps; touch-action
+                none so dragging it never scrolls the page underneath */}
+            <div
+              className="absolute inset-0"
+              style={{ background: "rgba(0,0,0,0.55)", touchAction: "none" }}
+              onClick={onToggle}
+            />
+            {/* the sheet itself is position:fixed (via the portal), so it is NOT
+                trapped inside the sticky console and scrolls reliably on touch */}
+            <div
+              className="relative z-[61] flex max-h-[85vh] w-full flex-col overflow-hidden sm:w-[460px] sm:max-h-[80vh] sm:rounded-xl"
+              style={{
+                background: t.panel,
+                border: `1px solid ${t.lineStrong}`,
+                boxShadow: "0 -8px 60px -10px rgba(0,0,0,0.6)",
+              }}
+            >
+              <div
+                className="flex shrink-0 items-center justify-between px-4 py-3"
+                style={{ borderBottom: `1px solid ${t.line}`, background: t.control }}
+              >
+                <span
+                  className="font-mono-label text-[11px] font-bold uppercase tracking-[0.14em]"
+                  style={{ color: t.ink }}
+                >
+                  {index} {label}
+                </span>
+                <button
+                  onClick={onToggle}
+                  className="font-mono-label px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em]"
+                  style={{ color: ACCENT }}
+                  aria-label="Close"
+                >
+                  Close
+                </button>
+              </div>
+              <div
+                className="overflow-y-auto overscroll-contain"
+                style={{
+                  overscrollBehavior: "contain",
+                  WebkitOverflowScrolling: "touch",
+                }}
+              >
+                {children}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -1698,12 +1741,14 @@ function GroupedOptions({
       )}
       {groups.map((g) => (
         <div key={g.label}>
-          <div
-            className="font-mono-label px-3 pb-1 pt-2.5 text-[10px] uppercase tracking-[0.16em]"
-            style={{ color: t.inkFaint }}
-          >
-            {g.label}
-          </div>
+          {g.label && (
+            <div
+              className="font-mono-label px-3 pb-1 pt-2.5 text-[10px] uppercase tracking-[0.16em]"
+              style={{ color: t.inkFaint }}
+            >
+              {g.label}
+            </div>
+          )}
           {g.ids.map((id) => {
             const o = options.find((x) => x.id === id);
             if (!o) return null;
