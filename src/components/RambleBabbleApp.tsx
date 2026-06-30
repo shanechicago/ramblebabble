@@ -526,7 +526,7 @@ export default function RambleBabbleApp({
           <Wordmark color={t.cInk} />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {navBtn("Home", true, () => {})}
-            {navBtn("Archive", false, onOpenHistory)}
+            {navBtn("My Rambles", false, onOpenHistory)}
             <button
               onClick={() => setOverlay("upgrade")}
               className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px"
@@ -1288,10 +1288,17 @@ export default function RambleBabbleApp({
               <button
                 onClick={handleCopy}
                 disabled={!cleaned || revealing}
-                className="font-mono-label shrink-0 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
-                style={{ background: t.ink, color: "#f5f3fb" }}
+                className="font-mono-label flex shrink-0 items-center gap-2 whitespace-nowrap px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
+                style={{
+                  backgroundImage: GRADIENT,
+                  boxShadow: "0 8px 22px -8px rgba(123,92,255,0.9)",
+                }}
               >
-                {copyLabel}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                  <rect x="9" y="9" width="11" height="11" rx="1.5" />
+                  <path d="M5 15V5a1 1 0 011-1h9" />
+                </svg>
+                {copyLabel === "Copy" ? "Copy Babble" : copyLabel}
               </button>
             </div>
 
@@ -1970,17 +1977,8 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="font-mono-label flex-1 px-4 py-3 text-[11px] uppercase tracking-[0.12em] transition disabled:opacity-50"
-      style={{ background: t.panel, color: t.ink }}
-      onMouseEnter={(e) => {
-        if (disabled) return;
-        e.currentTarget.style.background = t.ink;
-        e.currentTarget.style.color = t.panel;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = t.panel;
-        e.currentTarget.style.color = t.ink;
-      }}
+      className="font-mono-label flex-1 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-125 disabled:opacity-50"
+      style={{ background: t.ink, color: t.panel }}
     >
       {children}
     </button>

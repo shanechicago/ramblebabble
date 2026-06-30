@@ -107,7 +107,7 @@ export default function MyRambles({
             className="font-mono-label text-[12px] uppercase tracking-[0.14em]"
             style={{ color: ACCENT }}
           >
-            Archive
+            My Rambles
           </span>
         </div>
       </header>
@@ -118,9 +118,9 @@ export default function MyRambles({
             className="font-bric font-extrabold leading-[0.95]"
             style={{ fontSize: "clamp(36px,4.6vw,58px)", letterSpacing: "-0.04em" }}
           >
-            The{" "}
+            My{" "}
             <span className="font-serif-i" style={{ color: ACCENT }}>
-              archive
+              Rambles
             </span>
           </h1>
           <button
