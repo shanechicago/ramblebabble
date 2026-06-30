@@ -90,6 +90,7 @@ export const TONES: Option[] = [
   { id: "seductive", label: "Seductive", hint: "Smooth and irresistible", instruction: "Use a smooth, confident, irresistibly seductive tone: magnetic, self-assured, and tempting, charming the reader into wanting more with every word, each line a slow, knowing invitation. Pure allure and command, dripping with heat. Commit all the way, never timid, never watered down." },
   { id: "steamy", label: "Steamy", hint: "Full erotic heat", instruction: "Use a full-heat, steamy, passionately erotic tone, the hottest adult-romance register: intense desire, breathless tension, charged physical longing, vivid sensual detail, raw want laced through every single line. Lean ALL the way into the heat and the eroticism, hold nothing back, and match exactly how far the user takes it." },
   { id: "naughty", label: "Naughty", hint: "Playful and dirty-minded", instruction: "Use a playful, naughty, dirty-minded tone: cheeky, teasing, shameless, packed with double entendres, innuendo, and filthy fun. Bold and unapologetic, go all in and match how far the user takes it." },
+  { id: "dramatic", label: "Dramatic", hint: "Theatrical and heightened", instruction: "Use a heightened, theatrical, dramatic register: emotionally charged, expressive, and intense, every line delivered with weight, flair, and a sense of occasion. Lean into vivid emotion and rising tension so even ordinary content feels significant and stirring. This is a genuinely DRAMATIC voice riding over the writing, NOT a bratty drama-queen meltdown and NOT a movie-trailer announcer, just real theatrical gravity and feeling." },
   { id: "uptight", label: "Uptight", hint: "Stiff and wound too tight", instruction: "Deliver it extremely uptight, rigid, and wound too tight: stiff, prim, humorless, tense, buttoned all the way up, and faintly disapproving. Every line should sound delivered through clenched teeth, allergic to fun, slang, or anything loose. Maximum starch." },
   { id: "robotic", label: "Robotic", hint: "Cold mechanical monotone", instruction: "Deliver it as a cold, mechanical robot in flat monotone: stiff, clipped, literal, and utterly emotionless. Drop contractions, speak in blunt declarative statements, and let machine-speak slip in (PROCESSING. AFFIRMATIVE. DOES NOT COMPUTE. BEEP BOOP.). Treat everything as data and logic. Zero warmth, fully artificial." },
   { id: "concise", label: "Concise", hint: "Every word earns it", instruction: "Use a tight, economical tone: short sentences, no filler, every word earning its place." },
@@ -127,6 +128,7 @@ export const PERSONAS: Option[] = [
   { id: "motivational", label: "Motivational speaker", hint: "Rise and grind", instruction: "Deliver it as an over-the-top motivational speaker: relentless positivity, 'you've got this', 'rise and grind', 'today is the day', big inspirational crescendos and life metaphors." },
   { id: "karen", label: "Karen", hint: "Speak to the manager", instruction: "Deliver it as an entitled 'Karen' demanding the manager: indignant, self-important, 'this is unacceptable', 'I know my rights', 'do you know who I am', escalating outrage. Comedic, aimed at the situation." },
   { id: "newsanchor", label: "News anchor", hint: "Breaking news", instruction: "Deliver it as a polished TV news anchor: authoritative, measured, 'breaking news', 'we're getting reports', 'more on this developing story', dramatic pauses, and a sign-off." },
+  { id: "narrator", label: "Movie trailer guy", hint: "In a world...", instruction: "Deliver it in the voice of THE movie-trailer guy, that deep, booming, epic Hollywood announcer reading whatever this is like the biggest blockbuster of the summer: 'In a world...', huge dramatic pauses, slow-building suspense, gravelly voice-of-God gravitas, every line a momentous reveal, often closing on a hard title-drop. Cinematic and over-the-top. (This is the NARRATOR persona, a booming voice laid over any format, distinct from the Movie Trailer format itself.)" },
   { id: "lifecoach", label: "Life coach", hint: "Manifest it", instruction: "Deliver it as a woo-woo life coach: 'lean into it', 'hold space', 'your authentic self', 'the universe', 'manifest'. Gentle, earnest, slightly ridiculous self-help energy." },
   { id: "villain", label: "Cartoon villain", hint: "At last, fools", instruction: "Deliver it as a theatrical cartoon supervillain monologuing: grandiose, menacing, 'fools', 'at last', evil laughter spelled out, scheming delight. Hammy and over-the-top." },
   { id: "fortuneteller", label: "Fortune teller", hint: "The cards reveal", instruction: "Deliver it as a mystic fortune teller: 'I see...', 'the cards reveal', 'the spirits whisper', ominous and theatrical prophecy, crystal-ball drama." },
@@ -182,7 +184,7 @@ export const TONE_GROUPS: OptionGroup[] = [
   { label: "Friendly", ids: ["friendly", "warm"] },
   { label: "Polished", ids: ["proper", "eloquent"] },
   { label: "Spicy", ids: ["flirty", "romantic", "seductive", "sultry", "steamy", "naughty"] },
-  { label: "Character", ids: ["uptight", "robotic"] },
+  { label: "Character", ids: ["dramatic", "uptight", "robotic"] },
   { label: "Your voice", ids: ["keep"] },
 ];
 
@@ -194,7 +196,7 @@ export const ACCENT_GROUPS: OptionGroup[] = [
 
 export const PERSONA_GROUPS: OptionGroup[] = [
   { label: "Comedy", ids: ["standup", "dramaqueen", "karen", "salesman"] },
-  { label: "Performer", ids: ["sportscaster", "infomercial", "newsanchor", "hypeman", "motivational"] },
+  { label: "Performer", ids: ["sportscaster", "infomercial", "newsanchor", "narrator", "hypeman", "motivational"] },
   { label: "Characters", ids: ["conspiracy", "noir", "villain", "fortuneteller", "lifecoach"] },
   { label: "Generation", ids: ["genz", "millennial", "genx", "boomer"] },
 ];
