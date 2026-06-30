@@ -1644,11 +1644,14 @@ function Selector({
       </button>
       {open && (
         <div
-          className="absolute left-0 right-0 top-full z-40 max-h-[75vh] overflow-y-auto"
+          className="absolute left-0 right-0 top-full z-40 max-h-[70vh] overflow-y-auto overscroll-contain"
           style={{
             background: t.panel,
             border: `1px solid ${t.lineStrong}`,
             boxShadow: "0 24px 50px -16px rgba(0,0,0,0.55)",
+            overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
+            touchAction: "pan-y",
           }}
         >
           {children}
