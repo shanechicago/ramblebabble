@@ -660,7 +660,7 @@ export default function RambleBabbleApp({
               style={{ color: t.cDim }}
             >
               Record on the left, Babble on the right. Pick a Format (try
-              &ldquo;Clean &amp; Clear&rdquo;). Tone, character, accent are optional.
+              &ldquo;Clean &amp; Concise&rdquo;). Tone, character, accent are optional.
             </p>
           </div>
 
@@ -695,7 +695,7 @@ export default function RambleBabbleApp({
                 </div>
                 <OptionRow
                   t={t}
-                  label="Clean & Clear"
+                  label="Clean & Concise"
                   active={outputType === "note"}
                   onClick={() => {
                     setOutputType("note");
@@ -889,7 +889,7 @@ export default function RambleBabbleApp({
         <div className="grid gap-4 lg:grid-cols-[1fr_1.42fr] lg:items-stretch">
           {/* RAMBLE (input) — 06 in the numbered flow */}
           <section
-            className="relative flex min-h-[320px] sm:min-h-[540px] flex-col"
+            className="relative flex min-h-[340px] lg:min-h-[calc(100dvh-270px)] flex-col"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
@@ -1079,7 +1079,7 @@ export default function RambleBabbleApp({
               outline so it reads as the result, distinct from the Ramble box. */}
           <div className="flex" style={{ backgroundImage: GRADIENT, padding: 2 }}>
             <section
-              className="flex min-h-[320px] sm:min-h-[540px] flex-1 flex-col"
+              className="flex min-h-[340px] lg:min-h-[calc(100dvh-270px)] flex-1 flex-col"
               style={{ background: "#f5f3fb" }}
             >
             <div
