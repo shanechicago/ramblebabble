@@ -149,6 +149,12 @@ export default function RambleBabbleApp({
   // Mobile: the whole options console collapses behind one tap so the ramble
   // gets the screen. Desktop/iPad keep it always-open (there's room).
   const [showOptions, setShowOptions] = useState(false);
+  // ONE thing at a time, full screen: "compose" (ramble + options) or "result"
+  // (the Babble, full width, with room to read it all). Babble it -> result;
+  // a Back button returns to compose. Kills the cramped two-panel scroll mess.
+  const [view, setView] = useState<"compose" | "result">(
+    reopen?.cleaned ? "result" : "compose",
+  );
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
   const [revealText, setRevealText] = useState(reopen?.cleaned ?? "");
@@ -348,8 +354,9 @@ export default function RambleBabbleApp({
         setKeyPoints(Array.isArray(data.keyPoints) ? data.keyPoints : []);
         setFollowUps(Array.isArray(data.followUps) ? data.followUps : []);
         setKeyOpen(true);
-        setFollowOpen(false);
+        setFollowOpen(true);
         startReveal(out);
+        setView("result");
         if (!modifier) {
           // The Supabase builder is lazy: it only runs when awaited / .then'd.
           // Calling .then here is what actually sends the insert.
@@ -419,6 +426,7 @@ export default function RambleBabbleApp({
     setFollowUps([]);
     setError(null);
     setLimitNotice(null);
+    setView("compose");
   }, [recorder]);
 
   const resetChoices = () => {
@@ -659,15 +667,20 @@ export default function RambleBabbleApp({
                 Ramble
               </span>
             </h1>
-            <p
-              className="font-mono-label hidden max-w-xl text-[11px] uppercase leading-[1.6] tracking-[0.08em] sm:block"
-              style={{ color: t.cDim }}
-            >
-              Record on the left, Babble on the right. Pick a Format (try
-              &ldquo;Clean &amp; Concise&rdquo;). Tone, character, accent are optional.
-            </p>
+            {view === "compose" && (
+              <p
+                className="font-mono-label hidden max-w-xl text-[11px] uppercase leading-[1.6] tracking-[0.08em] sm:block"
+                style={{ color: t.cDim }}
+              >
+                Record or paste your ramble, pick a format (try &ldquo;Clean
+                &amp; Concise&rdquo;), then hit Babble it. Tone, character,
+                accent, language are optional.
+              </p>
+            )}
           </div>
 
+          {view === "compose" && (
+            <>
           {/* PHONE: collapse the entire control panel behind one tap so the
               ramble gets the screen. DESKTOP/iPad: always open (there's room). */}
           <button
@@ -953,6 +966,8 @@ export default function RambleBabbleApp({
               </p>
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -962,10 +977,11 @@ export default function RambleBabbleApp({
       >
         {/* Two panels. Record is the action on the Ramble box (left); Babble it
             mirrors it on the Babble box (right). Output gets the most room. */}
-        <div className="grid gap-4 lg:grid-cols-[1fr_1.42fr] lg:items-stretch">
-          {/* RAMBLE (input) — 06 in the numbered flow */}
+        <div className="grid gap-4">
+          {/* COMPOSE view: the ramble input, full width. */}
+          {view === "compose" && (
           <section
-            className="relative flex min-h-[340px] lg:min-h-[calc(100dvh-270px)] flex-col"
+            className="relative flex min-h-[60vh] flex-col"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
@@ -1204,12 +1220,14 @@ export default function RambleBabbleApp({
               )}
             </div>
           </section>
+          )}
 
-          {/* BABBLE (output) — the prize. The whole box wears the brand-gradient
-              outline so it reads as the result, distinct from the Ramble box. */}
+          {/* RESULT view: the Babble on its own, full width, with room to read
+              everything (key points, follow-ups) and a Back button to edit. */}
+          {view === "result" && (
           <div className="flex" style={{ backgroundImage: GRADIENT, padding: 2 }}>
             <section
-              className="flex min-h-[340px] lg:min-h-[calc(100dvh-270px)] flex-1 flex-col"
+              className="flex min-h-[60vh] flex-1 flex-col"
               style={{ background: "#f5f3fb" }}
             >
             <div
@@ -1222,6 +1240,17 @@ export default function RambleBabbleApp({
               }}
             >
               <div className="flex min-w-0 items-center gap-3">
+                <button
+                  onClick={() => setView("compose")}
+                  title="Back to edit your ramble"
+                  className="font-mono-label flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+                  style={{ background: t.ink, color: "#f5f3fb" }}
+                >
+                  <span aria-hidden style={{ fontSize: 14 }}>
+                    &larr;
+                  </span>{" "}
+                  Edit ramble
+                </button>
                 <span
                   className="font-mono-label text-[12px] font-bold"
                   style={{ color: ACCENT }}
@@ -1263,7 +1292,7 @@ export default function RambleBabbleApp({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 p-5">
               {!hasResult && !cleaning ? (
                 <div className="flex h-full flex-col items-center justify-center text-center">
                   <span
@@ -1377,6 +1406,7 @@ export default function RambleBabbleApp({
             )}
             </section>
           </div>
+          )}
         </div>
       </main>
 
