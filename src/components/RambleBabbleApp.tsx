@@ -160,6 +160,7 @@ export default function RambleBabbleApp({
   // Mobile: the whole options console collapses behind one tap so the ramble
   // gets the screen. Desktop/iPad keep it always-open (there's room).
   const [showOptions, setShowOptions] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   // ONE thing at a time, full screen: "compose" (ramble + options) or "result"
   // (the Babble, full width, with room to read it all). Babble it -> result;
   // a Back button returns to compose. Kills the cramped two-panel scroll mess.
@@ -712,23 +713,38 @@ export default function RambleBabbleApp({
         <div className="px-4 pb-3 sm:px-8">
           {/* Title — "Ramble" is the brand, so it wears the brand gradient. */}
           <div className="mb-2.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
-            <h1
-              className="font-bric font-extrabold leading-none"
-              style={{ fontSize: "clamp(26px,2.4vw,36px)", letterSpacing: "-0.03em" }}
-            >
-              Refine a{" "}
-              <span
-                className="font-bric"
+            <div className="flex items-center gap-2.5">
+              <h1
+                className="font-bric font-extrabold leading-none"
                 style={{
-                  backgroundImage: GRADIENT,
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
+                  fontSize: "clamp(26px,2.4vw,36px)",
+                  letterSpacing: "-0.03em",
                 }}
               >
-                Ramble
-              </span>
-            </h1>
+                Refine a{" "}
+                <span
+                  className="font-bric"
+                  style={{
+                    backgroundImage: GRADIENT,
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    color: "transparent",
+                  }}
+                >
+                  Ramble
+                </span>
+              </h1>
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                aria-label="How the style options work"
+                title="How the style options work"
+                className="font-mono-label flex h-6 w-6 shrink-0 items-center justify-center text-[13px] font-bold transition hover:brightness-110"
+                style={{ background: ACCENT, color: "#fff", borderRadius: 999 }}
+              >
+                ?
+              </button>
+            </div>
             {view === "compose" && (
               <p
                 className="font-mono-label hidden max-w-xl text-[11px] uppercase leading-[1.6] tracking-[0.08em] sm:block"
@@ -740,6 +756,71 @@ export default function RambleBabbleApp({
               </p>
             )}
           </div>
+
+          {helpOpen && (
+            <div
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+              onClick={() => setHelpOpen(false)}
+            >
+              <div
+                className="absolute inset-0"
+                style={{ background: "rgba(0,0,0,0.55)" }}
+              />
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="relative z-[71] w-full max-w-[440px] p-5"
+                style={{
+                  background: t.panel,
+                  border: `1px solid ${t.lineStrong}`,
+                  boxShadow: "0 24px 60px -16px rgba(0,0,0,0.6)",
+                }}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <span
+                    className="font-mono-label text-[12px] font-bold uppercase tracking-[0.14em]"
+                    style={{ color: ACCENT }}
+                  >
+                    How to shape your Babble
+                  </span>
+                  <button
+                    onClick={() => setHelpOpen(false)}
+                    className="font-mono-label text-[11px] font-bold uppercase tracking-[0.12em]"
+                    style={{ color: ACCENT }}
+                  >
+                    Close
+                  </button>
+                </div>
+                <ul className="space-y-2 text-[14px] leading-[1.5]" style={{ color: t.ink }}>
+                  <li>
+                    <b>Format</b> is what it becomes, an email, a text, a poem, a
+                    rap. (This one is required.)
+                  </li>
+                  <li>
+                    <b>Tone</b> is the vibe, casual, confident, spicy.
+                  </li>
+                  <li>
+                    <b>Character</b> is who is saying it, a pirate, a drama
+                    queen, a conspiracy theorist.
+                  </li>
+                  <li>
+                    <b>Accent</b> is how it sounds, Southern, British, New
+                    Yorker.
+                  </li>
+                  <li>
+                    <b>Language</b> translates the whole thing.
+                  </li>
+                  <li>
+                    <b>Keep these spellings</b> locks names or words so the app
+                    never changes them.
+                  </li>
+                </ul>
+                <p className="mt-3 text-[13px]" style={{ color: t.inkDim }}>
+                  Only Format is required. Mix and match the rest, or stack
+                  several for something wild.
+                </p>
+              </div>
+            </div>
+          )}
 
           {view === "compose" && (
             <>
@@ -1047,7 +1128,7 @@ export default function RambleBabbleApp({
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
-              className="sticky z-10 flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-4"
+              className="sticky z-10 flex flex-col gap-2 px-3 py-2.5 sm:px-4"
               style={{
                 top: topH,
                 minHeight: 60,
@@ -1055,7 +1136,7 @@ export default function RambleBabbleApp({
                 borderBottom: `1px solid ${t.lineStrong}`,
               }}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <span
                   className="font-mono-label text-[12px] font-bold"
                   style={{ color: ACCENT }}
@@ -1065,7 +1146,7 @@ export default function RambleBabbleApp({
                 <button
                   onClick={recording ? handleStop : handleStart}
                   disabled={transcribing}
-                  className="font-mono-label flex items-center gap-2.5 whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-60 sm:px-5"
+                  className="font-mono-label flex flex-1 items-center justify-center gap-2.5 whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-60 sm:px-5"
                   style={
                     recording
                       ? {
@@ -1109,7 +1190,7 @@ export default function RambleBabbleApp({
                 <button
                   onClick={() => runCleanup()}
                   disabled={cleaning || !inputText.trim()}
-                  className="font-mono-label flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-45 disabled:saturate-50 sm:px-5"
+                  className="font-mono-label flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-45 disabled:saturate-50 sm:px-5"
                   style={{
                     backgroundImage: GRADIENT,
                     boxShadow: "0 10px 26px -10px rgba(123,92,255,0.8)",
@@ -1140,7 +1221,7 @@ export default function RambleBabbleApp({
               <div className="flex items-center gap-2">
                 <button
                   onClick={pasteIn}
-                  className="font-mono-label whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  className="font-mono-label flex flex-1 justify-center whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
                   style={{ background: t.ink, color: t.panel }}
                 >
                   Paste a ramble
@@ -1148,7 +1229,7 @@ export default function RambleBabbleApp({
                 <button
                   onClick={copyRamble}
                   disabled={!inputText.trim()}
-                  className="font-mono-label whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
+                  className="font-mono-label flex flex-1 justify-center whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
                   style={{
                     background: rambleCopied ? ACCENT : t.ink,
                     color: rambleCopied ? "#fff" : t.panel,
@@ -1164,7 +1245,7 @@ export default function RambleBabbleApp({
                     setLimitNotice(null);
                   }}
                   disabled={!inputText}
-                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
+                  className="font-mono-label flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
                   style={{ background: t.ink, color: t.panel }}
                 >
                   <span aria-hidden style={{ color: "#ff6b68", fontSize: 15 }}>
@@ -1289,18 +1370,7 @@ export default function RambleBabbleApp({
                 borderBottom: `1px solid ${t.lineStrong}`,
               }}
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <button
-                  onClick={() => setView("compose")}
-                  title="Back to edit your ramble"
-                  className="font-mono-label flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
-                  style={{ background: t.ink, color: "#f5f3fb" }}
-                >
-                  <span aria-hidden style={{ fontSize: 14 }}>
-                    &larr;
-                  </span>{" "}
-                  Edit ramble
-                </button>
+              <div className="flex min-w-0 items-center gap-2.5">
                 <span
                   className="font-mono-label text-[12px] font-bold"
                   style={{ color: ACCENT }}
@@ -1311,7 +1381,7 @@ export default function RambleBabbleApp({
                   className="rb-babbleit font-babble inline-block bg-clip-text text-transparent"
                   style={{
                     backgroundImage: GRADIENT,
-                    fontSize: 30,
+                    fontSize: 28,
                     lineHeight: 1.15,
                   }}
                 >
@@ -1332,29 +1402,46 @@ export default function RambleBabbleApp({
                     {loadingWord}&hellip;
                   </span>
                 ) : (
-                  <span
-                    className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] sm:inline"
-                    style={{ color: hasResult ? ACCENT : t.inkDim }}
-                  >
-                    {hasResult ? metaLabel : "lands here"}
-                  </span>
+                  hasResult && (
+                    <span
+                      className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] lg:inline"
+                      style={{ color: ACCENT }}
+                    >
+                      {metaLabel}
+                    </span>
+                  )
                 )}
               </div>
-              <button
-                onClick={handleCopy}
-                disabled={!cleaned || revealing}
-                className="font-mono-label flex shrink-0 items-center gap-2 whitespace-nowrap px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
-                style={{
-                  backgroundImage: GRADIENT,
-                  boxShadow: "0 8px 22px -8px rgba(123,92,255,0.9)",
-                }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
-                  <rect x="9" y="9" width="11" height="11" rx="1.5" />
-                  <path d="M5 15V5a1 1 0 011-1h9" />
-                </svg>
-                {copyLabel === "Copy" ? "Copy Babble" : copyLabel}
-              </button>
+              {/* Edit (back, keeps the ramble) on the left, Copy (rightmost) on
+                  the right, all on one compact row. */}
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => setView("compose")}
+                  title="Edit this ramble"
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+                  style={{ background: t.ink, color: "#f5f3fb" }}
+                >
+                  <span aria-hidden style={{ fontSize: 13 }}>
+                    &larr;
+                  </span>{" "}
+                  Edit
+                </button>
+                <button
+                  onClick={handleCopy}
+                  disabled={!cleaned || revealing}
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
+                  style={{
+                    backgroundImage: GRADIENT,
+                    boxShadow: "0 8px 22px -8px rgba(123,92,255,0.9)",
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                    <rect x="9" y="9" width="11" height="11" rx="1.5" />
+                    <path d="M5 15V5a1 1 0 011-1h9" />
+                  </svg>
+                  {copyLabel}
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 p-5">
@@ -1493,7 +1580,7 @@ export default function RambleBabbleApp({
                   Try again
                 </ActionBtn>
                 <ActionBtn t={t} onClick={handleClear}>
-                  Clear
+                  New ramble
                 </ActionBtn>
               </div>
             )}
