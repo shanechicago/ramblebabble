@@ -1948,16 +1948,52 @@ function Collapsible({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rb-rise mt-6" style={{ borderTop: `1px solid ${t.line}` }}>
+    <div
+      className="rb-rise mt-5 overflow-hidden"
+      style={{ border: `1.5px solid rgba(123,92,255,0.32)` }}
+    >
       <button
         onClick={onToggle}
-        className="font-mono-label flex w-full items-center justify-between pt-4 text-[11px] uppercase tracking-[0.16em]"
-        style={{ color: t.inkDim }}
+        className="flex w-full items-center justify-between px-4 py-3 transition"
+        style={{
+          background: open ? "rgba(123,92,255,0.13)" : "rgba(123,92,255,0.07)",
+        }}
       >
-        {label}
-        <span aria-hidden>{open ? "^" : "v"}</span>
+        <span
+          className="font-mono-label flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-[0.14em]"
+          style={{ color: ACCENT }}
+        >
+          <span
+            aria-hidden
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: 999,
+              background: ACCENT,
+              display: "inline-block",
+            }}
+          />
+          {label}
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={ACCENT}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+          style={{
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 0.15s",
+          }}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </button>
-      {open && children}
+      {open && <div className="px-4 pb-4 pt-1">{children}</div>}
     </div>
   );
 }
