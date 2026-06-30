@@ -199,6 +199,13 @@ export default function RambleBabbleApp({
     };
   }, []);
 
+  // Auto-dismiss the error toast after a few seconds.
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(null), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
+
   const transcribeBlob = useCallback(
     async (blob: Blob | null) => {
       if (!blob || blob.size === 0) {
@@ -453,6 +460,28 @@ export default function RambleBabbleApp({
 
   return (
     <div style={{ background: t.canvas, color: t.cInk, minHeight: "100vh" }}>
+      {/* Always-visible error toast (fixed, so you see it no matter where you
+          are on the page or how small the screen). Tap to dismiss. */}
+      {error && (
+        <button
+          onClick={() => setError(null)}
+          role="alert"
+          className="rb-rise fixed bottom-6 left-1/2 z-[90] flex max-w-[92vw] -translate-x-1/2 items-center gap-2 px-5 py-3.5 text-left text-[14px] font-bold text-white"
+          style={{
+            background: "#ff3b30",
+            boxShadow: "0 16px 40px -10px rgba(255,59,48,0.6)",
+          }}
+        >
+          <span
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[13px]"
+            style={{ background: "rgba(255,255,255,0.25)" }}
+          >
+            !
+          </span>
+          {error}
+        </button>
+      )}
+
       {/* cursor spotlight */}
       <div
         aria-hidden
@@ -474,9 +503,9 @@ export default function RambleBabbleApp({
           borderBottom: `1px solid ${t.cLine}`,
         }}
       >
-        <header className="flex items-center justify-between px-8 py-3">
+        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:px-8">
           <Wordmark color={t.cInk} />
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {navBtn("Home", true, () => {})}
             {navBtn("Archive", false, onOpenHistory)}
             <button
@@ -606,7 +635,7 @@ export default function RambleBabbleApp({
           </div>
         </header>
 
-        <div className="px-8 pb-3">
+        <div className="px-4 pb-3 sm:px-8">
           {/* Title — "Ramble" is the brand, so it wears the brand gradient. */}
           <div className="mb-2.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
             <h1
@@ -627,7 +656,7 @@ export default function RambleBabbleApp({
               </span>
             </h1>
             <p
-              className="font-mono-label max-w-xl text-[11px] uppercase leading-[1.6] tracking-[0.08em]"
+              className="font-mono-label hidden max-w-xl text-[11px] uppercase leading-[1.6] tracking-[0.08em] sm:block"
               style={{ color: t.cDim }}
             >
               Record on the left, Babble on the right. Pick a Format (try
@@ -852,28 +881,19 @@ export default function RambleBabbleApp({
       </div>
 
       <main
-        className="relative z-10 mx-auto w-full px-8 pb-12 pt-5"
+        className="relative z-10 mx-auto w-full px-4 pb-12 pt-5 sm:px-8"
         style={{ maxWidth: 1760 }}
       >
-        {error && (
-          <p
-            className="font-mono-label mb-4 px-3 py-2 text-[12px]"
-            style={{ background: "rgba(200,49,47,0.12)", color: "#ff6b68" }}
-          >
-            {error}
-          </p>
-        )}
-
         {/* Two panels. Record is the action on the Ramble box (left); Babble it
             mirrors it on the Babble box (right). Output gets the most room. */}
         <div className="grid gap-4 lg:grid-cols-[1fr_1.42fr] lg:items-stretch">
           {/* RAMBLE (input) — 06 in the numbered flow */}
           <section
-            className="relative flex min-h-[540px] flex-col"
+            className="relative flex min-h-[320px] sm:min-h-[540px] flex-col"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             <div
-              className="sticky z-10 flex items-center justify-between gap-2 px-4 py-2"
+              className="sticky z-10 flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-4"
               style={{
                 top: topH,
                 minHeight: 60,
@@ -891,7 +911,7 @@ export default function RambleBabbleApp({
                 <button
                   onClick={recording ? handleStop : handleStart}
                   disabled={transcribing}
-                  className="font-mono-label flex items-center gap-2.5 px-5 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-60"
+                  className="font-mono-label flex items-center gap-2.5 whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-60 sm:px-5"
                   style={
                     recording
                       ? {
@@ -926,7 +946,7 @@ export default function RambleBabbleApp({
               <div className="flex items-center gap-2">
                 <button
                   onClick={pasteIn}
-                  className="font-mono-label px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  className="font-mono-label whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
                   style={{ background: t.ink, color: t.panel }}
                 >
                   Paste a ramble
@@ -939,7 +959,7 @@ export default function RambleBabbleApp({
                     setLimitNotice(null);
                   }}
                   disabled={!inputText}
-                  className="font-mono-label flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
                   style={{ background: t.ink, color: t.panel }}
                 >
                   <span aria-hidden style={{ color: "#ff6b68", fontSize: 15 }}>
@@ -1049,11 +1069,11 @@ export default function RambleBabbleApp({
               outline so it reads as the result, distinct from the Ramble box. */}
           <div className="flex" style={{ backgroundImage: GRADIENT, padding: 2 }}>
             <section
-              className="flex min-h-[540px] flex-1 flex-col"
+              className="flex min-h-[320px] sm:min-h-[540px] flex-1 flex-col"
               style={{ background: "#f5f3fb" }}
             >
             <div
-              className="sticky z-10 flex items-center justify-between gap-2 px-4 py-2"
+              className="sticky z-10 flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-4"
               style={{
                 top: topH,
                 minHeight: 60,
@@ -1344,7 +1364,10 @@ type T = (typeof THEMES)[Theme];
 
 function Wordmark({ color }: { color: string }) {
   return (
-    <div className="flex items-center gap-2.5 text-[24px]" style={{ color }}>
+    <div
+      className="flex items-center gap-2 text-[19px] sm:gap-2.5 sm:text-[24px]"
+      style={{ color }}
+    >
       <span className="font-bric font-extrabold" style={{ letterSpacing: "-0.02em" }}>
         Ramble
       </span>
