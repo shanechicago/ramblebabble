@@ -146,6 +146,9 @@ export default function RambleBabbleApp({
   const [targetLanguage, setTargetLanguage] = useState("");
   const [customInstruction, setCustomInstruction] = useState("");
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  // Mobile: the whole options console collapses behind one tap so the ramble
+  // gets the screen. Desktop/iPad keep it always-open (there's room).
+  const [showOptions, setShowOptions] = useState(false);
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
   const [revealText, setRevealText] = useState(reopen?.cleaned ?? "");
@@ -665,12 +668,55 @@ export default function RambleBabbleApp({
             </p>
           </div>
 
+          {/* PHONE: collapse the entire control panel behind one tap so the
+              ramble gets the screen. DESKTOP/iPad: always open (there's room). */}
+          <button
+            type="button"
+            onClick={() => setShowOptions((o) => !o)}
+            className="flex w-full items-center justify-between gap-3 px-3.5 py-3 lg:hidden"
+            style={{ border: `1px solid ${t.lineStrong}`, background: t.control }}
+          >
+            <span className="flex min-w-0 flex-col items-start gap-0.5 text-left">
+              <span
+                className="font-mono-label text-[10px] uppercase tracking-[0.16em]"
+                style={{ color: t.inkDim }}
+              >
+                Style your Babble
+              </span>
+              <span
+                className="max-w-[64vw] truncate text-[15px] font-bold"
+                style={{ color: t.ink }}
+              >
+                {[
+                  outputType === "custom"
+                    ? "Something else"
+                    : (selectedStyle?.label ?? "Clean & Concise"),
+                  selectedTone?.label,
+                  selectedPersona?.label,
+                  selectedAccent?.label,
+                  targetLanguage,
+                ]
+                  .filter(Boolean)
+                  .join("  ·  ")}
+              </span>
+            </span>
+            <span
+              className="font-mono-label shrink-0 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white"
+              style={{ backgroundImage: GRADIENT }}
+            >
+              {showOptions ? "Done" : "Change"}
+            </span>
+          </button>
+
           {/* Flattened control console — its own mist-gray surface, distinct
               from the Ramble/Babble boxes, with a brand-gradient edge for life. */}
-          <div style={{ border: `1px solid ${t.lineStrong}`, background: t.control }}>
+          <div
+            className={`${showOptions ? "" : "hidden"} lg:block`}
+            style={{ border: `1px solid ${t.lineStrong}`, background: t.control }}
+          >
             <div style={{ height: 3, backgroundImage: GRADIENT }} />
             <div
-              className="grid grid-cols-2 gap-px lg:grid-cols-4"
+              className="grid grid-cols-2 gap-px lg:grid-cols-5"
               style={{ background: t.lineStrong }}
             >
               <Selector
@@ -807,30 +853,52 @@ export default function RambleBabbleApp({
                   setOpenDropdown(null);
                 }}
               />
-              <div
-                className="font-mono-label px-3 pb-1 pt-2.5 text-[10px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: ACCENT }}
-              >
-                Output language
-              </div>
-              <OptionRow
+            </Selector>
+
+              {/* LANGUAGE — its own axis now, not buried under Accent. Accent =
+                  English spoken with an accent. Language = output written in that
+                  language. Full width on phones so there's no broken empty cell. */}
+              <Selector
                 t={t}
-                label="Same as input"
-                active={!targetLanguage}
-                onClick={() => {
-                  setTargetLanguage("");
-                }}
-              />
-              {LANGUAGES.map((l) => (
+                optional
+                className="col-span-2 lg:col-span-1"
+                index="05"
+                label="Language"
+                value={targetLanguage}
+                placeholder="Same as input"
+                open={openDropdown === "language"}
+                onToggle={() =>
+                  setOpenDropdown((d) => (d === "language" ? null : "language"))
+                }
+              >
                 <OptionRow
                   t={t}
-                  key={l}
-                  label={l}
-                  active={targetLanguage === l}
-                  onClick={() => setTargetLanguage(l)}
+                  label="Same as input (no translation)"
+                  active={!targetLanguage}
+                  onClick={() => {
+                    setTargetLanguage("");
+                    setOpenDropdown(null);
+                  }}
                 />
-              ))}
-            </Selector>
+                <div
+                  className="font-mono-label px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.18em]"
+                  style={{ color: ACCENT }}
+                >
+                  Translate the output to
+                </div>
+                {LANGUAGES.map((l) => (
+                  <OptionRow
+                    t={t}
+                    key={l}
+                    label={l}
+                    active={targetLanguage === l}
+                    onClick={() => {
+                      setTargetLanguage(l);
+                      setOpenDropdown(null);
+                    }}
+                  />
+                ))}
+              </Selector>
             </div>
 
             {outputType === "custom" && (
@@ -858,7 +926,7 @@ export default function RambleBabbleApp({
                   className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
                   style={{ color: t.ink }}
                 >
-                  05 Keep these spellings{" "}
+                  06 Keep these spellings{" "}
                   <span className="font-bold" style={{ color: ACCENT }}>
                     · optional
                   </span>
@@ -914,7 +982,7 @@ export default function RambleBabbleApp({
                   className="font-mono-label text-[12px] font-bold"
                   style={{ color: ACCENT }}
                 >
-                  06
+                  07
                 </span>
                 <button
                   onClick={recording ? handleStop : handleStart}
@@ -1158,7 +1226,7 @@ export default function RambleBabbleApp({
                   className="font-mono-label text-[12px] font-bold"
                   style={{ color: ACCENT }}
                 >
-                  07
+                  08
                 </span>
                 <span
                   className="rb-babbleit font-babble inline-block bg-clip-text text-transparent"
@@ -1588,6 +1656,7 @@ function Selector({
   open,
   onToggle,
   children,
+  className,
 }: {
   t: T;
   index: string;
@@ -1598,10 +1667,14 @@ function Selector({
   open: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   const set = !!value;
   return (
-    <div className="relative flex flex-col" style={{ background: t.control }}>
+    <div
+      className={`relative flex flex-col ${className ?? ""}`}
+      style={{ background: t.control }}
+    >
       <button
         onClick={onToggle}
         className="flex w-full flex-1 items-center justify-between gap-2 px-3.5 py-2.5 text-left transition"
