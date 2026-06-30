@@ -80,6 +80,7 @@ export const OUTPUT_TYPES: Option[] = [
 export const TONES: Option[] = [
   { id: "professional", label: "Professional", hint: "Workplace-appropriate", instruction: "Use a professional, workplace-appropriate tone: clear, competent, and businesslike. Straightforward, not flowery." },
   { id: "friendly", label: "Friendly", hint: "Warm and approachable", instruction: "Use a warm, friendly, approachable tone." },
+  { id: "casual", label: "Casual", hint: "Relaxed, like you talk", instruction: "Use a relaxed, casual, conversational tone, the way a real person actually talks to a friend or family member: easy and natural, everyday words, contractions throughout, light and unfussy. Clean it up and make it clear, but never stiff, formal, or corporate. Absolutely no business-speak ('I would appreciate it if', 'please find', 'kindly', 'at your earliest convenience', 'I have developed', 'your insights will help me'), just plain, warm, human phrasing, the way you'd actually text or message someone you know." },
   { id: "direct", label: "Direct", hint: "Brief and to the point", instruction: "Use a direct, concise tone. Get to the point with no padding." },
   { id: "confident", label: "Confident", hint: "Assertive and sure", instruction: "Use a confident, self-assured tone: assertive, positive, and decisive, without arrogance." },
   { id: "warm", label: "Warm", hint: "Kind and personal", instruction: "Use a warm, kind, encouraging tone that feels personal and genuine." },
@@ -181,7 +182,7 @@ export const FUN_GROUPS: OptionGroup[] = [
 // TONE: grouped so the menu reads by family, not a random list.
 export const TONE_GROUPS: OptionGroup[] = [
   { label: "Professional", ids: ["professional", "direct", "confident", "concise", "persuasive"] },
-  { label: "Friendly", ids: ["friendly", "warm"] },
+  { label: "Friendly", ids: ["casual", "friendly", "warm"] },
   { label: "Polished", ids: ["proper", "eloquent"] },
   { label: "Spicy", ids: ["flirty", "romantic", "seductive", "sultry", "steamy", "naughty"] },
   { label: "Character", ids: ["dramatic", "uptight", "robotic"] },
