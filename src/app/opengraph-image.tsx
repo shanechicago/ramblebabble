@@ -1,14 +1,19 @@
 import { ImageResponse } from "next/og";
-
-// Edge runtime so the bundled .ttf assets load via fetch(new URL(...)).
-export const runtime = "edge";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 // The branded card shown when ramblebabble.com is shared. Uses the real fonts
 // (Caveat Brush for "Babble" + "wildly wacky") so it matches the site logo.
+// Fonts are read from disk (Node) so the card is pre-rendered to a static
+// image at build time, avoiding the Edge Function size limit.
 export const alt =
   "RambleBabble: Ramble in. Brilliance out... sometimes wildly wacky.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+const FONT_DIR = join(process.cwd(), "src", "app");
+const CAVEAT = readFileSync(join(FONT_DIR, "CaveatBrush.ttf"));
+const HEAVY = readFileSync(join(FONT_DIR, "HeavySans.ttf"));
 
 const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
 const SCRIPT_GRADIENT = {
@@ -19,16 +24,7 @@ const SCRIPT_GRADIENT = {
   fontFamily: "Caveat Brush",
 };
 
-export default async function OpengraphImage() {
-  const [caveat, heavy] = await Promise.all([
-    fetch(new URL("./CaveatBrush.ttf", import.meta.url)).then((r) =>
-      r.arrayBuffer(),
-    ),
-    fetch(new URL("./HeavySans.ttf", import.meta.url)).then((r) =>
-      r.arrayBuffer(),
-    ),
-  ]);
-
+export default function OpengraphImage() {
   return new ImageResponse(
     (
       <div
@@ -107,8 +103,8 @@ export default async function OpengraphImage() {
     {
       ...size,
       fonts: [
-        { name: "Caveat Brush", data: caveat, style: "normal", weight: 400 },
-        { name: "HeavySans", data: heavy, style: "normal", weight: 900 },
+        { name: "Caveat Brush", data: CAVEAT, style: "normal", weight: 400 },
+        { name: "HeavySans", data: HEAVY, style: "normal", weight: 700 },
       ],
     },
   );
