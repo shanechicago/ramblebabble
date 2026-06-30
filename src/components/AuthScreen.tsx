@@ -40,7 +40,9 @@ export default function AuthScreen({
   const [mode, setMode] = useState<"signin" | "signup">(
     initialMode ?? "signup",
   );
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState(""); // sign-in: email OR legacy username
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ export default function AuthScreen({
   const [remember, setRemember] = useState(true);
 
   const comingSoon = (provider: string) =>
-    setError(`${provider} sign-in is coming soon. Create a username for now.`);
+    setError(`${provider} sign-in is coming soon. Create an account for now.`);
 
   useEffect(() => {
     if (
@@ -68,13 +70,27 @@ export default function AuthScreen({
     return () => clearInterval(id);
   }, []);
 
+  const emailOk = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim());
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const u = username.trim();
-    if (u.length < 3) return setError("Username must be at least 3 characters.");
     if (password.length < 4)
       return setError("Password must be at least 4 characters.");
+
+    // Sign-in identity: a real email, or a legacy username (mapped internally).
+    // Sign-up identity: always the real email the person typed.
+    let loginEmail: string;
+    if (mode === "signup") {
+      if (name.trim().length < 1) return setError("Please enter your name.");
+      if (!emailOk(email)) return setError("Please enter a valid email address.");
+      loginEmail = email.trim().toLowerCase();
+    } else {
+      const id = username.trim();
+      if (id.length < 3)
+        return setError("Enter your email (or username) and password.");
+      loginEmail = id.includes("@") ? id.toLowerCase() : usernameToEmail(id);
+    }
 
     setLoading(true);
     const supabase = getSupabase();
@@ -83,7 +99,11 @@ export default function AuthScreen({
         const res = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: u, password }),
+          body: JSON.stringify({
+            name: name.trim(),
+            email: loginEmail,
+            password,
+          }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -93,7 +113,7 @@ export default function AuthScreen({
         }
       }
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: usernameToEmail(u),
+        email: loginEmail,
         password,
       });
       if (!signInError && typeof window !== "undefined") {
@@ -104,7 +124,7 @@ export default function AuthScreen({
       if (signInError) {
         setError(
           mode === "signin"
-            ? "Wrong username or password."
+            ? "Wrong email/username or password."
             : "Account made, but sign-in failed. Try signing in.",
         );
         setLoading(false);
@@ -247,20 +267,55 @@ export default function AuthScreen({
               : "Set it up once, then ramble forever."}
           </p>
 
-          <label
-            className="font-mono-label mt-8 block text-[11px] uppercase tracking-[0.16em]"
-            style={{ color: INK_DIM }}
-          >
-            Username
-          </label>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="yourname"
-            autoComplete="username"
-            autoCapitalize="none"
-            className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#6c7079] focus:border-[#7b5cff]"
-          />
+          {mode === "signup" ? (
+            <>
+              <label
+                className="font-mono-label mt-8 block text-[11px] uppercase tracking-[0.16em]"
+                style={{ color: INK_DIM }}
+              >
+                Name
+              </label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="your name"
+                autoComplete="name"
+                className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#6c7079] focus:border-[#7b5cff]"
+              />
+              <label
+                className="font-mono-label mt-6 block text-[11px] uppercase tracking-[0.16em]"
+                style={{ color: INK_DIM }}
+              >
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@email.com"
+                autoComplete="email"
+                autoCapitalize="none"
+                className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#6c7079] focus:border-[#7b5cff]"
+              />
+            </>
+          ) : (
+            <>
+              <label
+                className="font-mono-label mt-8 block text-[11px] uppercase tracking-[0.16em]"
+                style={{ color: INK_DIM }}
+              >
+                Email or username
+              </label>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="you@email.com"
+                autoComplete="username"
+                autoCapitalize="none"
+                className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#6c7079] focus:border-[#7b5cff]"
+              />
+            </>
+          )}
 
           <label
             className="font-mono-label mt-6 block text-[11px] uppercase tracking-[0.16em]"
@@ -272,7 +327,7 @@ export default function AuthScreen({
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="at least eight characters"
+            placeholder="at least four characters"
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
             className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#6c7079] focus:border-[#7b5cff]"
           />

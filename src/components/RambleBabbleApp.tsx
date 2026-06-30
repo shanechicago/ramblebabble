@@ -135,6 +135,11 @@ export default function RambleBabbleApp({
   // Try-first: anyone can ramble + babble without an account. After a few free
   // Babbles we gate on signup (the hook comes before the ask). Saving always
   // needs an account.
+  // BETA: the hard gate is OFF while friends are testing, nobody (signed in or
+  // not) gets blocked. Flip GATE_LIVE to true when the testing week ends. The
+  // soft "create a free account to save" nudge still shows, so we keep
+  // capturing signups without walling anyone.
+  const GATE_LIVE = false;
   const FREE_BABBLES = 3;
   const [theme, setTheme] = useState<Theme>("night");
   const t = THEMES[theme];
@@ -334,7 +339,7 @@ export default function RambleBabbleApp({
       // Try-first gate: let anonymous visitors babble a few times for free, then
       // ask them to create an account (the hook comes before the ask). "Try
       // again" on an existing result never counts against the free quota.
-      if (!userId && !modifier) {
+      if (GATE_LIVE && !userId && !modifier) {
         const used =
           typeof window !== "undefined"
             ? parseInt(window.localStorage.getItem("rb_free_used") || "0", 10)
