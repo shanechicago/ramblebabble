@@ -172,7 +172,7 @@ export default function MyRambles({
           {rambles?.map((r, i) => (
             <div
               key={r.id}
-              className="grid items-start gap-4 py-5 transition-all hover:pl-[18px]"
+              className="flex flex-col gap-3 py-5 transition-all sm:grid sm:items-start sm:gap-4 sm:hover:pl-[18px]"
               style={{
                 gridTemplateColumns: "48px 1fr auto",
                 borderBottom: `1px solid ${C_LINE}`,
@@ -183,7 +183,7 @@ export default function MyRambles({
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <span
-                className="font-mono-label pt-1 text-[13px]"
+                className="font-mono-label hidden pt-1 text-[13px] sm:block"
                 style={{ color: "#5d646c" }}
               >
                 {String(i + 1).padStart(2, "0")}
@@ -217,7 +217,7 @@ export default function MyRambles({
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                 <button
                   onClick={() => onReopen(r)}
                   className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] text-white"

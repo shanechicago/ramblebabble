@@ -138,7 +138,7 @@ export default function RambleBabbleApp({
   const accountInitial = (accountName[0] || "Y").toUpperCase();
 
   const [inputText, setInputText] = useState(reopen?.transcript ?? "");
-  const [outputType, setOutputType] = useState(reopen?.output_type ?? "");
+  const [outputType, setOutputType] = useState(reopen?.output_type ?? "note");
   const [tone, setTone] = useState(reopen?.tone ?? "");
   const [vocabulary, setVocabulary] = useState("");
   const [accent, setAccent] = useState("");
@@ -155,6 +155,13 @@ export default function RambleBabbleApp({
   const [view, setView] = useState<"compose" | "result">(
     reopen?.cleaned ? "result" : "compose",
   );
+  const [rambleCopied, setRambleCopied] = useState(false);
+  const copyRamble = useCallback(() => {
+    if (!inputText.trim()) return;
+    void navigator.clipboard?.writeText(inputText);
+    setRambleCopied(true);
+    setTimeout(() => setRambleCopied(false), 1300);
+  }, [inputText]);
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
   const [revealText, setRevealText] = useState(reopen?.cleaned ?? "");
@@ -1044,6 +1051,36 @@ export default function RambleBabbleApp({
                       ? "Stop"
                       : "Record a ramble"}
                 </button>
+                <button
+                  onClick={() => runCleanup()}
+                  disabled={cleaning || !inputText.trim()}
+                  className="font-mono-label flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-45 disabled:saturate-50 sm:px-5"
+                  style={{
+                    backgroundImage: GRADIENT,
+                    boxShadow: "0 10px 26px -10px rgba(123,92,255,0.8)",
+                  }}
+                >
+                  {cleaning ? (
+                    <>
+                      <span
+                        className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                        style={{
+                          borderColor: "rgba(255,255,255,0.4)",
+                          borderTopColor: "#fff",
+                        }}
+                      />
+                      {loadingWord}&hellip;
+                    </>
+                  ) : (
+                    <>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                        <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
+                      </svg>
+                      Babble it
+                      <span aria-hidden>&rarr;</span>
+                    </>
+                  )}
+                </button>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -1052,6 +1089,17 @@ export default function RambleBabbleApp({
                   style={{ background: t.ink, color: t.panel }}
                 >
                   Paste a ramble
+                </button>
+                <button
+                  onClick={copyRamble}
+                  disabled={!inputText.trim()}
+                  className="font-mono-label whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
+                  style={{
+                    background: rambleCopied ? ACCENT : t.ink,
+                    color: rambleCopied ? "#fff" : t.panel,
+                  }}
+                >
+                  {rambleCopied ? "Copied" : "Copy"}
                 </button>
                 <button
                   onClick={() => {
@@ -1166,59 +1214,6 @@ export default function RambleBabbleApp({
               </p>
             )}
 
-            {/* Babble it lives RIGHT HERE, under the ramble, so you never cross
-                to the other panel or hunt for it. Record up top, Babble down here. */}
-            <div
-              className="px-3 pb-3 pt-2 sm:px-4"
-              style={{ borderTop: `1px solid ${t.line}` }}
-            >
-              <button
-                onClick={() => runCleanup()}
-                disabled={cleaning || !inputText.trim()}
-                className={`flex w-full items-center justify-center gap-2.5 py-4 text-[17px] font-bold uppercase tracking-[0.1em] text-white transition hover:brightness-110 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45 disabled:saturate-50 ${
-                  inputText.trim() && !cleaning ? "rb-glowpulse" : ""
-                }`}
-                style={{
-                  backgroundImage: GRADIENT,
-                  boxShadow: "0 16px 40px -12px rgba(123,92,255,0.8)",
-                }}
-              >
-                {cleaning ? (
-                  <>
-                    <span
-                      className="rb-spin inline-block h-4 w-4 rounded-full border-2"
-                      style={{
-                        borderColor: "rgba(255,255,255,0.4)",
-                        borderTopColor: "#fff",
-                      }}
-                    />
-                    {loadingWord}&hellip;
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      aria-hidden
-                    >
-                      <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
-                    </svg>
-                    Babble it
-                    <span aria-hidden>&rarr;</span>
-                  </>
-                )}
-              </button>
-              {!inputText.trim() && !cleaning && (
-                <p
-                  className="font-mono-label mt-2 text-center text-[10px] uppercase tracking-[0.16em]"
-                  style={{ color: t.inkFaint }}
-                >
-                  Record or paste a ramble first
-                </p>
-              )}
-            </div>
           </section>
           )}
 
@@ -1290,6 +1285,14 @@ export default function RambleBabbleApp({
                   </span>
                 )}
               </div>
+              <button
+                onClick={handleCopy}
+                disabled={!cleaned || revealing}
+                className="font-mono-label shrink-0 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
+                style={{ background: t.ink, color: "#f5f3fb" }}
+              >
+                {copyLabel}
+              </button>
             </div>
 
             <div className="flex-1 p-5">
