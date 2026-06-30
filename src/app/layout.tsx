@@ -1,10 +1,26 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const TAGLINE = "RambleBabble, talk messy, leave polished or wildly wacky";
+const PITCH =
+  "Ramble in, Babble out. Turn your messiest voice memos and half-thoughts into clean messages, emails, and notes, or crank them up wildly wacky.";
+
 export const metadata: Metadata = {
-  title: "RambleBabble. Talk messy. Leave polished.",
-  description:
-    "Record or paste messy spoken thoughts and turn them into clean, usable written text.",
+  metadataBase: new URL("https://ramblebabble.com"),
+  title: TAGLINE,
+  description: PITCH,
+  openGraph: {
+    title: TAGLINE,
+    description: PITCH,
+    url: "https://ramblebabble.com",
+    siteName: "RambleBabble",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TAGLINE,
+    description: PITCH,
+  },
 };
 
 export default function RootLayout({

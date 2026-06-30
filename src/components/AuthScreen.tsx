@@ -40,7 +40,7 @@ export default function AuthScreen() {
   const [remember, setRemember] = useState(true);
 
   const comingSoon = (provider: string) =>
-    setError(`${provider} sign-in is coming soon. Make a username for now.`);
+    setError(`${provider} sign-in is coming soon. Create a username for now.`);
 
   useEffect(() => {
     if (
