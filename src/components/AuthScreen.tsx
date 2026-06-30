@@ -28,10 +28,18 @@ const HERO_WORDS = [
 const MARQUEE =
   "EMAIL · TALL TALE · RAP VERSE · SUMMARY · SPICY TEXT · AI PROMPT · MEETING NOTES · POEM · CONSPIRACY THEORY · MOVIE TRAILER · TO DO LIST · HAIKU · BREAKING NEWS · ";
 
-export default function AuthScreen() {
+export default function AuthScreen({
+  initialMode,
+  onClose,
+}: {
+  initialMode?: "signin" | "signup";
+  onClose?: () => void;
+} = {}) {
   // New visitors land on "Create" (never greeted "Welcome back"); only people
   // who've signed in before on this device default to "Sign in".
-  const [mode, setMode] = useState<"signin" | "signup">("signup");
+  const [mode, setMode] = useState<"signin" | "signup">(
+    initialMode ?? "signup",
+  );
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +52,13 @@ export default function AuthScreen() {
 
   useEffect(() => {
     if (
+      !initialMode &&
       typeof window !== "undefined" &&
       window.localStorage.getItem("rb_returning")
     ) {
       setMode("signin");
     }
-  }, []);
+  }, [initialMode]);
 
   useEffect(() => {
     const id = setInterval(
@@ -111,6 +120,16 @@ export default function AuthScreen() {
       className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
       style={{ background: CANVAS }}
     >
+      {onClose && (
+        <button
+          onClick={onClose}
+          aria-label="Close and keep rambling"
+          className="font-mono-label fixed right-4 top-4 z-[90] flex items-center gap-2 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+          style={{ background: "rgba(243,245,247,0.16)", color: CANVAS_INK }}
+        >
+          Keep rambling <span aria-hidden style={{ fontSize: 15 }}>&times;</span>
+        </button>
+      )}
       {/* LEFT: void-black landing hero (now visible on phones too) */}
       <div
         className="relative flex flex-col justify-between gap-10 overflow-hidden px-7 py-10 lg:gap-0 lg:px-[60px] lg:py-[52px]"
@@ -220,7 +239,7 @@ export default function AuthScreen() {
             className="font-bric mt-6 text-[30px] font-bold"
             style={{ letterSpacing: "-0.02em" }}
           >
-            {mode === "signin" ? "Welcome back" : "Make an account"}
+            {mode === "signin" ? "Welcome back" : "Create an account"}
           </h2>
           <p className="mt-1.5 text-[14px]" style={{ color: INK_DIM }}>
             {mode === "signin"
@@ -240,7 +259,7 @@ export default function AuthScreen() {
             placeholder="yourname"
             autoComplete="username"
             autoCapitalize="none"
-            className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#9094a0] focus:border-[#7b5cff]"
+            className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#6c7079] focus:border-[#7b5cff]"
           />
 
           <label
@@ -255,7 +274,7 @@ export default function AuthScreen() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="at least eight characters"
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
-            className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#9094a0] focus:border-[#7b5cff]"
+            className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#6c7079] focus:border-[#7b5cff]"
           />
 
           <div className="mt-4 flex items-center justify-between">

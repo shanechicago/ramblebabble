@@ -13,6 +13,9 @@ export default function RambleBabbleRoot() {
   const [screen, setScreen] = useState<"main" | "history">("main");
   const [reopen, setReopen] = useState<SavedRamble | null>(null);
   const [reopenSeq, setReopenSeq] = useState(0);
+  // Try-first: the app loads for everyone. The sign-in / create screen is an
+  // on-demand overlay (triggered by the nav or the free-Babble gate), not a wall.
+  const [authMode, setAuthMode] = useState<null | "signin" | "signup">(null);
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -22,8 +25,12 @@ export default function RambleBabbleRoot() {
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
-      // Always land on the main workspace right after signing in.
-      if (event === "SIGNED_IN") setScreen("main");
+      // Always land on the main workspace right after signing in, and close
+      // the auth overlay if it was open.
+      if (event === "SIGNED_IN") {
+        setScreen("main");
+        setAuthMode(null);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -51,9 +58,9 @@ export default function RambleBabbleRoot() {
     );
   }
 
-  if (!user) return <AuthScreen />;
-
-  if (screen === "history") {
+  // My Rambles (the saved archive) needs an account. Anonymous users who try to
+  // open it get the create-account overlay instead.
+  if (screen === "history" && user) {
     return (
       <div
         data-theme="dark"
@@ -66,13 +73,21 @@ export default function RambleBabbleRoot() {
   }
 
   return (
-    <RambleBabbleApp
-      key={reopenSeq}
-      userId={user.id}
-      userEmail={user.email ?? ""}
-      onOpenHistory={() => setScreen("history")}
-      onSignOut={signOut}
-      reopen={reopen}
-    />
+    <>
+      <RambleBabbleApp
+        key={reopenSeq}
+        userId={user?.id ?? null}
+        userEmail={user?.email ?? ""}
+        onOpenHistory={() => (user ? setScreen("history") : setAuthMode("signup"))}
+        onSignOut={signOut}
+        onRequestAuth={(m) => setAuthMode(m)}
+        reopen={reopen}
+      />
+      {authMode && (
+        <div className="fixed inset-0 z-[80] overflow-y-auto">
+          <AuthScreen initialMode={authMode} onClose={() => setAuthMode(null)} />
+        </div>
+      )}
+    </>
   );
 }
