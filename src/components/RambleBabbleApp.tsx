@@ -660,7 +660,7 @@ export default function RambleBabbleApp({
               style={{ color: t.cDim }}
             >
               Record on the left, Babble on the right. Pick a Format (try
-              &ldquo;Clean it up&rdquo;). Tone, character, accent are optional.
+              &ldquo;Clean &amp; Clear&rdquo;). Tone, character, accent are optional.
             </p>
           </div>
 
@@ -695,7 +695,7 @@ export default function RambleBabbleApp({
                 </div>
                 <OptionRow
                   t={t}
-                  label="Clean it up"
+                  label="Clean & Clear"
                   active={outputType === "note"}
                   onClick={() => {
                     setOutputType("note");
@@ -837,7 +837,7 @@ export default function RambleBabbleApp({
                 value={customInstruction}
                 onChange={(e) => setCustomInstruction(e.target.value)}
                 placeholder="Turn it into... e.g. a wedding toast, a recipe"
-                className="w-full bg-transparent px-3 py-2.5 text-[14px] outline-none"
+                className="w-full bg-transparent px-3 py-2.5 text-[16px] outline-none"
                 style={{
                   background: t.panel,
                   borderTop: `1px solid ${t.lineStrong}`,
@@ -865,7 +865,7 @@ export default function RambleBabbleApp({
                 value={vocabulary}
                 onChange={(e) => setVocabulary(e.target.value)}
                 placeholder="e.g. people's names, a company or product name to spell right"
-                className="min-w-[220px] flex-1 bg-transparent px-2 py-1 text-[14px] outline-none"
+                className="min-w-[220px] flex-1 bg-transparent px-2 py-1 text-[16px] outline-none"
                 style={{ color: t.ink, borderBottom: `1px solid ${t.lineStrong}` }}
               />
               <button
@@ -926,18 +926,28 @@ export default function RambleBabbleApp({
                         }
                   }
                 >
-                  <span
-                    className={recording ? "" : "rb-blink"}
-                    style={{
-                      display: "inline-block",
-                      height: 11,
-                      width: 11,
-                      borderRadius: recording ? 2 : 999,
-                      background: recording ? "#fff" : "#ff3b30",
-                    }}
-                  />
+                  {transcribing ? (
+                    <span
+                      className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                      style={{
+                        borderColor: "rgba(255,255,255,0.35)",
+                        borderTopColor: "#fff",
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className={recording ? "" : "rb-blink"}
+                      style={{
+                        display: "inline-block",
+                        height: 11,
+                        width: 11,
+                        borderRadius: recording ? 2 : 999,
+                        background: recording ? "#fff" : "#ff3b30",
+                      }}
+                    />
+                  )}
                   {transcribing
-                    ? loadingWord
+                    ? `${loadingWord}…`
                     : recording
                       ? "Stop"
                       : "Record a ramble"}
@@ -1096,17 +1106,17 @@ export default function RambleBabbleApp({
                 >
                   {cleaning ? (
                     <span
-                      className="font-mono-label flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.12em]"
-                      style={{ color: ACCENT }}
+                      className="rb-procpulse font-mono-label flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-bold uppercase tracking-[0.12em]"
+                      style={{ background: "rgba(123,92,255,0.16)", color: ACCENT }}
                     >
                       <span
                         className="rb-spin inline-block h-4 w-4 rounded-full border-2"
                         style={{
-                          borderColor: "rgba(123,92,255,0.35)",
+                          borderColor: "rgba(123,92,255,0.3)",
                           borderTopColor: ACCENT,
                         }}
                       />
-                      {loadingWord}
+                      {loadingWord}&hellip;
                     </span>
                   ) : (
                     <span
@@ -1121,18 +1131,20 @@ export default function RambleBabbleApp({
                     </span>
                   )}
                 </button>
-                <span
-                  className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] lg:inline"
-                  style={{
-                    color: hasResult || inputText.trim() ? ACCENT : t.inkDim,
-                  }}
-                >
-                  {hasResult
-                    ? metaLabel
-                    : inputText.trim()
-                      ? "ready — tap to generate"
-                      : "your Babble lands here"}
-                </span>
+                {!cleaning && (
+                  <span
+                    className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] lg:inline"
+                    style={{
+                      color: hasResult || inputText.trim() ? ACCENT : t.inkDim,
+                    }}
+                  >
+                    {hasResult
+                      ? metaLabel
+                      : inputText.trim()
+                        ? "ready, tap to generate"
+                        : "your Babble lands here"}
+                  </span>
+                )}
               </div>
               <button
                 onClick={handleCopy}

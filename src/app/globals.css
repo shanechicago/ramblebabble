@@ -358,6 +358,21 @@ a:hover,
   animation: rb-babbleit 2.2s ease-in-out infinite;
 }
 
+/* Processing indicator: a soft pulsing ring so it's obvious the app is
+   actively working (transcribing / babbling), not frozen. */
+@keyframes rb-procpulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(123, 92, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(123, 92, 255, 0.14);
+  }
+}
+.rb-procpulse {
+  animation: rb-procpulse 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
