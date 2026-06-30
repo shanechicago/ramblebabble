@@ -850,32 +850,39 @@ export default function RambleBabbleApp({
 
             {/* Keep-words + Reset — white cell, distinct from the gray selectors */}
             <div
-              className="flex flex-wrap items-center gap-3 px-3 py-2.5"
+              className="px-3 py-2.5"
               style={{ background: t.panel, borderTop: `1px solid ${t.lineStrong}` }}
             >
-              <span
-                className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
-                style={{ color: t.ink }}
-              >
-                05 Keep words exact{" "}
-                <span className="font-bold" style={{ color: ACCENT }}>
-                  · optional
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
+                  style={{ color: t.ink }}
+                >
+                  05 Keep these spellings{" "}
+                  <span className="font-bold" style={{ color: ACCENT }}>
+                    · optional
+                  </span>
                 </span>
-              </span>
-              <input
-                value={vocabulary}
-                onChange={(e) => setVocabulary(e.target.value)}
-                placeholder="e.g. people's names, a company or product name to spell right"
-                className="min-w-[220px] flex-1 bg-transparent px-2 py-1 text-[16px] outline-none"
-                style={{ color: t.ink, borderBottom: `1px solid ${t.lineStrong}` }}
-              />
-              <button
-                onClick={resetChoices}
-                className="font-mono-label flex items-center gap-1.5 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
-                style={{ background: t.ink, color: t.panel }}
-              >
-                <span aria-hidden>&#8635;</span> Reset choices
-              </button>
+                <input
+                  value={vocabulary}
+                  onChange={(e) => setVocabulary(e.target.value)}
+                  placeholder="e.g. Siobhan, Kuvvi, Dr. Achebe, ProTools"
+                  className="min-w-[220px] flex-1 bg-transparent px-2 py-1 text-[16px] outline-none"
+                  style={{ color: t.ink, borderBottom: `1px solid ${t.lineStrong}` }}
+                />
+                <button
+                  onClick={resetChoices}
+                  className="font-mono-label flex items-center gap-1.5 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  style={{ background: t.ink, color: t.panel }}
+                >
+                  <span aria-hidden>&#8635;</span> Reset choices
+                </button>
+              </div>
+              <p className="mt-1.5 text-[12px]" style={{ color: t.inkDim }}>
+                Type any names, brands, or unusual words you want spelled exactly
+                this way, so the app keeps them word-for-word and never
+                &ldquo;corrects&rdquo; them. Leave blank if you don&rsquo;t have any.
+              </p>
             </div>
           </div>
         </div>
@@ -1074,6 +1081,60 @@ export default function RambleBabbleApp({
                 {limitNotice}
               </p>
             )}
+
+            {/* Babble it lives RIGHT HERE, under the ramble, so you never cross
+                to the other panel or hunt for it. Record up top, Babble down here. */}
+            <div
+              className="px-3 pb-3 pt-2 sm:px-4"
+              style={{ borderTop: `1px solid ${t.line}` }}
+            >
+              <button
+                onClick={() => runCleanup()}
+                disabled={cleaning || !inputText.trim()}
+                className={`flex w-full items-center justify-center gap-2.5 py-4 text-[17px] font-bold uppercase tracking-[0.1em] text-white transition hover:brightness-110 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45 disabled:saturate-50 ${
+                  inputText.trim() && !cleaning ? "rb-glowpulse" : ""
+                }`}
+                style={{
+                  backgroundImage: GRADIENT,
+                  boxShadow: "0 16px 40px -12px rgba(123,92,255,0.8)",
+                }}
+              >
+                {cleaning ? (
+                  <>
+                    <span
+                      className="rb-spin inline-block h-4 w-4 rounded-full border-2"
+                      style={{
+                        borderColor: "rgba(255,255,255,0.4)",
+                        borderTopColor: "#fff",
+                      }}
+                    />
+                    {loadingWord}&hellip;
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden
+                    >
+                      <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
+                    </svg>
+                    Babble it
+                    <span aria-hidden>&rarr;</span>
+                  </>
+                )}
+              </button>
+              {!inputText.trim() && !cleaning && (
+                <p
+                  className="font-mono-label mt-2 text-center text-[10px] uppercase tracking-[0.16em]"
+                  style={{ color: t.inkFaint }}
+                >
+                  Record or paste a ramble first
+                </p>
+              )}
+            </div>
           </section>
 
           {/* BABBLE (output) — the prize. The whole box wears the brand-gradient
@@ -1099,62 +1160,39 @@ export default function RambleBabbleApp({
                 >
                   07
                 </span>
-                <button
-                  onClick={() => runCleanup()}
-                  disabled={cleaning}
-                  title="Babble it"
-                  className="flex items-center gap-2 transition hover:brightness-110 active:translate-y-px disabled:opacity-70"
+                <span
+                  className="rb-babbleit font-babble inline-block bg-clip-text text-transparent"
+                  style={{
+                    backgroundImage: GRADIENT,
+                    fontSize: 30,
+                    lineHeight: 1.15,
+                  }}
                 >
-                  {cleaning ? (
-                    <span
-                      className="rb-procpulse font-mono-label flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-bold uppercase tracking-[0.12em]"
-                      style={{ background: "rgba(123,92,255,0.16)", color: ACCENT }}
-                    >
-                      <span
-                        className="rb-spin inline-block h-4 w-4 rounded-full border-2"
-                        style={{
-                          borderColor: "rgba(123,92,255,0.3)",
-                          borderTopColor: ACCENT,
-                        }}
-                      />
-                      {loadingWord}&hellip;
-                    </span>
-                  ) : (
-                    <span
-                      className="rb-babbleit font-babble inline-block bg-clip-text text-transparent"
-                      style={{
-                        backgroundImage: GRADIENT,
-                        fontSize: 32,
-                        lineHeight: 1.15,
-                      }}
-                    >
-                      Babble it
-                    </span>
-                  )}
-                </button>
-                {!cleaning && (
+                  Your Babble
+                </span>
+                {cleaning ? (
                   <span
-                    className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] lg:inline"
-                    style={{
-                      color: hasResult || inputText.trim() ? ACCENT : t.inkDim,
-                    }}
+                    className="rb-procpulse font-mono-label flex items-center gap-2 px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.12em]"
+                    style={{ background: "rgba(123,92,255,0.16)", color: ACCENT }}
                   >
-                    {hasResult
-                      ? metaLabel
-                      : inputText.trim()
-                        ? "ready, tap to generate"
-                        : "your Babble lands here"}
+                    <span
+                      className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                      style={{
+                        borderColor: "rgba(123,92,255,0.3)",
+                        borderTopColor: ACCENT,
+                      }}
+                    />
+                    {loadingWord}&hellip;
+                  </span>
+                ) : (
+                  <span
+                    className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] sm:inline"
+                    style={{ color: hasResult ? ACCENT : t.inkDim }}
+                  >
+                    {hasResult ? metaLabel : "lands here"}
                   </span>
                 )}
               </div>
-              <button
-                onClick={handleCopy}
-                disabled={!cleaned || revealing}
-                className="font-mono-label shrink-0 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
-                style={{ background: t.ink, color: t.panel }}
-              >
-                {copyLabel}
-              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5">
@@ -1172,34 +1210,13 @@ export default function RambleBabbleApp({
                   >
                     Your cleaned-up, organized result lands right here.
                   </p>
-                  {/* Unmistakable generate button so nobody hunts for it. */}
-                  <button
-                    onClick={() => runCleanup()}
-                    disabled={cleaning}
-                    className="rb-glowpulse mt-6 flex items-center gap-2.5 px-8 py-4 text-[16px] font-bold uppercase tracking-[0.1em] text-white transition hover:brightness-110 active:translate-y-px"
-                    style={{
-                      backgroundImage: GRADIENT,
-                      boxShadow: "0 18px 44px -10px rgba(123,92,255,0.9)",
-                    }}
-                  >
-                    <svg
-                      width="17"
-                      height="17"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      aria-hidden
-                    >
-                      <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
-                    </svg>
-                    Babble it
-                    <span aria-hidden>&rarr;</span>
-                  </button>
-                  <span
-                    className="font-mono-label mt-3 text-[10px] uppercase tracking-[0.16em]"
+                  <p
+                    className="font-mono-label mt-4 max-w-xs text-[11px] uppercase tracking-[0.14em]"
                     style={{ color: t.inkFaint }}
                   >
-                    tap to generate your result
-                  </span>
+                    Record or paste your ramble, then tap{" "}
+                    <span style={{ color: ACCENT }}>Babble it</span> under it.
+                  </p>
                 </div>
               ) : (
                 <div>
@@ -1584,10 +1601,10 @@ function Selector({
 }) {
   const set = !!value;
   return (
-    <div className="relative" style={{ background: t.control }}>
+    <div className="relative flex flex-col" style={{ background: t.control }}>
       <button
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left transition"
+        className="flex w-full flex-1 items-center justify-between gap-2 px-3.5 py-2.5 text-left transition"
         style={{
           background: open
             ? "rgba(123,92,255,0.18)"
