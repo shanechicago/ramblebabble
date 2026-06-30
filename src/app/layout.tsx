@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const TAGLINE = "RambleBabble, talk messy, leave polished or wildly wacky";
+const TAGLINE =
+  "RambleBabble: Ramble in. Brilliance out... sometimes wildly wacky.";
 const PITCH =
-  "Ramble in, Babble out. Turn your messiest voice memos and half-thoughts into clean messages, emails, and notes, or crank them up wildly wacky.";
+  "Dump your messiest voice memos and half-thoughts. Get back clean messages, emails, and notes, or something wildly wacky. Ramble in, brilliance out.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://ramblebabble.com"),
