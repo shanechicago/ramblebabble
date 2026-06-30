@@ -16,6 +16,11 @@ const PANEL = "#e9ebf0";
 const INK = "#14161b";
 const INK_DIM = "#565d63";
 
+// BETA: keep signup dead simple, just a username + password, exactly like the
+// first testers had. Flip this to true at launch to collect Name + Email for
+// the marketing list (the form and the signup route both already support it).
+const COLLECT_NAME_EMAIL = false;
+
 const HERO_WORDS = [
   "refined",
   "ridiculous",
@@ -82,13 +87,21 @@ export default function AuthScreen({
     // Sign-up identity: always the real email the person typed.
     let loginEmail: string;
     if (mode === "signup") {
-      if (name.trim().length < 1) return setError("Please enter your name.");
-      if (!emailOk(email)) return setError("Please enter a valid email address.");
-      loginEmail = email.trim().toLowerCase();
+      if (COLLECT_NAME_EMAIL) {
+        if (name.trim().length < 1) return setError("Please enter your name.");
+        if (!emailOk(email))
+          return setError("Please enter a valid email address.");
+        loginEmail = email.trim().toLowerCase();
+      } else {
+        const u = username.trim();
+        if (u.length < 3)
+          return setError("Username must be at least 3 characters.");
+        loginEmail = usernameToEmail(u);
+      }
     } else {
       const id = username.trim();
       if (id.length < 3)
-        return setError("Enter your email (or username) and password.");
+        return setError("Enter your username (or email) and password.");
       loginEmail = id.includes("@") ? id.toLowerCase() : usernameToEmail(id);
     }
 
@@ -99,11 +112,11 @@ export default function AuthScreen({
         const res = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: name.trim(),
-            email: loginEmail,
-            password,
-          }),
+          body: JSON.stringify(
+            COLLECT_NAME_EMAIL
+              ? { name: name.trim(), email: loginEmail, password }
+              : { username: username.trim(), password },
+          ),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -267,7 +280,7 @@ export default function AuthScreen({
               : "Set it up once, then ramble forever."}
           </p>
 
-          {mode === "signup" ? (
+          {mode === "signup" && COLLECT_NAME_EMAIL ? (
             <>
               <label
                 className="font-mono-label mt-8 block text-[11px] uppercase tracking-[0.16em]"
@@ -304,12 +317,12 @@ export default function AuthScreen({
                 className="font-mono-label mt-8 block text-[11px] uppercase tracking-[0.16em]"
                 style={{ color: INK_DIM }}
               >
-                Email or username
+                {mode === "signin" ? "Username or email" : "Username"}
               </label>
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="you@email.com"
+                placeholder={mode === "signin" ? "yourname" : "pick a username"}
                 autoComplete="username"
                 autoCapitalize="none"
                 className="mt-2 w-full rounded-none border-0 border-b border-[rgba(19,22,26,0.32)] bg-transparent pb-2 pt-1 text-[16px] text-[#14161b] outline-none transition placeholder:text-[#6c7079] focus:border-[#7b5cff]"
