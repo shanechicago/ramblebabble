@@ -493,13 +493,14 @@ export default function RambleBabbleApp({
   const hasResult = !!cleaned;
   const shownOutput = revealing ? revealText : cleaned;
   const metaLabel = [
-    selectedStyle?.label,
+    outputType === "custom" ? "Something else" : selectedStyle?.label,
     selectedTone?.label,
     selectedPersona?.label,
     selectedAccent?.label,
+    targetLanguage,
   ]
     .filter(Boolean)
-    .join(" / ");
+    .join("  ·  ");
 
   const navBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
@@ -1401,16 +1402,7 @@ export default function RambleBabbleApp({
                     />
                     {loadingWord}&hellip;
                   </span>
-                ) : (
-                  hasResult && (
-                    <span
-                      className="font-mono-label hidden truncate text-[11px] font-bold uppercase tracking-[0.12em] lg:inline"
-                      style={{ color: ACCENT }}
-                    >
-                      {metaLabel}
-                    </span>
-                  )
-                )}
+                ) : null}
               </div>
               {/* Edit (back, keeps the ramble) on the left, Copy (rightmost) on
                   the right, all on one compact row. */}
@@ -1443,6 +1435,28 @@ export default function RambleBabbleApp({
                 </button>
               </div>
             </div>
+
+            {/* The criteria that shaped this Babble, visible on every screen so
+                you (and anyone you show) can see exactly what was applied. */}
+            {hasResult && !cleaning && metaLabel && (
+              <div
+                className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2"
+                style={{
+                  background: "rgba(123,92,255,0.08)",
+                  borderBottom: `1px solid ${t.line}`,
+                }}
+              >
+                <span
+                  className="font-mono-label text-[10px] uppercase tracking-[0.14em]"
+                  style={{ color: t.inkDim }}
+                >
+                  Styled as
+                </span>
+                <span className="text-[13px] font-bold" style={{ color: t.ink }}>
+                  {metaLabel}
+                </span>
+              </div>
+            )}
 
             <div className="flex-1 p-5">
               {!hasResult && !cleaning ? (
