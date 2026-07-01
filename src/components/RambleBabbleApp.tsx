@@ -73,41 +73,43 @@ const LANGUAGES = [
 // and DAY (light chrome, white paper panels). No tone-on-tone in either.
 type Theme = "night" | "day";
 const THEMES = {
+  // Genuinely dark: the writing plane, chrome and canvas share one charcoal
+  // family and `ink` is LIGHT (it's the primary text on dark panels). Secondary
+  // buttons are ghost/outline, never `ink`-filled, so the light ink is safe.
   night: {
-    canvas: "#0b0c0f",
-    chrome: "rgba(11,12,15,0.94)",
+    canvas: "#0a0b0e",
+    chrome: "rgba(12,13,17,0.88)",
     cInk: "#f3f5f7",
-    cDim: "#b2b8c2",
-    cLine: "rgba(243,245,247,0.16)",
-    cLineStrong: "rgba(243,245,247,0.36)",
-    // Output boxes = bright paper. Control deck = a cooler mist gray, distinct.
-    panel: "#eef0f4",
-    panel2: "#dfe2e8",
-    control: "#cbd2da",
-    control2: "#bcc4ce",
-    ink: "#14161b",
-    inkDim: "#454c55",
-    inkFaint: "#6a717a",
-    line: "rgba(19,22,26,0.20)",
-    lineStrong: "rgba(19,22,26,0.36)",
+    cDim: "#aab0bb",
+    cLine: "rgba(243,245,247,0.10)",
+    cLineStrong: "rgba(243,245,247,0.20)",
+    panel: "#131519",
+    panel2: "#1b1e24",
+    control: "#20242b",
+    control2: "#2a2f37",
+    ink: "#f3f5f7",
+    inkDim: "#b6bcc6",
+    inkFaint: "#7c828d",
+    line: "rgba(243,245,247,0.09)",
+    lineStrong: "rgba(243,245,247,0.18)",
   },
+  // Calm light: white writing sheet, soft neutral controls, dark ink.
   day: {
-    canvas: "#eef1f4",
-    chrome: "rgba(238,241,244,0.94)",
+    canvas: "#f4f6f8",
+    chrome: "rgba(244,246,248,0.88)",
     cInk: "#14161b",
-    cDim: "#454c55",
-    cLine: "rgba(19,22,26,0.16)",
-    cLineStrong: "rgba(19,22,26,0.32)",
-    // Boxes pure white; control deck the cool mist gray so it stands out.
+    cDim: "#4b525c",
+    cLine: "rgba(19,22,26,0.10)",
+    cLineStrong: "rgba(19,22,26,0.20)",
     panel: "#ffffff",
-    panel2: "#eceef2",
-    control: "#cbd2da",
-    control2: "#bcc4ce",
+    panel2: "#f0f2f5",
+    control: "#eef1f4",
+    control2: "#e2e6ec",
     ink: "#14161b",
-    inkDim: "#454c55",
+    inkDim: "#4b525c",
     inkFaint: "#6a717a",
-    line: "rgba(19,22,26,0.16)",
-    lineStrong: "rgba(19,22,26,0.30)",
+    line: "rgba(19,22,26,0.10)",
+    lineStrong: "rgba(19,22,26,0.22)",
   },
 } as const;
 
@@ -666,51 +668,11 @@ export default function RambleBabbleApp({
         </header>
 
         <div className="px-4 pb-3 sm:px-8">
-          {/* Title — "Ramble" is the brand, so it wears the brand gradient. */}
-          <div className="mb-2.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
-            <div className="flex items-center gap-2.5">
-              <h1
-                className="font-bric font-extrabold leading-none"
-                style={{
-                  fontSize: "clamp(26px,2.4vw,36px)",
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                Refine a{" "}
-                <span
-                  className="font-bric"
-                  style={{
-                    backgroundImage: GRADIENT,
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent",
-                  }}
-                >
-                  Ramble
-                </span>
-              </h1>
-              <button
-                type="button"
-                onClick={() => setHelpOpen(true)}
-                aria-label="How the style options work"
-                title="How the style options work"
-                className="font-mono-label flex h-6 w-6 shrink-0 items-center justify-center text-[13px] font-bold transition hover:brightness-110"
-                style={{ background: ACCENT, color: "#fff", borderRadius: 999 }}
-              >
-                ?
-              </button>
-            </div>
-            {view === "compose" && (
-              <p
-                className="font-mono-label hidden max-w-xl text-[11px] uppercase leading-[1.6] tracking-[0.08em] sm:block"
-                style={{ color: t.cDim }}
-              >
-                Record or paste your ramble, pick a format (try &ldquo;Clean
-                &amp; Concise&rdquo;), then hit Babble it. Tone, character,
-                accent, language are optional.
-              </p>
-            )}
-          </div>
+          {/* The RambleBabble wordmark in the chrome above is the only brand
+              lockup. The old "Refine a Ramble" heading + instruction paragraph
+              were redundant and heavy, so they're gone; the help button and the
+              style summary now live in the slim context line below, and the
+              guidance moved into the textarea placeholder. */}
 
           {helpOpen && (
             <div
@@ -782,22 +744,26 @@ export default function RambleBabbleApp({
           {/* Collapse the entire control panel behind one tap ("Style your
               Babble") on EVERY screen (default folded), so the ramble box owns
               the workspace. Users open it to change Format/Tone/etc, then fold. */}
-          <button
-            type="button"
-            onClick={() => setShowOptions((o) => !o)}
-            className="flex w-full items-center justify-between gap-3 px-3.5 py-3"
-            style={{ border: `1px solid ${t.lineStrong}`, background: t.control }}
-          >
-            <span className="flex min-w-0 flex-col items-start gap-0.5 text-left">
+          {/* Slim context line (no box, no fill): the current Style summary
+              opens the options console on the left; the live word count and the
+              help glyph sit on the right. Gradient is reserved for the one
+              primary action, so nothing here shouts. */}
+          <div className="flex items-center justify-between gap-3 py-0.5">
+            <button
+              type="button"
+              onClick={() => setShowOptions((o) => !o)}
+              className="flex min-w-0 items-center gap-2 text-left"
+              title="Change the style: format, tone, character, accent, language"
+            >
               <span
-                className="font-mono-label text-[10px] uppercase tracking-[0.16em]"
-                style={{ color: t.inkDim }}
+                className="font-mono-label shrink-0 text-[10px] uppercase tracking-[0.18em]"
+                style={{ color: t.cDim }}
               >
-                Style your Babble
+                Style
               </span>
               <span
-                className="max-w-[64vw] truncate text-[15px] font-bold"
-                style={{ color: t.ink }}
+                className="min-w-0 truncate text-[13px] font-semibold"
+                style={{ color: t.cInk }}
               >
                 {[
                   outputType === "custom"
@@ -811,14 +777,34 @@ export default function RambleBabbleApp({
                   .filter(Boolean)
                   .join("  ·  ")}
               </span>
-            </span>
-            <span
-              className="font-mono-label shrink-0 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white"
-              style={{ backgroundImage: GRADIENT }}
-            >
-              {showOptions ? "Done" : "Change"}
-            </span>
-          </button>
+              <svg
+                width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke={ACCENT} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                aria-hidden className="shrink-0"
+                style={{ transform: showOptions ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            <div className="flex shrink-0 items-center gap-3">
+              <span
+                className="font-mono-label whitespace-nowrap text-[11px] tracking-[0.06em]"
+                style={{ color: t.cDim }}
+              >
+                {words} words
+              </span>
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                aria-label="How the style options work"
+                title="How the style options work"
+                className="font-mono-label flex h-5 w-5 shrink-0 items-center justify-center text-[12px] font-bold transition hover:brightness-110"
+                style={{ background: "transparent", border: `1px solid ${ACCENT}`, color: ACCENT, borderRadius: 999 }}
+              >
+                ?
+              </button>
+            </div>
+          </div>
 
           {/* Flattened control console — its own mist-gray surface, distinct
               from the Ramble/Babble boxes, with a brand-gradient edge for life. */}
@@ -1122,166 +1108,31 @@ export default function RambleBabbleApp({
         <div className="grid gap-4">
           {/* COMPOSE view: the ramble input, full width. */}
           {view === "compose" && (
-          <section
-            className="relative flex min-h-[60vh] flex-col"
-            style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
-          >
-            <div
-              className="sticky z-10 flex flex-col gap-2 px-3 py-2.5 sm:px-4"
-              style={{
-                top: topH,
-                minHeight: 60,
-                background: t.panel2,
-                borderBottom: `1px solid ${t.lineStrong}`,
-              }}
-            >
-              {hasResult && (
-                <button
-                  onClick={() => setView("result")}
-                  title="Go back to your Babble (keeps this ramble)"
-                  className="font-mono-label flex items-center justify-center gap-2 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px"
-                  style={{
-                    backgroundImage: GRADIENT,
-                    boxShadow: "0 8px 20px -8px rgba(123,92,255,0.85)",
-                  }}
-                >
-                  <span aria-hidden style={{ fontSize: 13 }}>
-                    &larr;
-                  </span>
-                  Back to your Babble
-                </button>
-              )}
-              <div className="flex items-center gap-2">
-                <span
-                  className="font-mono-label text-[12px] font-bold"
-                  style={{ color: ACCENT }}
-                >
-                  07
-                </span>
-                <button
-                  onClick={recording ? handleStop : handleStart}
-                  disabled={transcribing}
-                  className="font-mono-label flex flex-1 items-center justify-center gap-2.5 whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-60 sm:px-5"
-                  style={
-                    recording
-                      ? {
-                          background: "#ff3b30",
-                          color: "#fff",
-                          boxShadow: "0 10px 26px -10px rgba(255,59,48,0.85)",
-                        }
-                      : {
-                          background: t.ink,
-                          color: t.panel,
-                          boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)",
-                        }
-                  }
-                >
-                  {transcribing ? (
-                    <span
-                      className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
-                      style={{
-                        borderColor: "rgba(255,255,255,0.35)",
-                        borderTopColor: "#fff",
-                      }}
-                    />
-                  ) : (
-                    <span
-                      className={recording ? "" : "rb-blink"}
-                      style={{
-                        display: "inline-block",
-                        height: 11,
-                        width: 11,
-                        borderRadius: recording ? 2 : 999,
-                        background: recording ? "#fff" : "#ff3b30",
-                      }}
-                    />
-                  )}
-                  {transcribing
-                    ? `${loadingWord}…`
-                    : recording
-                      ? "Stop"
-                      : "Record a ramble"}
-                </button>
-                <button
-                  onClick={() => runCleanup()}
-                  disabled={cleaning || !inputText.trim()}
-                  className="font-mono-label flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-45 disabled:saturate-50 sm:px-5"
-                  style={{
-                    backgroundImage: GRADIENT,
-                    boxShadow: "0 10px 26px -10px rgba(123,92,255,0.8)",
-                  }}
-                >
-                  {cleaning ? (
-                    <>
-                      <span
-                        className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
-                        style={{
-                          borderColor: "rgba(255,255,255,0.4)",
-                          borderTopColor: "#fff",
-                        }}
-                      />
-                      {loadingWord}&hellip;
-                    </>
-                  ) : (
-                    <>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                        <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
-                      </svg>
-                      Babble it
-                      <span aria-hidden>&rarr;</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={pasteIn}
-                  className="font-mono-label flex flex-1 justify-center whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
-                  style={{ background: t.ink, color: t.panel }}
-                >
-                  Paste a ramble
-                </button>
-                <button
-                  onClick={copyRamble}
-                  disabled={!inputText.trim()}
-                  className="font-mono-label flex flex-1 justify-center whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
-                  style={{
-                    background: rambleCopied ? ACCENT : t.ink,
-                    color: rambleCopied ? "#fff" : t.panel,
-                  }}
-                >
-                  {rambleCopied ? "Copied" : "Copy"}
-                </button>
-                <button
-                  onClick={() => {
-                    if (recorder.status === "recording") recorder.cancel();
-                    setInputText("");
-                    setError(null);
-                    setLimitNotice(null);
-                  }}
-                  disabled={!inputText}
-                  className="font-mono-label flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
-                  style={{ background: t.ink, color: t.panel }}
-                >
-                  <span aria-hidden style={{ color: "#ff6b68", fontSize: 15 }}>
-                    &times;
-                  </span>{" "}
-                  Clear
-                </button>
-              </div>
-            </div>
+          <section className="flex flex-col gap-3">
+            {/* HERO WELL: the ramble input is the center of the page. The old
+                sticky two-row button toolbar (Record/Babble it + Paste/Copy/
+                Clear) is gone; the single primary action and the quiet
+                secondaries now live in one action row UNDER the textarea. */}
 
-            <div className="relative flex-1">
+            <div className="relative">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Ramble in, Babble out. Spill your messiest rambles right here, the voice memos, the half-baked ideas, the texts you definitely shouldn't send yet. That's the whole point."
-                className="h-full min-h-[340px] w-full resize-none bg-transparent p-4 text-[17px] leading-[1.6] outline-none"
-                style={{ color: t.ink }}
+                placeholder="Ramble in, Babble out. Spill your messiest rambles right here: the voice memos, the half-baked ideas, the texts you definitely shouldn't send yet. Then pick a style up top and press Babble it."
+                className="rb-hero-input w-full resize-none rounded-[20px] p-5 text-[18px] leading-[1.65] outline-none sm:p-6"
+                style={
+                  {
+                    color: t.ink,
+                    background: t.panel,
+                    border: `1px solid ${t.line}`,
+                    minHeight: "max(340px, 50vh)",
+                    "--rb-ph": t.inkFaint,
+                  } as React.CSSProperties
+                }
               />
               {recording && (
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-[20px]"
                   style={{ background: t.panel }}
                 >
                   <div className="flex h-12 items-end gap-1.5">
@@ -1338,22 +1189,124 @@ export default function RambleBabbleApp({
               )}
             </div>
 
-            <div
-              className="flex items-center justify-between px-4 py-2.5"
-              style={{ borderTop: `1px solid ${t.line}` }}
-            >
-              <span
-                className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
-                style={{ color: t.inkFaint }}
-              >
-                {words} words / {chars} chars
-              </span>
+            {/* Quiet return to the existing Babble (only when one exists). A
+                clear bordered button, not a gradient bar, so it reads as a
+                control and never competes with the primary. */}
+            {hasResult && (
               <button
-                onClick={handleClear}
-                className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
-                style={{ color: t.inkDim }}
+                onClick={() => setView("result")}
+                title="Go back to your Babble (keeps this ramble)"
+                className="font-mono-label flex items-center gap-1.5 self-start whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition hover:brightness-110 active:translate-y-px"
+                style={{ background: "transparent", border: `1px solid ${ACCENT}`, color: ACCENT }}
               >
-                Clear
+                <span aria-hidden style={{ fontSize: 13 }}>
+                  &larr;
+                </span>
+                Back to your Babble
+              </button>
+            )}
+
+            {/* ACTION ROW: quiet ghost secondaries on the left, the ONE loud
+                primary on the right. On phones the primary drops to its own
+                full-width line at the bottom (thumb reach). */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-1 flex-wrap items-center gap-2">
+                <button
+                  onClick={recording ? handleStop : handleStart}
+                  disabled={transcribing}
+                  className="font-mono-label flex items-center gap-2 whitespace-nowrap rounded-[10px] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
+                  style={
+                    recording
+                      ? { background: "#ff3b30", color: "#fff", border: "1px solid #ff3b30" }
+                      : { background: "transparent", border: `1px solid ${t.line}`, color: t.inkDim }
+                  }
+                >
+                  {transcribing ? (
+                    <span
+                      className="rb-spin inline-block h-3 w-3 rounded-full border-2"
+                      style={{ borderColor: t.line, borderTopColor: ACCENT }}
+                    />
+                  ) : (
+                    <span
+                      className={recording ? "" : "rb-blink"}
+                      style={{
+                        display: "inline-block",
+                        height: 9,
+                        width: 9,
+                        borderRadius: recording ? 2 : 999,
+                        background: recording ? "#fff" : ACCENT,
+                      }}
+                    />
+                  )}
+                  {transcribing ? `${loadingWord}…` : recording ? "Stop" : "Record"}
+                </button>
+                <button
+                  onClick={pasteIn}
+                  className="font-mono-label whitespace-nowrap rounded-[10px] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px"
+                  style={{ background: "transparent", border: `1px solid ${t.line}`, color: t.inkDim }}
+                >
+                  Paste
+                </button>
+                <button
+                  onClick={copyRamble}
+                  disabled={!inputText.trim()}
+                  className="font-mono-label whitespace-nowrap rounded-[10px] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
+                  style={{
+                    background: "transparent",
+                    border: `1px solid ${t.line}`,
+                    color: rambleCopied ? ACCENT : t.inkDim,
+                  }}
+                >
+                  {rambleCopied ? "Copied" : "Copy"}
+                </button>
+                <button
+                  onClick={() => {
+                    if (recorder.status === "recording") recorder.cancel();
+                    setInputText("");
+                    setError(null);
+                    setLimitNotice(null);
+                  }}
+                  disabled={!inputText}
+                  className="font-mono-label flex items-center gap-1 whitespace-nowrap px-2 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
+                  style={{ background: "transparent", color: t.inkFaint }}
+                >
+                  <span aria-hidden style={{ color: "#ff6b68", fontSize: 14 }}>
+                    &times;
+                  </span>{" "}
+                  Clear
+                </button>
+              </div>
+
+              <button
+                onClick={() => runCleanup()}
+                disabled={cleaning || !inputText.trim()}
+                className={
+                  "font-mono-label flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-[14px] px-6 text-[14px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-45 disabled:saturate-50 sm:w-auto" +
+                  (inputText.trim() && !cleaning ? " rb-glowpulse" : "")
+                }
+                style={{
+                  backgroundImage: GRADIENT,
+                  boxShadow: "0 12px 30px -10px rgba(123,92,255,0.55)",
+                  height: 48,
+                }}
+              >
+                {cleaning ? (
+                  <>
+                    <span
+                      className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                      style={{ borderColor: "rgba(255,255,255,0.4)", borderTopColor: "#fff" }}
+                    />
+                    {loadingWord}&hellip;
+                  </>
+                ) : (
+                  <>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
+                    </svg>
+                    Babble it
+                    <span aria-hidden>&rarr;</span>
+                  </>
+                )}
               </button>
             </div>
             {limitNotice && (
@@ -1374,15 +1327,15 @@ export default function RambleBabbleApp({
           <div className="flex" style={{ backgroundImage: GRADIENT, padding: 2 }}>
             <section
               className="flex min-h-[42vh] flex-1 flex-col"
-              style={{ background: "#f5f3fb" }}
+              style={{ background: t.panel }}
             >
             <div
               className="sticky z-10 flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 sm:px-4"
               style={{
                 top: topH,
                 minHeight: 44,
-                background: "#e7e4f6",
-                borderBottom: `1px solid ${t.lineStrong}`,
+                background: t.panel2,
+                borderBottom: `1px solid ${t.line}`,
               }}
             >
               <div className="flex min-w-0 items-center gap-2.5">
@@ -1424,8 +1377,8 @@ export default function RambleBabbleApp({
                 <button
                   onClick={() => setView("compose")}
                   title="Edit this ramble"
-                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
-                  style={{ background: t.ink, color: "#f5f3fb" }}
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+                  style={{ background: "transparent", border: `1px solid ${t.lineStrong}`, color: t.inkDim }}
                 >
                   <span aria-hidden style={{ fontSize: 13 }}>
                     &larr;
@@ -1435,8 +1388,8 @@ export default function RambleBabbleApp({
                 <button
                   onClick={handleClear}
                   title="Start a new ramble (clears this and starts fresh)"
-                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
-                  style={{ background: t.ink, color: "#f5f3fb" }}
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+                  style={{ background: "transparent", border: `1px solid ${t.lineStrong}`, color: t.inkDim }}
                 >
                   <span aria-hidden style={{ fontSize: 14 }}>
                     +
@@ -2195,7 +2148,7 @@ function ActionBtn({
       onClick={onClick}
       disabled={disabled}
       className="font-mono-label flex-1 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-125 disabled:opacity-50"
-      style={{ background: t.ink, color: t.panel }}
+      style={{ background: t.panel2, color: t.ink }}
     >
       {children}
     </button>

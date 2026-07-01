@@ -108,6 +108,13 @@ a:hover,
 .font-mono-timer {
   font-family: "JetBrains Mono", ui-monospace, monospace;
 }
+/* The ramble hero textarea: theme its placeholder explicitly so it is always
+   readable (opacity:1 defeats the browser's ~0.5 near-white default). The
+   --rb-ph custom property is set per-theme on the textarea's inline style. */
+.rb-hero-input::placeholder {
+  color: var(--rb-ph, #6a717a);
+  opacity: 1;
+}
 
 /* "sometimes wildly wacky" — words pop in one at a time, phrase jiggles,
    deliberately out of sync with the Babble wordmark. */
