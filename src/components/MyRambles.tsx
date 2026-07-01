@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 
 const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
@@ -43,6 +43,29 @@ function titleOf(r: SavedRamble): string {
   return first.length > 64 ? first.slice(0, 64) + "..." : first || "Untitled";
 }
 
+function formatOf(r: SavedRamble): string {
+  return r.output_label || r.output_type || "Other";
+}
+
+// Which time bucket a ramble falls into, so the archive reads as an organized
+// timeline instead of one endless pile. Order matters (newest bucket first).
+const GROUP_ORDER = [
+  "Today",
+  "Yesterday",
+  "This week",
+  "This month",
+  "Older",
+] as const;
+
+function dateBucket(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return "This week";
+  if (days < 30) return "This month";
+  return "Older";
+}
+
 export default function MyRambles({
   onBack,
   onReopen,
@@ -51,6 +74,9 @@ export default function MyRambles({
   onReopen: (r: SavedRamble) => void;
 }) {
   const [rambles, setRambles] = useState<SavedRamble[] | null>(null);
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -74,6 +100,52 @@ export default function MyRambles({
   const copy = useCallback((text: string) => {
     void navigator.clipboard.writeText(text);
   }, []);
+
+  const toggleGroup = useCallback((g: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(g)) next.delete(g);
+      else next.add(g);
+      return next;
+    });
+  }, []);
+
+  // The distinct formats present, most-used first, for the filter chips.
+  const formats = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rambles ?? []) {
+      const key = formatOf(r);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return Array.from(counts, ([key, count]) => ({ key, count })).sort(
+      (a, b) => b.count - a.count,
+    );
+  }, [rambles]);
+
+  // Search (title/output/transcript/tone) + format filter. Order is preserved
+  // from the newest-first fetch.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (rambles ?? []).filter((r) => {
+      if (typeFilter !== "all" && formatOf(r) !== typeFilter) return false;
+      if (!q) return true;
+      const hay =
+        `${r.cleaned}\n${r.transcript}\n${r.output_label ?? ""}\n${r.tone ?? ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [rambles, query, typeFilter]);
+
+  const groups = useMemo(() => {
+    const g: Record<string, SavedRamble[]> = {};
+    for (const r of filtered) {
+      const b = dateBucket(r.created_at);
+      (g[b] ??= []).push(r);
+    }
+    return g;
+  }, [filtered]);
+
+  const hasRambles = rambles !== null && rambles.length > 0;
+  const isSearching = query.trim() !== "" || typeFilter !== "all";
 
   return (
     <div style={{ background: CANVAS, color: C_INK, minHeight: "100vh" }}>
@@ -138,12 +210,71 @@ export default function MyRambles({
           </button>
         </div>
 
+        {/* Search + format filters — only once there's something to sift. */}
+        {hasRambles && (
+          <div className="mb-5">
+            <div className="relative flex items-center">
+              <svg
+                className="pointer-events-none absolute left-3.5"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={C_DIM}
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search your rambles by word or phrase..."
+                className="w-full bg-transparent py-3 pl-11 pr-20 text-[15px] outline-none transition placeholder:text-[#7b828c] focus:border-[#7b5cff]"
+                style={{ border: `1px solid ${C_LINE}`, color: C_INK }}
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="font-mono-label absolute right-3 text-[11px] font-bold uppercase tracking-[0.12em]"
+                  style={{ color: ACCENT }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {formats.length > 1 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <FilterChip
+                  active={typeFilter === "all"}
+                  onClick={() => setTypeFilter("all")}
+                >
+                  All <Count active={typeFilter === "all"}>{rambles!.length}</Count>
+                </FilterChip>
+                {formats.map((f) => (
+                  <FilterChip
+                    key={f.key}
+                    active={typeFilter === f.key}
+                    onClick={() => setTypeFilter(f.key)}
+                  >
+                    {f.key} <Count active={typeFilter === f.key}>{f.count}</Count>
+                  </FilterChip>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div
           className="font-mono-label flex items-center justify-between pb-3 text-[11px] uppercase tracking-[0.16em]"
           style={{ color: C_DIM, borderBottom: `1px solid ${C_LINE}` }}
         >
           <span>
-            {rambles?.length ?? 0} saved / reopen one to keep refining
+            {isSearching
+              ? `${filtered.length} of ${rambles?.length ?? 0} shown`
+              : `${rambles?.length ?? 0} saved / reopen one to keep refining`}
           </span>
         </div>
 
@@ -168,83 +299,173 @@ export default function MyRambles({
           </div>
         )}
 
-        <div>
-          {rambles?.map((r, i) => (
-            <div
-              key={r.id}
-              className="flex flex-col gap-3 py-5 transition-all sm:grid sm:items-start sm:gap-4 sm:hover:pl-[18px]"
-              style={{
-                gridTemplateColumns: "48px 1fr auto",
-                borderBottom: `1px solid ${C_LINE}`,
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "rgba(243,245,247,0.03)")
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            >
-              <span
-                className="font-mono-label hidden pt-1 text-[13px] sm:block"
-                style={{ color: "#5d646c" }}
+        {hasRambles && filtered.length === 0 && (
+          <p
+            className="mt-10 text-center text-[15px]"
+            style={{ color: C_DIM }}
+          >
+            No rambles match that. Try a different word or clear the filter.
+          </p>
+        )}
+
+        {/* Grouped, collapsible timeline. */}
+        {GROUP_ORDER.filter((g) => groups[g]?.length).map((g) => {
+          const isCollapsed = collapsed.has(g);
+          return (
+            <section key={g} className="mt-6">
+              <button
+                onClick={() => toggleGroup(g)}
+                className="font-mono-label flex w-full items-center gap-2 py-2 text-[11px] font-bold uppercase tracking-[0.16em]"
+                style={{ color: C_DIM }}
               >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-
-              <div className="min-w-0">
-                <button
-                  onClick={() => onReopen(r)}
-                  className="block text-left text-[19px] font-medium transition"
-                  style={{ color: C_INK }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = ACCENT)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = C_INK)}
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={ACCENT}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                  style={{
+                    transform: isCollapsed ? "rotate(-90deg)" : "none",
+                    transition: "transform 0.15s",
+                  }}
                 >
-                  {titleOf(r)}
-                </button>
-                <span
-                  className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
-                  style={{ color: "#5d646c" }}
-                >
-                  {relDate(r.created_at)}
-                </span>
-                <p
-                  className="mt-1.5 truncate text-[14px]"
-                  style={{ color: C_DIM }}
-                >
-                  {r.cleaned.replace(/\n+/g, " ")}
-                </p>
-                <div className="mt-2.5 flex flex-wrap gap-2">
-                  <Tag color={ACCENT}>{r.output_label || r.output_type}</Tag>
-                  {r.tone && <Tag color={COBALT}>{r.tone}</Tag>}
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+                <span style={{ color: C_INK }}>{g}</span>
+                <span style={{ color: ACCENT }}>{groups[g].length}</span>
+              </button>
+              {!isCollapsed && (
+                <div>
+                  {groups[g].map((r) => (
+                    <RambleRow
+                      key={r.id}
+                      r={r}
+                      onReopen={onReopen}
+                      onCopy={copy}
+                      onRemove={remove}
+                    />
+                  ))}
                 </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-                <button
-                  onClick={() => onReopen(r)}
-                  className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] text-white"
-                  style={{ background: ACCENT }}
-                >
-                  Open
-                </button>
-                <button
-                  onClick={() => copy(r.cleaned)}
-                  className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em]"
-                  style={{ background: "#e9ebf0", color: "#14161b" }}
-                >
-                  Copy
-                </button>
-                <button
-                  onClick={() => remove(r.id)}
-                  className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em]"
-                  style={{ background: "#e9ebf0", color: "#14161b" }}
-                >
-                  Del
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+              )}
+            </section>
+          );
+        })}
       </main>
     </div>
+  );
+}
+
+function RambleRow({
+  r,
+  onReopen,
+  onCopy,
+  onRemove,
+}: {
+  r: SavedRamble;
+  onReopen: (r: SavedRamble) => void;
+  onCopy: (text: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div
+      className="flex flex-col gap-3 py-4 transition-all sm:grid sm:items-start sm:gap-4 sm:hover:pl-[18px]"
+      style={{
+        gridTemplateColumns: "1fr auto",
+        borderBottom: `1px solid ${C_LINE}`,
+      }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background = "rgba(243,245,247,0.03)")
+      }
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      <div className="min-w-0">
+        <button
+          onClick={() => onReopen(r)}
+          className="block text-left text-[18px] font-medium transition"
+          style={{ color: C_INK }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = ACCENT)}
+          onMouseLeave={(e) => (e.currentTarget.style.color = C_INK)}
+        >
+          {titleOf(r)}
+        </button>
+        <span
+          className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
+          style={{ color: "#5d646c" }}
+        >
+          {relDate(r.created_at)}
+        </span>
+        <p className="mt-1.5 truncate text-[14px]" style={{ color: C_DIM }}>
+          {r.cleaned.replace(/\n+/g, " ")}
+        </p>
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          <Tag color={ACCENT}>{r.output_label || r.output_type}</Tag>
+          {r.tone && <Tag color={COBALT}>{r.tone}</Tag>}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+        <button
+          onClick={() => onReopen(r)}
+          className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] text-white"
+          style={{ background: ACCENT }}
+        >
+          Open
+        </button>
+        <button
+          onClick={() => onCopy(r.cleaned)}
+          className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em]"
+          style={{ background: "#e9ebf0", color: "#14161b" }}
+        >
+          Copy
+        </button>
+        <button
+          onClick={() => onRemove(r.id)}
+          className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em]"
+          style={{ background: "#e9ebf0", color: "#14161b" }}
+        >
+          Del
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="font-mono-label flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition"
+      style={
+        active
+          ? { background: ACCENT, color: "#fff" }
+          : { border: `1px solid ${C_LINE}`, color: C_DIM }
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
+function Count({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className="text-[10px]"
+      style={{ color: active ? "rgba(255,255,255,0.75)" : "#5d646c" }}
+    >
+      {children}
+    </span>
   );
 }
 
