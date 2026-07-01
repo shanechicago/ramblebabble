@@ -58,8 +58,12 @@ export default function RambleBabbleRoot() {
     );
   }
 
-  // My Rambles (the saved archive) needs an account. Anonymous users who try to
-  // open it get the create-account overlay instead.
+  // Landing: logged-out visitors get the split-screen landing (black hero on the
+  // left, sign in / create on the right), the way it was before the try-first
+  // change. No guest paywall. Signed-in users fall through to the app.
+  if (!user) return <AuthScreen />;
+
+  // My Rambles (the saved archive) needs an account.
   if (screen === "history" && user) {
     return (
       <div
