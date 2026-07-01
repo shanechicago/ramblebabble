@@ -130,7 +130,7 @@ export default function MyRambles({
       if (typeFilter !== "all" && formatOf(r) !== typeFilter) return false;
       if (!q) return true;
       const hay =
-        `${r.cleaned}\n${r.transcript}\n${r.output_label ?? ""}\n${r.tone ?? ""}`.toLowerCase();
+        `${r.cleaned}\n${r.transcript}\n${r.output_label ?? ""}\n${r.output_type ?? ""}\n${r.tone ?? ""}`.toLowerCase();
       return hay.includes(q);
     });
   }, [rambles, query, typeFilter]);
