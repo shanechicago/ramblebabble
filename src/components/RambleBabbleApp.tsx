@@ -293,19 +293,21 @@ export default function RambleBabbleApp({
     if (revealRef.current) clearInterval(revealRef.current);
     setRevealing(true);
     let shown = 0;
-    // Reveal the real text at a readable pace (about 25 characters per second,
-    // roughly reading speed) so you can actually read it as it appears, instead
-    // of a scramble that blurs past. Plain text, no glyph noise.
     revealRef.current = setInterval(() => {
-      shown += 1;
+      shown += 6;
       if (shown >= final.length) {
         if (revealRef.current) clearInterval(revealRef.current);
         setRevealText(final);
         setRevealing(false);
         return;
       }
-      setRevealText(final.slice(0, shown));
-    }, 40);
+      let s = final.slice(0, shown);
+      for (let i = shown; i < final.length; i++) {
+        const c = final[i];
+        s += /\s/.test(c) ? c : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      }
+      setRevealText(s);
+    }, 26);
   }, []);
 
   const handleStart = useCallback(() => {
@@ -1430,7 +1432,7 @@ export default function RambleBabbleApp({
                 </button>
                 <button
                   onClick={handleCopy}
-                  disabled={!cleaned}
+                  disabled={!cleaned || revealing}
                   className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
                   style={{
                     backgroundImage: GRADIENT,
