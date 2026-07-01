@@ -1110,7 +1110,7 @@ export default function RambleBabbleApp({
       </div>
 
       <main
-        className="relative z-10 mx-auto w-full px-4 pb-12 pt-5 sm:px-8"
+        className="relative z-10 mx-auto w-full px-4 pb-10 pt-3 sm:px-8"
         style={{ maxWidth: 1760 }}
       >
         {/* Two panels. Record is the action on the Ramble box (left); Babble it
@@ -1353,14 +1353,14 @@ export default function RambleBabbleApp({
           {view === "result" && (
           <div className="flex" style={{ backgroundImage: GRADIENT, padding: 2 }}>
             <section
-              className="flex min-h-[60vh] flex-1 flex-col"
+              className="flex min-h-[42vh] flex-1 flex-col"
               style={{ background: "#f5f3fb" }}
             >
             <div
-              className="sticky z-10 flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-4"
+              className="sticky z-10 flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 sm:px-4"
               style={{
                 top: topH,
-                minHeight: 60,
+                minHeight: 44,
                 background: "#e7e4f6",
                 borderBottom: `1px solid ${t.lineStrong}`,
               }}
@@ -1376,8 +1376,8 @@ export default function RambleBabbleApp({
                   className="rb-babbleit font-babble inline-block bg-clip-text text-transparent"
                   style={{
                     backgroundImage: GRADIENT,
-                    fontSize: 28,
-                    lineHeight: 1.15,
+                    fontSize: 21,
+                    lineHeight: 1.1,
                   }}
                 >
                   Your Babble
@@ -1404,7 +1404,7 @@ export default function RambleBabbleApp({
                 <button
                   onClick={() => setView("compose")}
                   title="Edit this ramble"
-                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
                   style={{ background: t.ink, color: "#f5f3fb" }}
                 >
                   <span aria-hidden style={{ fontSize: 13 }}>
@@ -1415,7 +1415,7 @@ export default function RambleBabbleApp({
                 <button
                   onClick={handleClear}
                   title="Start a new ramble (clears this and starts fresh)"
-                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
                   style={{ background: t.ink, color: "#f5f3fb" }}
                 >
                   <span aria-hidden style={{ fontSize: 14 }}>
@@ -1426,7 +1426,7 @@ export default function RambleBabbleApp({
                 <button
                   onClick={handleCopy}
                   disabled={!cleaned || revealing}
-                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
                   style={{
                     backgroundImage: GRADIENT,
                     boxShadow: "0 8px 22px -8px rgba(123,92,255,0.9)",
@@ -1445,7 +1445,7 @@ export default function RambleBabbleApp({
                 you (and anyone you show) can see exactly what was applied. */}
             {hasResult && !cleaning && metaLabel && (
               <div
-                className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2"
+                className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5"
                 style={{
                   background: "rgba(123,92,255,0.08)",
                   borderBottom: `1px solid ${t.line}`,
@@ -1463,7 +1463,7 @@ export default function RambleBabbleApp({
               </div>
             )}
 
-            <div className="flex-1 p-5">
+            <div className="flex-1 px-5 py-4 sm:px-6">
               {!hasResult && !cleaning ? (
                 <div className="flex h-full flex-col items-center justify-center text-center">
                   <span
@@ -1489,11 +1489,11 @@ export default function RambleBabbleApp({
               ) : (
                 <div>
                   <div
-                    className="whitespace-pre-wrap text-[17px] leading-[1.7]"
+                    className="whitespace-pre-wrap text-[17px] leading-[1.5]"
                     style={{
                       color: t.ink,
                       fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                      maxWidth: "70ch",
+                      maxWidth: "82ch",
                     }}
                   >
                     {cleaning && !shownOutput ? "" : shownOutput}
@@ -2110,12 +2110,12 @@ function Collapsible({
 }) {
   return (
     <div
-      className="rb-rise mt-5 overflow-hidden"
+      className="rb-rise mt-3 overflow-hidden"
       style={{ border: `1.5px solid rgba(123,92,255,0.32)` }}
     >
       <button
         onClick={onToggle}
-        className="flex w-full items-center justify-between px-4 py-3 transition"
+        className="flex w-full items-center justify-between px-4 py-2.5 transition"
         style={{
           background: open ? "rgba(123,92,255,0.13)" : "rgba(123,92,255,0.07)",
         }}
