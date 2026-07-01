@@ -1420,6 +1420,17 @@ export default function RambleBabbleApp({
                   Edit
                 </button>
                 <button
+                  onClick={handleClear}
+                  title="Start a new ramble (clears this and starts fresh)"
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+                  style={{ background: t.ink, color: "#f5f3fb" }}
+                >
+                  <span aria-hidden style={{ fontSize: 14 }}>
+                    +
+                  </span>{" "}
+                  New ramble
+                </button>
+                <button
                   onClick={handleCopy}
                   disabled={!cleaned || revealing}
                   className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
