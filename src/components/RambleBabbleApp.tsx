@@ -825,12 +825,13 @@ export default function RambleBabbleApp({
 
           {view === "compose" && (
             <>
-          {/* PHONE: collapse the entire control panel behind one tap so the
-              ramble gets the screen. DESKTOP/iPad: always open (there's room). */}
+          {/* Collapse the entire control panel behind one tap ("Style your
+              Babble") on EVERY screen (default folded), so the ramble box owns
+              the workspace. Users open it to change Format/Tone/etc, then fold. */}
           <button
             type="button"
             onClick={() => setShowOptions((o) => !o)}
-            className="flex w-full items-center justify-between gap-3 px-3.5 py-3 lg:hidden"
+            className="flex w-full items-center justify-between gap-3 px-3.5 py-3"
             style={{ border: `1px solid ${t.lineStrong}`, background: t.control }}
           >
             <span className="flex min-w-0 flex-col items-start gap-0.5 text-left">
@@ -868,7 +869,7 @@ export default function RambleBabbleApp({
           {/* Flattened control console — its own mist-gray surface, distinct
               from the Ramble/Babble boxes, with a brand-gradient edge for life. */}
           <div
-            className={`${showOptions ? "" : "hidden"} lg:block`}
+            className={showOptions ? "" : "hidden"}
             style={{ border: `1px solid ${t.lineStrong}`, background: t.control }}
           >
             <div style={{ height: 3, backgroundImage: GRADIENT }} />
