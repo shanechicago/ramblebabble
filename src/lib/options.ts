@@ -45,7 +45,6 @@ export const OUTPUT_TYPES: Option[] = [
   { id: "social", label: "Social post", hint: "X, Instagram, generic", example: "An engaging post for X, Instagram, or a feed.", instruction: "Rewrite as an engaging social media post suitable for X or an Instagram caption. Strong hook first, easy to skim, natural and human. Add a few relevant hashtags only if they fit." },
   { id: "blog", label: "Blog post", hint: "Short article", example: "A title, a hook, and tidy paragraphs.", instruction: "Rewrite as a short blog post or article: an engaging title, a hook, a few well-structured paragraphs with a clear throughline, and a closing takeaway." },
   { id: "caption", label: "Caption", hint: "Scroll-stopping line", example: "A punchy caption for a photo or post.", instruction: "Rewrite as a short, scroll-stopping caption: a strong first line, easy to skim, natural and human." },
-  { id: "bio", label: "Bio / profile", hint: "About-you blurb", example: "A confident few sentences about who you are.", instruction: "Rewrite as a concise bio or profile blurb (for a website, app, or profile): a confident, personable few sentences capturing who they are and what they're about." },
   { id: "letter", label: "Letter", hint: "Formal letter", example: "A formal letter with greeting, body, sign-off.", instruction: "Rewrite as a proper formal letter with a greeting, a well-structured body, and a sign-off. Keep it appropriately formal." },
   { id: "coverletter", label: "Cover letter", hint: "Job application", example: "Why you're a fit, drawn from what you said.", instruction: "Rewrite as a focused cover letter: a strong opening, why they're a fit, relevant strengths drawn ONLY from what they said, and a courteous close." },
   { id: "thankyou", label: "Thank-you note", hint: "Genuine gratitude", example: "A warm note that names what you're grateful for.", instruction: "Rewrite as a warm, genuine thank-you note that names specifically what they're grateful for. Heartfelt, not gushy." },
@@ -167,7 +166,7 @@ export const USEFUL_GROUPS: OptionGroup[] = [
   { label: "Messages", ids: ["email", "reply", "followup", "text", "dm"] },
   { label: "Documents", ids: ["doc", "letter", "memo", "coverletter", "thankyou", "apology", "complaint"] },
   { label: "Work", ids: ["summary", "tldr", "meeting", "agenda", "status", "todo", "outline", "bug", "idea", "proposal", "pitch", "prompt"] },
-  { label: "Writing", ids: ["review", "howto", "speech", "blog", "caption", "bio", "journal"] },
+  { label: "Writing", ids: ["review", "howto", "speech", "blog", "caption", "journal"] },
   { label: "Social", ids: ["linkedin", "social"] },
 ];
 
