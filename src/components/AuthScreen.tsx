@@ -33,18 +33,10 @@ const HERO_WORDS = [
 const MARQUEE =
   "EMAIL · TALL TALE · RAP VERSE · SUMMARY · SPICY TEXT · AI PROMPT · MEETING NOTES · POEM · CONSPIRACY THEORY · MOVIE TRAILER · TO DO LIST · HAIKU · BREAKING NEWS · ";
 
-export default function AuthScreen({
-  initialMode,
-  onClose,
-}: {
-  initialMode?: "signin" | "signup";
-  onClose?: () => void;
-} = {}) {
+export default function AuthScreen() {
   // New visitors land on "Create" (never greeted "Welcome back"); only people
   // who've signed in before on this device default to "Sign in".
-  const [mode, setMode] = useState<"signin" | "signup">(
-    initialMode ?? "signup",
-  );
+  const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState(""); // sign-in: email OR legacy username
@@ -59,13 +51,12 @@ export default function AuthScreen({
 
   useEffect(() => {
     if (
-      !initialMode &&
       typeof window !== "undefined" &&
       window.localStorage.getItem("rb_returning")
     ) {
       setMode("signin");
     }
-  }, [initialMode]);
+  }, []);
 
   useEffect(() => {
     const id = setInterval(
@@ -153,16 +144,6 @@ export default function AuthScreen({
       className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]"
       style={{ background: CANVAS }}
     >
-      {onClose && (
-        <button
-          onClick={onClose}
-          aria-label="Close and keep rambling"
-          className="font-mono-label fixed right-4 top-4 z-[90] flex items-center gap-2 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
-          style={{ background: "rgba(243,245,247,0.16)", color: CANVAS_INK }}
-        >
-          Keep rambling <span aria-hidden style={{ fontSize: 15 }}>&times;</span>
-        </button>
-      )}
       {/* LEFT: void-black landing hero (now visible on phones too) */}
       <div
         className="relative flex flex-col justify-between gap-10 overflow-hidden px-7 py-10 lg:gap-0 lg:px-[60px] lg:py-[52px]"

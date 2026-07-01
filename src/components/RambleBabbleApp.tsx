@@ -122,25 +122,14 @@ export default function RambleBabbleApp({
   userEmail,
   onOpenHistory,
   onSignOut,
-  onRequestAuth,
   reopen,
 }: {
-  userId: string | null;
+  userId: string;
   userEmail: string;
   onOpenHistory: () => void;
   onSignOut: () => void;
-  onRequestAuth: (mode: "signin" | "signup") => void;
   reopen: SavedRamble | null;
 }) {
-  // Try-first: anyone can ramble + babble without an account. After a few free
-  // Babbles we gate on signup (the hook comes before the ask). Saving always
-  // needs an account.
-  // BETA: the hard gate is OFF while friends are testing, nobody (signed in or
-  // not) gets blocked. Flip GATE_LIVE to true when the testing week ends. The
-  // soft "create a free account to save" nudge still shows, so we keep
-  // capturing signups without walling anyone.
-  const GATE_LIVE = false;
-  const FREE_BABBLES = 3;
   const [theme, setTheme] = useState<Theme>("night");
   const t = THEMES[theme];
 
@@ -340,19 +329,6 @@ export default function RambleBabbleApp({
         setError("Tell us what to turn it into.");
         return;
       }
-      // Try-first gate: let anonymous visitors babble a few times for free, then
-      // ask them to create an account (the hook comes before the ask). "Try
-      // again" on an existing result never counts against the free quota.
-      if (GATE_LIVE && !userId && !modifier) {
-        const used =
-          typeof window !== "undefined"
-            ? parseInt(window.localStorage.getItem("rb_free_used") || "0", 10)
-            : 0;
-        if (used >= FREE_BABBLES) {
-          onRequestAuth("signup");
-          return;
-        }
-      }
       const selected = OUTPUT_TYPES.find((o) => o.id === outputType);
       const kind: "work" | "fun" =
         selected?.group === "fun" || !!accent || !!persona ? "fun" : "work";
@@ -393,16 +369,7 @@ export default function RambleBabbleApp({
         setFollowOpen(true);
         startReveal(out);
         setView("result");
-        // Anonymous try-first: count this free Babble (so we can gate after a
-        // few). Logged-in users save to their archive instead.
-        if (!userId && !modifier && typeof window !== "undefined") {
-          const used = parseInt(
-            window.localStorage.getItem("rb_free_used") || "0",
-            10,
-          );
-          window.localStorage.setItem("rb_free_used", String(used + 1));
-        }
-        if (!modifier && userId) {
+        if (!modifier) {
           // The Supabase builder is lazy: it only runs when awaited / .then'd.
           // Calling .then here is what actually sends the insert.
           getSupabase()
@@ -614,37 +581,15 @@ export default function RambleBabbleApp({
               </button>
             </div>
             <div className="relative">
-              {userId ? (
-                <button
-                  onClick={() => setAccountOpen((o) => !o)}
-                  title={`Account (${accountName})`}
-                  className="font-mono-label flex h-8 w-8 items-center justify-center text-[13px] font-bold text-white transition active:translate-y-px"
-                  style={{ background: ACCENT }}
-                >
-                  {accountInitial}
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onRequestAuth("signin")}
-                    className="font-mono-label whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px"
-                    style={{ background: "rgba(243,245,247,0.14)", color: t.cInk }}
-                  >
-                    Sign in
-                  </button>
-                  <button
-                    onClick={() => onRequestAuth("signup")}
-                    className="font-mono-label whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px"
-                    style={{
-                      backgroundImage: GRADIENT,
-                      boxShadow: "0 8px 20px -8px rgba(123,92,255,0.85)",
-                    }}
-                  >
-                    Create account
-                  </button>
-                </div>
-              )}
-              {userId && accountOpen && (
+              <button
+                onClick={() => setAccountOpen((o) => !o)}
+                title={`Account (${accountName})`}
+                className="font-mono-label flex h-8 w-8 items-center justify-center text-[13px] font-bold text-white transition active:translate-y-px"
+                style={{ background: ACCENT }}
+              >
+                {accountInitial}
+              </button>
+              {accountOpen && (
                 <>
                   <div
                     className="fixed inset-0 z-40"
@@ -1610,34 +1555,6 @@ export default function RambleBabbleApp({
                 </div>
               )}
             </div>
-
-            {!userId && hasResult && !revealing && (
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-                style={{
-                  background: "rgba(123,92,255,0.12)",
-                  borderTop: `1px solid rgba(123,92,255,0.35)`,
-                }}
-              >
-                <span
-                  className="text-[14px] font-semibold"
-                  style={{ color: t.ink }}
-                >
-                  Love it? Create a free account to save your Babbles and keep
-                  going.
-                </span>
-                <button
-                  onClick={() => onRequestAuth("signup")}
-                  className="font-mono-label whitespace-nowrap px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px"
-                  style={{
-                    backgroundImage: GRADIENT,
-                    boxShadow: "0 8px 20px -8px rgba(123,92,255,0.85)",
-                  }}
-                >
-                  Create account
-                </button>
-              </div>
-            )}
 
             {hasResult && !revealing && (
               <div
