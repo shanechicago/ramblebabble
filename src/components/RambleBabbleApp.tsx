@@ -546,6 +546,7 @@ export default function RambleBabbleApp({
               style={{
                 backgroundImage: GRADIENT,
                 boxShadow: "0 8px 20px -8px rgba(123,92,255,0.85)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.32)",
               }}
             >
               Upgrade
@@ -1288,6 +1289,7 @@ export default function RambleBabbleApp({
                   backgroundImage: GRADIENT,
                   boxShadow: "0 12px 30px -10px rgba(123,92,255,0.55)",
                   height: 48,
+                  textShadow: "0 1px 2px rgba(0,0,0,0.32)",
                 }}
               >
                 {cleaning ? (
@@ -1403,6 +1405,7 @@ export default function RambleBabbleApp({
                   style={{
                     backgroundImage: GRADIENT,
                     boxShadow: "0 8px 22px -8px rgba(123,92,255,0.9)",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.32)",
                   }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
@@ -1531,8 +1534,8 @@ export default function RambleBabbleApp({
 
             {hasResult && !revealing && (
               <div
-                className="flex flex-wrap gap-px"
-                style={{ background: t.line, borderTop: `1px solid ${t.line}` }}
+                className="flex flex-wrap gap-1 p-2"
+                style={{ borderTop: `1px solid ${t.line}` }}
               >
                 <ActionBtn t={t} onClick={handleCopy}>
                   {copyLabel}
@@ -2147,8 +2150,8 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="font-mono-label flex-1 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-125 disabled:opacity-50"
-      style={{ background: t.panel2, color: t.ink }}
+      className="font-mono-label flex-1 rounded-[10px] px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:bg-[rgba(123,92,255,0.08)] disabled:opacity-50"
+      style={{ background: "transparent", color: t.inkDim }}
     >
       {children}
     </button>
