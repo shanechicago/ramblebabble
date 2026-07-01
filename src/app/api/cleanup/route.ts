@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       persona?: string;
       targetLanguage?: string;
       vocabulary?: string;
+      cleanProfanity?: boolean;
       modifier?: string;
     };
 
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
       targetLanguage: body.targetLanguage?.trim() || undefined,
       vocabulary: body.vocabulary,
       kind,
+      cleanProfanity: body.cleanProfanity === true,
       modifier: typeof body.modifier === "string" ? body.modifier : undefined,
     });
 

@@ -30,6 +30,8 @@ export interface CleanupInput {
   vocabulary?: string;
   /** "work" = practical/useful output, "fun" = playful output. */
   kind: "work" | "fun";
+  /** When true, strip profanity from the output but keep the speaker's anger. */
+  cleanProfanity?: boolean;
   /** Optional extra instruction, e.g. "make it wilder" or "make it shorter". */
   modifier?: string;
 }

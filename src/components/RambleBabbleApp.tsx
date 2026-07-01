@@ -156,6 +156,9 @@ export default function RambleBabbleApp({
   const [persona, setPersona] = useState("");
   const [targetLanguage, setTargetLanguage] = useState("");
   const [customInstruction, setCustomInstruction] = useState("");
+  // Default: keep the speaker's swearing verbatim (their free-speech default).
+  // Toggle "Clean it up" to strip the curse words while keeping the anger.
+  const [cleanProfanity, setCleanProfanity] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   // Mobile: the whole options console collapses behind one tap so the ramble
   // gets the screen. Desktop/iPad keep it always-open (there's room).
@@ -376,6 +379,7 @@ export default function RambleBabbleApp({
             persona: persona || undefined,
             targetLanguage: targetLanguage || undefined,
             vocabulary: vocabulary.trim() || undefined,
+            cleanProfanity,
             modifier,
           }),
         });
@@ -476,6 +480,7 @@ export default function RambleBabbleApp({
     setAccent("");
     setPersona("");
     setTargetLanguage("");
+    setCleanProfanity(false);
     setOpenDropdown(null);
   };
 
@@ -1109,6 +1114,49 @@ export default function RambleBabbleApp({
                 this way, so the app keeps them word-for-word and never
                 &ldquo;corrects&rdquo; them. Leave blank if you don&rsquo;t have any.
               </p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <span
+                  className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
+                  style={{ color: t.ink }}
+                >
+                  Swearing{" "}
+                  <span className="font-bold" style={{ color: ACCENT }}>
+                    · optional
+                  </span>
+                </span>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCleanProfanity(false)}
+                    className="font-mono-label px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                    style={
+                      !cleanProfanity
+                        ? { background: t.ink, color: t.panel }
+                        : { background: t.control, color: t.ink }
+                    }
+                  >
+                    Keep it
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCleanProfanity(true)}
+                    className="font-mono-label px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                    style={
+                      cleanProfanity
+                        ? { background: t.ink, color: t.panel }
+                        : { background: t.control, color: t.ink }
+                    }
+                  >
+                    Clean it up
+                  </button>
+                </div>
+                <span className="text-[12px]" style={{ color: t.inkDim }}>
+                  {cleanProfanity
+                    ? "Curse words removed, your anger kept."
+                    : "Your curse words stay in, word for word."}
+                </span>
+              </div>
             </div>
           </div>
             </>
