@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
 import { getOutputType, getTone, getAccent, getPersona } from "@/lib/options";
 import { stripBanned, stripBannedList, stripMarkdown } from "@/lib/sanitize";
+import { RATE_LIMIT_MESSAGE } from "@/lib/config";
+import { getClientIp, checkRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
 const MAX_CHARS = 20000;
 
 export async function POST(req: NextRequest) {
+  const { allowed } = await checkRateLimit(getClientIp(req));
+  if (!allowed) {
+    return NextResponse.json({ error: RATE_LIMIT_MESSAGE }, { status: 429 });
+  }
+
   try {
     const body = (await req.json()) as {
       transcript?: string;

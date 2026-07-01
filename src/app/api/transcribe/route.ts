@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
-import { MAX_UPLOAD_BYTES } from "@/lib/config";
+import { MAX_UPLOAD_BYTES, RATE_LIMIT_MESSAGE } from "@/lib/config";
+import { getClientIp, checkRateLimit } from "@/lib/ratelimit";
 import { stripBanned } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
@@ -40,6 +41,11 @@ function stripHallucinations(text: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const { allowed } = await checkRateLimit(getClientIp(req));
+  if (!allowed) {
+    return NextResponse.json({ error: RATE_LIMIT_MESSAGE }, { status: 429 });
+  }
+
   try {
     const form = await req.formData();
     const audio = form.get("audio");

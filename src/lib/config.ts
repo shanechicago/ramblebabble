@@ -27,3 +27,18 @@ export const LIMIT_REACHED_MESSAGE =
 /** Shown when a recording is too large to upload. */
 export const TOO_LARGE_MESSAGE =
   "That recording is too large to send. Please record a shorter ramble.";
+
+// --- Abuse protection: rate limiting the two paid endpoints (per client IP) ---
+// So the app can face the public internet without anyone running up the API
+// bill. Both limits below are enforced together; exceeding EITHER returns HTTP
+// 429. Tunable: change the number, not the code.
+
+/** Requests per IP per rolling hour. */
+export const RATE_LIMIT_PER_HOUR = 10;
+
+/** Short-burst cap: requests per IP per rolling minute. */
+export const RATE_LIMIT_PER_MINUTE = 3;
+
+/** Shown (HTTP 429) when either rate limit is exceeded. */
+export const RATE_LIMIT_MESSAGE =
+  "You're rambling fast. Give it a minute and try again.";
