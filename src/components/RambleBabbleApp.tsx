@@ -532,7 +532,11 @@ export default function RambleBabbleApp({
         <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:px-8">
           <Wordmark color={t.cInk} />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            {navBtn("Home", true, () => {})}
+            {navBtn("Home", true, () => {
+              setView("compose");
+              if (typeof window !== "undefined")
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            })}
             {navBtn("My Rambles", false, onOpenHistory)}
             <button
               onClick={() => setOverlay("upgrade")}
@@ -1131,6 +1135,22 @@ export default function RambleBabbleApp({
                 borderBottom: `1px solid ${t.lineStrong}`,
               }}
             >
+              {hasResult && (
+                <button
+                  onClick={() => setView("result")}
+                  title="Go back to your Babble (keeps this ramble)"
+                  className="font-mono-label flex items-center justify-center gap-2 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px"
+                  style={{
+                    backgroundImage: GRADIENT,
+                    boxShadow: "0 8px 20px -8px rgba(123,92,255,0.85)",
+                  }}
+                >
+                  <span aria-hidden style={{ fontSize: 13 }}>
+                    &larr;
+                  </span>
+                  Back to your Babble
+                </button>
+              )}
               <div className="flex items-center gap-2">
                 <span
                   className="font-mono-label text-[12px] font-bold"
