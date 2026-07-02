@@ -74,7 +74,21 @@ export async function POST(req: NextRequest) {
       formatIsFun = outputType.group === "fun";
     }
 
-    const kind: "work" | "fun" = formatIsFun || hasCharacter ? "fun" : "work";
+    // Spicy / expressive tones (flirty, sultry, naughty, dramatic, ...) are
+    // creative work too: route them through the high-variance "fun" path so
+    // they get real heat and the FUN MODE license, not the tame work register.
+    const EXPRESSIVE_TONES = new Set([
+      "flirty",
+      "romantic",
+      "seductive",
+      "sultry",
+      "steamy",
+      "naughty",
+      "dramatic",
+    ]);
+    const toneIsExpressive = !!body.tone && EXPRESSIVE_TONES.has(body.tone);
+    const kind: "work" | "fun" =
+      formatIsFun || hasCharacter || toneIsExpressive ? "fun" : "work";
 
     const provider = getProvider();
     const result = await provider.cleanup({

@@ -12,8 +12,22 @@ import { CLEANUP_SYSTEM_PROMPT, buildCleanupUserMessage } from "../prompt";
 // playful "fun" outputs land much harder here. Transcription stays on OpenAI
 // Whisper (see ./openai.ts) — this provider deliberately does not transcribe.
 //
-// Model is overridable via env so we can tune without code changes.
-const CLEANUP_MODEL = process.env.ANTHROPIC_CLEANUP_MODEL || "claude-sonnet-4-6";
+// Models are overridable via env so we can tune without code changes. The
+// creative "fun" outputs (comedy, personas, accents, spicy tones) are the whole
+// delight of the product and where a stronger model earns its keep, so they run
+// on Opus 4.8; the faithful "work" cleanup (emails, notes) stays on the cheaper
+// Sonnet, which handles it well. Set ANTHROPIC_FUN_MODEL=claude-fable-5 to push
+// the fun outputs to the very top tier. (The old single ANTHROPIC_CLEANUP_MODEL
+// var is deprecated and intentionally ignored so this quality split always
+// applies.)
+const FUN_MODEL = process.env.ANTHROPIC_FUN_MODEL || "claude-opus-4-8";
+const WORK_MODEL = process.env.ANTHROPIC_WORK_MODEL || "claude-sonnet-4-6";
+
+// Opus 4.7/4.8 and Fable reject the `temperature` parameter; Sonnet/Haiku and
+// older models accept it. Send it only where it's allowed.
+function acceptsTemperature(model: string): boolean {
+  return !/opus-4-[78]|fable|mythos/.test(model);
+}
 
 // A babble is short; 4096 tokens is ample headroom.
 const MAX_TOKENS = 4096;
@@ -65,10 +79,15 @@ export const anthropicProvider: AIProvider = {
   async cleanup(input: CleanupInput): Promise<CleanupResult> {
     const anthropic = getClient();
 
+    const model = input.kind === "fun" ? FUN_MODEL : WORK_MODEL;
+
     const res = await anthropic.messages.create({
-      model: CLEANUP_MODEL,
+      model,
       max_tokens: MAX_TOKENS,
-      temperature: input.kind === "fun" ? FUN_TEMPERATURE : WORK_TEMPERATURE,
+      // Temperature only goes to models that accept it (Opus 4.8 / Fable reject it).
+      ...(acceptsTemperature(model)
+        ? { temperature: input.kind === "fun" ? FUN_TEMPERATURE : WORK_TEMPERATURE }
+        : {}),
       // Reused, unchanged system prompt goes in the dedicated `system` slot.
       system: CLEANUP_SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildCleanupUserMessage(input) }],
