@@ -14,13 +14,14 @@ import { CLEANUP_SYSTEM_PROMPT, buildCleanupUserMessage } from "../prompt";
 //
 // Models are overridable via env so we can tune without code changes. The
 // creative "fun" outputs (comedy, personas, accents, spicy tones) are the whole
-// delight of the product and where a stronger model earns its keep, so they run
-// on Opus 4.8; the faithful "work" cleanup (emails, notes) stays on the cheaper
-// Sonnet, which handles it well. Set ANTHROPIC_FUN_MODEL=claude-fable-5 to push
-// the fun outputs to the very top tier. (The old single ANTHROPIC_CLEANUP_MODEL
-// var is deprecated and intentionally ignored so this quality split always
-// applies.)
-const FUN_MODEL = process.env.ANTHROPIC_FUN_MODEL || "claude-opus-4-8";
+// delight of the product and where the best model earns its keep, so they run
+// on Fable 5 (Anthropic's top model for creative writing: sharpest comedy and
+// real heat); the faithful "work" cleanup (emails, notes) stays on the cheaper
+// Sonnet, which handles it well. Set ANTHROPIC_FUN_MODEL=claude-opus-4-8 to
+// trade a little creative quality for lower cost. (The old single
+// ANTHROPIC_CLEANUP_MODEL var is deprecated and intentionally ignored so this
+// quality split always applies.)
+const FUN_MODEL = process.env.ANTHROPIC_FUN_MODEL || "claude-fable-5";
 const WORK_MODEL = process.env.ANTHROPIC_WORK_MODEL || "claude-sonnet-4-6";
 
 // Opus 4.7/4.8 and Fable reject the `temperature` parameter; Sonnet/Haiku and
