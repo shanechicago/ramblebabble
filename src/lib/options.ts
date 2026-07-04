@@ -52,6 +52,7 @@ export const OUTPUT_TYPES: Option[] = [
   { id: "coverletter", label: "Cover letter", hint: "Job application", example: "Why you're a fit, drawn from what you said.", instruction: "Rewrite as a focused cover letter: a strong opening, why they're a fit, relevant strengths drawn ONLY from what they said, and a courteous close." },
   { id: "thankyou", label: "Thank-you note", hint: "Genuine gratitude", example: "A warm note that names what you're grateful for.", instruction: "Rewrite as a warm, genuine thank-you note that names specifically what they're grateful for. Heartfelt, not gushy." },
   { id: "apology", label: "Apology / hard message", hint: "Say the tough thing", example: "Accountable, no defensiveness, a path forward.", instruction: "Rewrite as a sincere, accountable apology or carefully-worded difficult message: acknowledge clearly, no defensiveness, and a constructive path forward. Measured and human." },
+  { id: "breakup", label: "Break-up text", hint: "End it, clear and kind", example: "A clear, respectful message to end a relationship.", instruction: "Rewrite as a break-up message that ends a relationship: be clear and honest that it's over, with no false hope, mixed signals, or 'maybe someday'. Own the decision in the first person, be respectful and kind rather than cruel, acknowledge the person and what was good if it fits, keep it fairly brief, and close cleanly. Just the message body, no subject line and no formal sign-off. (If the user stacks a tone or character on top, follow it, a savage or dramatic break-up is fair game, but by default keep it kind and final.)" },
   { id: "complaint", label: "Complaint", hint: "Firm but professional", example: "The issue, the impact, the fix you want.", instruction: "Rewrite as a firm but professional complaint: state the issue, the impact, and the resolution requested, in a clear, civil, hard-to-ignore way." },
   { id: "review", label: "Review", hint: "Product, place, service", example: "A clear verdict backed by specifics.", instruction: "Rewrite as a helpful review: a clear verdict, the specifics that back it up, and an honest pros-and-cons feel. Balanced and useful to a reader." },
   { id: "howto", label: "How-to steps", hint: "Step-by-step", example: "Numbered steps anyone can follow.", instruction: "Rewrite as clear step-by-step instructions: a short intro if needed, then numbered steps in order, each concrete and easy to follow." },
@@ -180,7 +181,7 @@ export interface OptionGroup {
 }
 
 export const USEFUL_GROUPS: OptionGroup[] = [
-  { label: "Messages", ids: ["email", "reply", "followup", "text", "dm"] },
+  { label: "Messages", ids: ["email", "reply", "followup", "text", "dm", "breakup"] },
   { label: "Documents", ids: ["doc", "letter", "memo", "coverletter", "thankyou", "apology", "complaint", "pressrelease"] },
   { label: "Work", ids: ["summary", "tldr", "meeting", "agenda", "status", "todo", "outline", "bug", "idea", "proposal", "pitch", "prompt", "faq", "businessplan"] },
   { label: "Writing", ids: ["review", "howto", "speech", "blog", "caption", "journal"] },
