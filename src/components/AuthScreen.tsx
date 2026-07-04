@@ -61,7 +61,7 @@ export default function AuthScreen() {
   useEffect(() => {
     const id = setInterval(
       () => setHw((h) => (h + 1) % HERO_WORDS.length),
-      2200,
+      800,
     );
     return () => clearInterval(id);
   }, []);
