@@ -229,6 +229,20 @@ export default function RambleBabbleApp({
     return () => clearTimeout(id);
   }, [error]);
 
+  // iOS Safari can restore focus to the ramble textarea from the back/forward
+  // cache, popping the on-screen keyboard the moment the page loads and hiding
+  // the Record button and the whole action row behind it. Always land with the
+  // keyboard dismissed so the controls are visible from the start.
+  useEffect(() => {
+    const dismissKeyboard = () => {
+      const el = document.activeElement as HTMLElement | null;
+      if (el && el.tagName === "TEXTAREA") el.blur();
+    };
+    dismissKeyboard();
+    window.addEventListener("pageshow", dismissKeyboard);
+    return () => window.removeEventListener("pageshow", dismissKeyboard);
+  }, []);
+
   const transcribeBlob = useCallback(
     async (blob: Blob | null) => {
       if (!blob || blob.size === 0) {
@@ -1115,6 +1129,33 @@ export default function RambleBabbleApp({
                 Clear) is gone; the single primary action and the quiet
                 secondaries now live in one action row UNDER the textarea. */}
 
+            {/* PRIMARY INPUT: voice. Record is the hero action ("Ramble in"),
+                so it lives ABOVE the box where it stays visible even with the
+                phone keyboard up, instead of being buried below a tall
+                textarea. Hidden only while a recording is in progress, when the
+                box overlay takes over with Stop / Cancel. */}
+            {!recording && (
+              <button
+                onClick={handleStart}
+                disabled={transcribing}
+                className="font-mono-label flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-[14px] px-6 py-3.5 text-[13px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-50 sm:w-auto sm:self-start"
+                style={{ background: ACCENT }}
+              >
+                {transcribing ? (
+                  <span
+                    className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                    style={{ borderColor: "rgba(255,255,255,0.4)", borderTopColor: "#fff" }}
+                  />
+                ) : (
+                  <span
+                    className="rb-blink"
+                    style={{ display: "inline-block", height: 10, width: 10, borderRadius: 999, background: "#fff" }}
+                  />
+                )}
+                {transcribing ? `${loadingWord}…` : "Record your ramble"}
+              </button>
+            )}
+
             <div className="relative">
               <textarea
                 value={inputText}
@@ -1212,35 +1253,6 @@ export default function RambleBabbleApp({
                 full-width line at the bottom (thumb reach). */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex flex-1 flex-wrap items-center gap-2">
-                <button
-                  onClick={recording ? handleStop : handleStart}
-                  disabled={transcribing}
-                  className="font-mono-label flex items-center gap-2 whitespace-nowrap rounded-[10px] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
-                  style={
-                    recording
-                      ? { background: "#ff3b30", color: "#fff", border: "1px solid #ff3b30" }
-                      : { background: "transparent", border: `1px solid ${t.line}`, color: t.inkDim }
-                  }
-                >
-                  {transcribing ? (
-                    <span
-                      className="rb-spin inline-block h-3 w-3 rounded-full border-2"
-                      style={{ borderColor: t.line, borderTopColor: ACCENT }}
-                    />
-                  ) : (
-                    <span
-                      className={recording ? "" : "rb-blink"}
-                      style={{
-                        display: "inline-block",
-                        height: 9,
-                        width: 9,
-                        borderRadius: recording ? 2 : 999,
-                        background: recording ? "#fff" : ACCENT,
-                      }}
-                    />
-                  )}
-                  {transcribing ? `${loadingWord}…` : recording ? "Stop" : "Record"}
-                </button>
                 <button
                   onClick={pasteIn}
                   className="font-mono-label whitespace-nowrap rounded-[10px] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px"
