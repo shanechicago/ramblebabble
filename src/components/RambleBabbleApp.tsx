@@ -1033,7 +1033,7 @@ export default function RambleBabbleApp({
                 <input
                   value={vocabulary}
                   onChange={(e) => setVocabulary(e.target.value)}
-                  placeholder="e.g. Siobhan, Kuvvi, Dr. Achebe, ProTools"
+                  placeholder="e.g. Siobhan, Dr. Achebe, ProTools, Nauticon"
                   className="min-w-[220px] flex-1 bg-transparent px-2 py-1 text-[16px] outline-none"
                   style={{ color: t.ink, borderBottom: `1px solid ${t.lineStrong}` }}
                 />
