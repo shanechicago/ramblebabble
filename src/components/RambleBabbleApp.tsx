@@ -76,21 +76,21 @@ const THEMES = {
   // family and `ink` is LIGHT (it's the primary text on dark panels). Secondary
   // buttons are ghost/outline, never `ink`-filled, so the light ink is safe.
   night: {
-    canvas: "#0a0b0e",
-    chrome: "rgba(12,13,17,0.88)",
-    cInk: "#f3f5f7",
-    cDim: "#aab0bb",
-    cLine: "rgba(243,245,247,0.10)",
-    cLineStrong: "rgba(243,245,247,0.20)",
-    panel: "#131519",
-    panel2: "#1b1e24",
-    control: "#20242b",
-    control2: "#2a2f37",
-    ink: "#f3f5f7",
-    inkDim: "#b6bcc6",
-    inkFaint: "#7c828d",
-    line: "rgba(243,245,247,0.09)",
-    lineStrong: "rgba(243,245,247,0.18)",
+    canvas: "#0a0a0b",
+    chrome: "rgba(10,10,11,0.88)",
+    cInk: "#f2f2f3",
+    cDim: "#a5a7ab",
+    cLine: "rgba(255,255,255,0.09)",
+    cLineStrong: "rgba(255,255,255,0.18)",
+    panel: "#18181a",
+    panel2: "#212124",
+    control: "#292a2d",
+    control2: "#34353a",
+    ink: "#f2f2f3",
+    inkDim: "#a9abaf",
+    inkFaint: "#74767b",
+    line: "rgba(255,255,255,0.08)",
+    lineStrong: "rgba(255,255,255,0.16)",
   },
   // Calm light: white writing sheet, soft neutral controls, dark ink.
   day: {
@@ -273,16 +273,6 @@ export default function RambleBabbleApp({
   const selectedTone = TONES.find((x) => x.id === tone);
   const selectedAccent = getAccent(accent);
   const selectedPersona = getPersona(persona);
-
-  // True when any secondary choice is off its default. It lights the small dot
-  // on the collapsed Options row, so a closed drawer never hides a live choice.
-  const optionsTouched =
-    !!tone ||
-    !!persona ||
-    !!accent ||
-    !!targetLanguage ||
-    !!vocabulary.trim() ||
-    cleanProfanity;
 
   const handleStart = useCallback(() => {
     setError(null);
@@ -467,7 +457,7 @@ export default function RambleBabbleApp({
     <button
       onClick={onClick}
       className="font-mono-label text-[12px] font-bold uppercase tracking-[0.14em] transition"
-      style={{ color: active ? ACCENT : t.cInk }}
+      style={{ color: active ? t.cInk : t.cDim }}
     >
       {label}
     </button>
@@ -528,11 +518,11 @@ export default function RambleBabbleApp({
             {navBtn("My Rambles", false, onOpenHistory)}
             <button
               onClick={() => setOverlay("upgrade")}
-              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px"
+              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
               style={{
-                backgroundImage: GRADIENT,
-                boxShadow: "0 8px 20px -8px rgba(123,92,255,0.85)",
-                textShadow: "0 1px 2px rgba(0,0,0,0.32)",
+                background: "transparent",
+                border: `1px solid ${t.cLineStrong}`,
+                color: t.cDim,
               }}
             >
               Upgrade
@@ -577,8 +567,12 @@ export default function RambleBabbleApp({
               <button
                 onClick={() => setAccountOpen((o) => !o)}
                 title={`Account (${accountName})`}
-                className="font-mono-label flex h-8 w-8 items-center justify-center text-[13px] font-bold text-white transition active:translate-y-px"
-                style={{ background: ACCENT }}
+                className="font-mono-label flex h-8 w-8 items-center justify-center text-[13px] font-bold transition active:translate-y-px"
+                style={{
+                  background: t.control2,
+                  border: `1px solid ${t.cLineStrong}`,
+                  color: t.cInk,
+                }}
               >
                 {accountInitial}
               </button>
@@ -601,8 +595,8 @@ export default function RambleBabbleApp({
                       style={{ borderBottom: `1px solid ${t.lineStrong}` }}
                     >
                       <span
-                        className="font-mono-label flex h-7 w-7 items-center justify-center text-[12px] font-bold text-white"
-                        style={{ background: ACCENT }}
+                        className="font-mono-label flex h-7 w-7 items-center justify-center text-[12px] font-bold"
+                        style={{ background: t.control2, color: t.ink }}
                       >
                         {accountInitial}
                       </span>
@@ -632,7 +626,6 @@ export default function RambleBabbleApp({
                     <AccountItem
                       t={t}
                       label="Upgrade"
-                      accent
                       onClick={() => {
                         setAccountOpen(false);
                         setOverlay("upgrade");
@@ -653,15 +646,14 @@ export default function RambleBabbleApp({
             </div>
           </div>
         </header>
+      </div>
 
-        <div className="px-4 pb-3 sm:px-8">
-          {/* The RambleBabble wordmark in the chrome above is the only brand
-              lockup. The old "Refine a Ramble" heading + instruction paragraph
-              were redundant and heavy, so they're gone; the help button and the
-              style summary now live in the slim context line below, and the
-              guidance moved into the textarea placeholder. */}
-
-          {helpOpen && (
+      {/* HELP — lives outside the sticky chrome on purpose. It is position:fixed
+          and never needed that wrapper; the wrapper's only real effects were
+          12px of dead padding under the header on every screen, and trapping
+          this z-[70] modal inside the header's z-30 stacking context, where the
+          portalled dropdown sheets could paint over it. */}
+      {helpOpen && (
             <div
               className="fixed inset-0 z-[70] flex items-center justify-center p-4"
               onClick={() => setHelpOpen(false)}
@@ -682,14 +674,14 @@ export default function RambleBabbleApp({
                 <div className="mb-3 flex items-center justify-between">
                   <span
                     className="font-mono-label text-[12px] font-bold uppercase tracking-[0.14em]"
-                    style={{ color: ACCENT }}
+                    style={{ color: t.ink }}
                   >
                     How to shape your Babble
                   </span>
                   <button
                     onClick={() => setHelpOpen(false)}
                     className="font-mono-label text-[11px] font-bold uppercase tracking-[0.12em]"
-                    style={{ color: ACCENT }}
+                    style={{ color: t.inkDim }}
                   >
                     Close
                   </button>
@@ -724,231 +716,205 @@ export default function RambleBabbleApp({
                 </p>
               </div>
             </div>
-          )}
-
-          {/* The compose-view controls (the STYLE control, its options console,
-              and the live word count) no longer live up here in the sticky
-              chrome. They moved DOWN into <main>, below the ramble input, so the
-              flow reads record/type first, THEN choose how it sounds, THEN
-              Babble it. The sticky top zone is now just the brand/nav header
-              (measured by topZoneRef) plus the help modal above. */}
-        </div>
-      </div>
+      )}
 
       <main
         className="relative z-10 mx-auto w-full px-4 pb-4 pt-3 sm:px-8"
         style={{ maxWidth: 1760 }}
       >
-        {/* Persistent two-panel workspace: LEFT is where you work (format,
-            options, ramble, record, Babble it), RIGHT is the payoff (your
-            Babble). Side by side on tablet/desktop, stacked on phones.
-            NO viewport height cap anywhere: the row is exactly as tall as the
-            LEFT panel's own content, and the payoff panel stretches to match it,
-            so the two read as balanced and neither one grows a scrollbar of its
-            own. Nested scrollbars were the whole disease; height was the cause. */}
-        <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
-          {/* ============ LEFT PANEL — workspace ============ */}
-          {/* Content-height, and nothing inside it scrolls, ever. Format and
-              Options share one line, then the ramble, then the quiet chips with
-              Record first, then the one primary. All of it is on screen from the
-              first frame, drawer open or shut. */}
-          <section
-            className="flex flex-col gap-3 rounded-[20px] p-4 sm:p-5"
-            style={{ background: t.panel, border: `1px solid ${t.line}` }}
+        {/* ============ TITLE BAND ============ */}
+        {/* What this screen is, and what to do, one line each. */}
+        <div className="mb-2">
+          <h1
+            className="font-bric text-[20px] font-extrabold sm:text-[22px]"
+            style={{ color: t.cInk, letterSpacing: "-0.02em" }}
           >
-            {/* ROW 1 — FORMAT (the one required choice) and OPTIONS, side by
-                side on ONE line. Format is the primary choice so it takes the
-                majority of the row; Options sits compact beside it. Both
-                dropdowns portal out, so nothing here is ever clipped. */}
-            <div className="flex items-stretch gap-2">
+            New ramble
+          </h1>
+          <p
+            className="mt-0.5 text-[13px] sm:text-[14px]"
+            style={{ color: t.cDim }}
+          >
+            Pick a format, dump your notes, and hit Babble it.
+          </p>
+        </div>
+
+        {/* ============ CONTROL BAND ============ */}
+        {/* Every choice lives here, full page width, ABOVE both columns. These
+            controls used to sit inside the left column, which made that column
+            do two jobs (settings AND notes) and pushed the ramble, Record and
+            Babble it down every time the drawer opened. Out here the drawer
+            spends WIDTH instead of height, and the workspace below keeps its
+            own geometry no matter what is open.
+            It is a BARE band, not a panel: no card of its own. Panel chrome here
+            cost ~40px of vertical budget on a 700px screen and bought nothing,
+            and it made the settings look like a third peer panel. Reading as
+            chrome above the two panels is both truer and cheaper. */}
+        <div className="mb-4 flex flex-col gap-3">
+          {/* FORMAT — the one required choice, full page width, and visibly
+              heavier than anything in the drawer below it. Its dropdown portals
+              out, so nothing here is ever clipped. */}
+          <div
+            className="overflow-hidden rounded-[12px]"
+            style={{ border: `1px solid ${t.lineStrong}` }}
+          >
+            <Selector
+              t={t}
+              label="Format"
+              value={
+                outputType === "custom"
+                  ? "Something else"
+                  : (selectedStyle?.label ?? "")
+              }
+              placeholder="Choose a format"
+              open={openDropdown === "format"}
+              onToggle={() =>
+                setOpenDropdown((d) => (d === "format" ? null : "format"))
+              }
+            >
               <div
-                className="min-w-0 flex-1 overflow-hidden rounded-[12px]"
-                style={{ border: `1px solid ${t.lineStrong}` }}
+                className="font-mono-label px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em]"
+                style={{ color: t.inkFaint }}
               >
-                <Selector
-                  t={t}
-                  label="Format"
-                  value={
-                    outputType === "custom"
-                      ? "Something else"
-                      : (selectedStyle?.label ?? "")
-                  }
-                  placeholder="Choose a format"
-                  open={openDropdown === "format"}
-                  onToggle={() =>
-                    setOpenDropdown((d) => (d === "format" ? null : "format"))
-                  }
-                >
-                  <div
-                    className="font-mono-label px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em]"
-                    style={{ color: ACCENT }}
-                  >
-                    Just refine
-                  </div>
-                  <OptionRow
-                    t={t}
-                    label="Clean & Concise"
-                    active={outputType === "note"}
-                    onClick={() => {
-                      setOutputType("note");
-                      setOpenDropdown(null);
-                    }}
-                  />
-                  <GroupedOptions
-                    t={t}
-                    heading="Practical"
-                    groups={USEFUL_GROUPS}
-                    options={OUTPUT_TYPES}
-                    value={outputType}
-                    onPick={(id) => {
-                      setOutputType(id);
-                      setOpenDropdown(null);
-                    }}
-                  />
-                  <GroupedOptions
-                    t={t}
-                    heading="Fun"
-                    groups={FUN_GROUPS}
-                    options={OUTPUT_TYPES}
-                    value={outputType}
-                    onPick={(id) => {
-                      setOutputType(id);
-                      setOpenDropdown(null);
-                    }}
-                  />
-                  <OptionRow
-                    t={t}
-                    label="Something else"
-                    active={outputType === "custom"}
-                    onClick={() => {
-                      setOutputType("custom");
-                      setOpenDropdown(null);
-                    }}
-                  />
-                </Selector>
+                Just refine
               </div>
-
-              {/* OPTIONS — everything secondary behind one compact control,
-                  riding beside Format instead of eating a whole row of its own.
-                  Closed by default. The accent dot means something in there is
-                  set, so a closed drawer never hides a live choice. The round
-                  "?" opens help without also toggling the drawer. */}
-              <button
-                type="button"
-                onClick={() => setShowOptions((o) => !o)}
-                aria-expanded={showOptions}
-                className="flex shrink-0 items-center gap-2 rounded-[12px] px-3 text-left transition active:translate-y-px"
-                style={{
-                  background: t.control,
-                  border: `1px solid ${t.lineStrong}`,
-                  minHeight: 44,
+              <OptionRow
+                t={t}
+                label="Clean & Concise"
+                active={outputType === "note"}
+                onClick={() => {
+                  setOutputType("note");
+                  setOpenDropdown(null);
                 }}
-                title="Tone, character, accent, language, spellings, profanity"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={ACCENT}
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                  style={{
-                    flexShrink: 0,
-                    transform: showOptions ? "rotate(180deg)" : "none",
-                    transition: "transform 0.15s",
-                  }}
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-                <span
-                  className="font-mono-label text-[12px] font-bold uppercase tracking-[0.14em]"
-                  style={{ color: t.ink }}
-                >
-                  Options
-                </span>
-                {optionsTouched && (
-                  <span
-                    role="img"
-                    aria-label="Some options are set"
-                    title="Some options are set"
-                    style={{
-                      width: 7,
-                      height: 7,
-                      flexShrink: 0,
-                      borderRadius: 999,
-                      background: ACCENT,
-                    }}
-                  />
-                )}
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setHelpOpen(true);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setHelpOpen(true);
-                    }
-                  }}
-                  aria-label="How the style options work"
-                  title="How the style options work"
-                  className="font-mono-label flex h-6 w-6 shrink-0 items-center justify-center text-[12px] font-bold transition hover:brightness-110"
-                  style={{
-                    background: "transparent",
-                    border: `1px solid ${ACCENT}`,
-                    color: ACCENT,
-                    borderRadius: 999,
-                  }}
-                >
-                  ?
-                </span>
-              </button>
-            </div>
-
-            {/* The custom instruction belongs right under the choice that asked
-                for it, not in some other drawer. Full width, under Row 1. */}
-            {outputType === "custom" && (
-              <input
-                value={customInstruction}
-                onChange={(e) => setCustomInstruction(e.target.value)}
-                placeholder="Turn it into... e.g. a wedding toast, a recipe"
-                aria-label="Turn it into"
-                className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
-                style={
-                  {
-                    background: t.panel2,
-                    border: `1px solid ${t.lineStrong}`,
-                    borderBottom: `2px solid ${ACCENT}`,
-                    color: t.ink,
-                    "--rb-ph": t.inkFaint,
-                  } as React.CSSProperties
-                }
               />
-            )}
+              <GroupedOptions
+                t={t}
+                heading="Practical"
+                groups={USEFUL_GROUPS}
+                options={OUTPUT_TYPES}
+                value={outputType}
+                onPick={(id) => {
+                  setOutputType(id);
+                  setOpenDropdown(null);
+                }}
+              />
+              <GroupedOptions
+                t={t}
+                heading="Fun"
+                groups={FUN_GROUPS}
+                options={OUTPUT_TYPES}
+                value={outputType}
+                onPick={(id) => {
+                  setOutputType(id);
+                  setOpenDropdown(null);
+                }}
+              />
+              <OptionRow
+                t={t}
+                label="Something else"
+                active={outputType === "custom"}
+                onClick={() => {
+                  setOutputType("custom");
+                  setOpenDropdown(null);
+                }}
+              />
+            </Selector>
+          </div>
 
-            {/* The drawer opens INLINE, as a real settings panel: one control
-                per row, full width, label above input, room to breathe. It grows
-                the panel rather than scrolling inside it. */}
-            {showOptions && (
-              <div
-                className="flex flex-col gap-4 rounded-[14px] p-3.5"
-                style={{ background: t.control, border: `1px solid ${t.line}` }}
+          {/* The custom instruction belongs right under the choice that asked
+              for it, not in some other drawer. */}
+          {outputType === "custom" && (
+            <input
+              value={customInstruction}
+              onChange={(e) => setCustomInstruction(e.target.value)}
+              placeholder="Turn it into... e.g. a wedding toast, a recipe"
+              aria-label="Turn it into"
+              className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+              style={
+                {
+                  background: t.panel2,
+                  border: `1px solid ${t.lineStrong}`,
+                  color: t.ink,
+                  "--rb-ph": t.inkFaint,
+                } as React.CSSProperties
+              }
+            />
+          )}
+
+          {/* OPTIONS — a quiet text toggle, not a boxed control competing with
+              Format. Closed by default. The "?" sits beside it as its own
+              button and opens help without touching the drawer. */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowOptions((o) => !o)}
+              aria-expanded={showOptions}
+              className="flex items-center gap-1.5 text-left transition active:translate-y-px"
+              style={{ background: "transparent" }}
+              title="Tone, character, accent, language, spellings, profanity"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={t.inkDim}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                style={{
+                  flexShrink: 0,
+                  transform: showOptions ? "rotate(180deg)" : "none",
+                  transition: "transform 0.15s",
+                }}
               >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+              <span
+                className="font-mono-label text-[11px] font-medium uppercase tracking-[0.12em]"
+                style={{ color: t.inkDim }}
+              >
+                Options
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              aria-label="How the style options work"
+              title="How the style options work"
+              className="font-mono-label flex h-6 w-6 shrink-0 items-center justify-center text-[12px] font-bold transition"
+              style={{
+                background: "transparent",
+                border: `1px solid ${t.line}`,
+                color: t.inkDim,
+                borderRadius: 999,
+              }}
+            >
+              ?
+            </button>
+          </div>
+
+          {/* The drawer opens INLINE, inside this band, across the whole page.
+              The four secondary choices ride a responsive grid so they spend
+              the width rather than stacking four deep and shoving the primary
+              action toward the fold. They are compact and quiet on purpose:
+              they must never read as equal to Format. */}
+          {showOptions && (
+            <div
+              className="flex flex-col gap-4 rounded-[14px] p-3.5"
+              style={{ background: t.control, border: `1px solid ${t.line}` }}
+            >
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div
                   className="overflow-hidden rounded-[10px]"
-                  style={{ border: `1px solid ${t.lineStrong}` }}
+                  style={{ border: `1px solid ${t.line}` }}
                 >
                   <Selector
                     t={t}
                     label="Tone"
                     optional
+                    compact
                     value={selectedTone?.label ?? ""}
                     placeholder="Choose a tone"
                     open={openDropdown === "tone"}
@@ -972,12 +938,13 @@ export default function RambleBabbleApp({
 
                 <div
                   className="overflow-hidden rounded-[10px]"
-                  style={{ border: `1px solid ${t.lineStrong}` }}
+                  style={{ border: `1px solid ${t.line}` }}
                 >
                   <Selector
                     t={t}
                     label="Character"
                     optional
+                    compact
                     value={selectedPersona?.label ?? ""}
                     placeholder="Add a character"
                     open={openDropdown === "character"}
@@ -1003,12 +970,13 @@ export default function RambleBabbleApp({
 
                 <div
                   className="overflow-hidden rounded-[10px]"
-                  style={{ border: `1px solid ${t.lineStrong}` }}
+                  style={{ border: `1px solid ${t.line}` }}
                 >
                   <Selector
                     t={t}
                     label="Accent"
                     optional
+                    compact
                     value={selectedAccent?.label ?? ""}
                     placeholder="Add an accent"
                     open={openDropdown === "accent"}
@@ -1035,12 +1003,13 @@ export default function RambleBabbleApp({
                     written in that language. */}
                 <div
                   className="overflow-hidden rounded-[10px]"
-                  style={{ border: `1px solid ${t.lineStrong}` }}
+                  style={{ border: `1px solid ${t.line}` }}
                 >
                   <Selector
                     t={t}
                     label="Language"
                     optional
+                    compact
                     value={targetLanguage}
                     placeholder="Same as input"
                     open={openDropdown === "language"}
@@ -1060,8 +1029,8 @@ export default function RambleBabbleApp({
                       }}
                     />
                     <div
-                      className="font-mono-label px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.18em]"
-                      style={{ color: ACCENT }}
+                      className="font-mono-label px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em]"
+                      style={{ color: t.inkFaint }}
                     >
                       Translate the output to
                     </div>
@@ -1079,54 +1048,58 @@ export default function RambleBabbleApp({
                     ))}
                   </Selector>
                 </div>
+              </div>
 
-                {/* Keep these spellings: a real label, an obviously typeable
-                    box, the explanation underneath where it belongs. */}
-                <div>
-                  <label
-                    htmlFor="rb-vocabulary"
-                    className="font-mono-label mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em]"
-                    style={{ color: t.ink }}
-                  >
-                    Keep these spellings{" "}
-                    <span className="font-bold" style={{ color: ACCENT }}>
-                      · optional
-                    </span>
-                  </label>
-                  <input
-                    id="rb-vocabulary"
-                    value={vocabulary}
-                    onChange={(e) => setVocabulary(e.target.value)}
-                    placeholder="e.g. Siobhan, Dr. Achebe, ProTools, Nauticon"
-                    className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
-                    style={
-                      {
-                        // t.panel, not t.panel2: this field sits ON the
-                        // t.control drawer, and in Day panel2 (#f0f2f5) on
-                        // control (#eef1f4) is tone-on-tone. panel is a real
-                        // well in both themes (white on grey / black on grey).
-                        background: t.panel,
-                        border: `1px solid ${t.lineStrong}`,
-                        color: t.ink,
-                        "--rb-ph": t.inkFaint,
-                      } as React.CSSProperties
-                    }
-                  />
-                  <p className="mt-1.5 text-[12px]" style={{ color: t.inkDim }}>
-                    Type any names, brands, or unusual words you want spelled
-                    exactly this way, so the app keeps them word-for-word and
-                    never &ldquo;corrects&rdquo; them. Leave blank if you
-                    don&rsquo;t have any.
-                  </p>
-                </div>
+              {/* Keep these spellings: a real label, an obviously typeable
+                  box, the explanation underneath where it belongs. */}
+              <div>
+                <label
+                  htmlFor="rb-vocabulary"
+                  className="font-mono-label mb-1.5 block text-[9px] font-medium uppercase tracking-[0.12em]"
+                  style={{ color: t.inkFaint }}
+                >
+                  Keep these spellings{" "}
+                  <span className="font-normal" style={{ color: t.inkFaint }}>
+                    · optional
+                  </span>
+                </label>
+                <input
+                  id="rb-vocabulary"
+                  value={vocabulary}
+                  onChange={(e) => setVocabulary(e.target.value)}
+                  placeholder="e.g. Siobhan, Dr. Achebe, ProTools, Nauticon"
+                  className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+                  style={
+                    {
+                      // t.panel, not t.panel2: this field sits ON the
+                      // t.control drawer, and in Day panel2 (#f0f2f5) on
+                      // control (#eef1f4) is tone-on-tone. panel is a real
+                      // well in both themes (white on grey / black on grey).
+                      background: t.panel,
+                      border: `1px solid ${t.lineStrong}`,
+                      color: t.ink,
+                      "--rb-ph": t.inkFaint,
+                    } as React.CSSProperties
+                  }
+                />
+                <p className="mt-1.5 text-[12px]" style={{ color: t.inkDim }}>
+                  Type any names, brands, or unusual words you want spelled
+                  exactly this way, so the app keeps them word-for-word and
+                  never &ldquo;corrects&rdquo; them. Leave blank if you
+                  don&rsquo;t have any.
+                </p>
+              </div>
 
+              {/* Profanity and Reset choices share one row: both are small, and
+                  small controls do not get a full-width row each. */}
+              <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <span
-                    className="font-mono-label mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em]"
-                    style={{ color: t.ink }}
+                    className="font-mono-label mb-1.5 block text-[9px] font-medium uppercase tracking-[0.12em]"
+                    style={{ color: t.inkFaint }}
                   >
                     Profanity{" "}
-                    <span className="font-bold" style={{ color: ACCENT }}>
+                    <span className="font-normal" style={{ color: t.inkFaint }}>
                       · optional
                     </span>
                   </span>
@@ -1176,30 +1149,60 @@ export default function RambleBabbleApp({
 
                 <button
                   onClick={resetChoices}
-                  className="font-mono-label flex items-center gap-1.5 self-start rounded-[10px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  className="font-mono-label flex items-center gap-1.5 rounded-[10px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
                   style={{ background: t.ink, color: t.panel }}
                 >
                   <span aria-hidden>&#8635;</span> Reset choices
                 </button>
               </div>
-            )}
+            </div>
+          )}
+        </div>
 
-            {/* ROW 2 — the ramble. The textarea is the ADJUSTABLE variable in
-                this panel (layout contract rule 1: content gets smaller, the
-                panel never scrolls inside itself). Its height is derived from
-                the viewport so everything above it plus Record and Babble it
-                always fit on one screen: on a short viewport it gives up its
-                own height rather than pushing the primary action below the fold
-                (rules 2 and 3). The 300px ceiling keeps it from turning into a
-                void on tall screens; the 140px floor keeps it usable. It never
-                scrolls at rest. */}
+        {/* ============ TWO-COLUMN WORKSPACE ============ */}
+        {/* LEFT is the notes and the one primary action, RIGHT is the payoff.
+            Side by side on tablet/desktop, stacked on phones. Neither column
+            ever scrolls inside itself. */}
+        <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
+          {/* ============ LEFT PANEL — your notes ============ */}
+          {/* It now does ONE job: the ramble, Record, and Babble it. Nothing in
+              here moves when the Options drawer opens. */}
+          <section
+            className="flex flex-col gap-2 rounded-[20px] p-4 sm:p-5"
+            style={{ background: t.panel, border: `1px solid ${t.line}` }}
+          >
+            {/* Heading for the column, with the live word count riding the far
+                end of the same line instead of costing a row of its own. */}
+            <div className="flex items-baseline justify-between gap-2">
+              <span
+                className="font-mono-label text-[11px] font-medium uppercase tracking-[0.12em]"
+                style={{ color: t.inkDim }}
+              >
+                Your notes
+              </span>
+              <span
+                className="font-mono-label text-[10px] tracking-[0.06em]"
+                style={{ color: t.inkFaint }}
+              >
+                {words} words
+              </span>
+            </div>
+
+            {/* The ramble. The textarea is the ADJUSTABLE variable on this page
+                (layout contract rule 1: content gets smaller, the panel never
+                scrolls inside itself). Its height is derived from the viewport
+                so the title band, the control band, Record and Babble it always
+                fit on one screen: on a short viewport it gives up its own height
+                rather than pushing the primary action below the fold (rules 2
+                and 3). The ceiling keeps it from turning into a void on tall
+                screens; the floor keeps it usable. It never scrolls at rest. */}
             <div className="relative flex flex-col">
               <textarea
                 ref={inputRef}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Ramble in, Babble out. Spill your messiest rambles right here: the voice memos, the half-baked ideas, the texts you definitely shouldn't send yet. Then choose how it should sound above and press Babble it."
-                className="rb-hero-input h-[clamp(140px,calc(100dvh_-_27rem),250px)] w-full resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:h-[clamp(150px,calc(100dvh_-_23rem),300px)] sm:p-5 sm:text-[17px]"
+                placeholder="Spill it here. The voice memos, the half-baked ideas, the texts you shouldn't send yet."
+                className="rb-hero-input h-[clamp(140px,calc(100dvh_-_35rem),250px)] w-full resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:h-[clamp(150px,calc(100dvh_-_31.5rem),300px)] sm:p-5 sm:text-[17px]"
                 style={
                   {
                     color: t.ink,
@@ -1268,15 +1271,14 @@ export default function RambleBabbleApp({
               )}
             </div>
 
-            {/* ROW 3 — the quiet chips, directly under the ramble and visible
-                with zero scrolling: Record is the app's core input, so it is
-                never below the fold. It turns into Stop while a take is live.
-                Clear stays out of the way, and the live word count rides the
-                far end of the same row instead of costing a row of its own.
-                No Paste chip: the browser cannot read the clipboard silently,
-                so it prompts, and Ctrl+V / long-press already do it in fewer
-                taps. No Copy chip either: copying your own ramble back out of
-                the box you just typed it into serves nobody. */}
+            {/* The quiet chips, directly under the ramble and visible with zero
+                scrolling: Record is the app's core input, so it is never below
+                the fold. It turns into Stop while a take is live. Clear stays
+                out of the way. No Paste chip: the browser cannot read the
+                clipboard silently, so it prompts, and Ctrl+V / long-press
+                already do it in fewer taps. No Copy chip either: copying your
+                own ramble back out of the box you just typed it into serves
+                nobody. */}
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={recording ? handleStop : handleStart}
@@ -1317,16 +1319,10 @@ export default function RambleBabbleApp({
                 </span>{" "}
                 Clear
               </button>
-              <span
-                className="font-mono-label ml-auto text-[10px] tracking-[0.06em]"
-                style={{ color: t.inkFaint }}
-              >
-                {words} words
-              </span>
             </div>
 
-            {/* ROW 4 — the ONE emphasized action, full panel width. Any limit
-                notice sits quietly above it. */}
+            {/* The ONE emphasized action, full column width. Any limit notice
+                sits quietly above it. */}
             <div className="flex flex-col gap-1.5">
               {limitNotice && (
                 <p className="font-mono-label text-[11px]" style={{ color: "#ff5a3c" }}>
@@ -1437,11 +1433,11 @@ export default function RambleBabbleApp({
                   <button
                     onClick={handleCopy}
                     disabled={!cleaned}
-                    className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
+                    className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
                     style={{
-                      backgroundImage: GRADIENT,
-                      boxShadow: "0 8px 22px -8px rgba(123,92,255,0.9)",
-                      textShadow: "0 1px 2px rgba(0,0,0,0.32)",
+                      background: "transparent",
+                      border: `1px solid ${t.lineStrong}`,
+                      color: t.inkDim,
                     }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
@@ -1459,7 +1455,7 @@ export default function RambleBabbleApp({
               {hasResult && !cleaning && metaLabel && (
                 <div
                   className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5"
-                  style={{ background: "rgba(123,92,255,0.08)", borderBottom: `1px solid ${t.line}` }}
+                  style={{ background: t.panel2, borderBottom: `1px solid ${t.line}` }}
                 >
                   <span
                     className="font-mono-label text-[10px] uppercase tracking-[0.14em]"
@@ -1480,7 +1476,7 @@ export default function RambleBabbleApp({
                   <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
                     <span
                       className="font-serif-i text-[64px] leading-none"
-                      style={{ color: ACCENT }}
+                      style={{ color: t.inkFaint }}
                     >
                       b
                     </span>
@@ -1495,7 +1491,7 @@ export default function RambleBabbleApp({
                       style={{ color: t.inkDim }}
                     >
                       Pick how it should sound, dump your notes on the left, and hit{" "}
-                      <span style={{ color: ACCENT }} className="font-semibold">
+                      <span style={{ color: t.ink }} className="font-semibold">
                         Babble it
                       </span>
                       .
@@ -1533,7 +1529,7 @@ export default function RambleBabbleApp({
                             >
                               <span
                                 className="font-mono-label text-[12px]"
-                                style={{ color: ACCENT }}
+                                style={{ color: t.inkFaint }}
                               >
                                 {String(i + 1).padStart(2, "0")}
                               </span>
@@ -1561,7 +1557,7 @@ export default function RambleBabbleApp({
                                 borderTop: i ? `1px solid ${t.line}` : undefined,
                               }}
                             >
-                              <span style={{ color: ACCENT }} aria-hidden>
+                              <span style={{ color: t.inkDim }} aria-hidden>
                                 &rarr;
                               </span>
                               {f}
@@ -1607,7 +1603,7 @@ export default function RambleBabbleApp({
             <button
               onClick={() => setTheme((th) => (th === "night" ? "day" : "night"))}
               className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
-              style={{ background: ACCENT, color: "#fff" }}
+              style={{ background: t.ink, color: t.panel }}
             >
               {theme === "night" ? "Switch to Day" : "Switch to Night"}
             </button>
@@ -1616,7 +1612,11 @@ export default function RambleBabbleApp({
             <button
               onClick={() => setOverlay("upgrade")}
               className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
-              style={{ backgroundImage: GRADIENT, color: "#fff" }}
+              style={{
+                background: "transparent",
+                border: `1px solid ${t.lineStrong}`,
+                color: t.inkDim,
+              }}
             >
               See upgrade options
             </button>
@@ -1702,26 +1702,24 @@ function Wordmark({ color }: { color: string }) {
 function AccountItem({
   t,
   label,
-  accent,
   onClick,
 }: {
   t: T;
   label: string;
-  accent?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       className="font-mono-label flex w-full items-center px-4 py-2.5 text-left text-[12px] font-bold uppercase tracking-[0.1em] transition"
-      style={{ background: "transparent", color: accent ? ACCENT : t.ink }}
+      style={{ background: "transparent", color: t.ink }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = t.ink;
         e.currentTarget.style.color = t.panel;
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = accent ? ACCENT : t.ink;
+        e.currentTarget.style.color = t.ink;
       }}
     >
       {label}
@@ -1755,7 +1753,6 @@ function Overlay({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ height: 3, backgroundImage: GRADIENT }} />
         <div
           className="flex items-center justify-between px-6 py-4"
           style={{ borderBottom: `1px solid ${t.lineStrong}` }}
@@ -1827,12 +1824,14 @@ function PlanCard({
       className="flex flex-col p-4"
       style={{
         background: t.panel2,
-        border: highlight ? `2px solid ${ACCENT}` : `1px solid ${t.lineStrong}`,
+        border: highlight
+          ? `2px solid ${t.lineStrong}`
+          : `1px solid ${t.lineStrong}`,
       }}
     >
       <span
         className="font-mono-label text-[11px] font-bold uppercase tracking-[0.14em]"
-        style={{ color: highlight ? ACCENT : t.inkDim }}
+        style={{ color: highlight ? t.ink : t.inkDim }}
       >
         {name}
       </span>
@@ -1849,8 +1848,10 @@ function PlanCard({
         disabled={disabled}
         className="font-mono-label mt-4 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-50"
         style={
+          // The one primary action inside its own modal, so it may stay
+          // emphasized. Flat solid accent, no gradient, no glow.
           highlight
-            ? { backgroundImage: GRADIENT, color: "#fff" }
+            ? { background: ACCENT, color: "#fff" }
             : { background: t.ink, color: t.panel }
         }
       >
@@ -1867,6 +1868,7 @@ function Selector({
   value,
   placeholder,
   optional,
+  compact,
   open,
   onToggle,
   children,
@@ -1880,6 +1882,9 @@ function Selector({
   value: string;
   placeholder: string;
   optional?: boolean;
+  // Compact = a secondary choice (the four in the Options drawer). Lighter and
+  // smaller than Format on purpose, so Format always visibly outranks them.
+  compact?: boolean;
   open: boolean;
   onToggle: () => void;
   children: React.ReactNode;
@@ -1889,38 +1894,34 @@ function Selector({
   return (
     <div
       className={`relative flex flex-col ${className ?? ""}`}
-      style={{ background: t.control }}
+      style={{ background: compact ? "transparent" : t.control }}
     >
       <button
         onClick={onToggle}
-        className="flex w-full flex-1 items-center justify-between gap-2 px-3.5 py-2.5 text-left transition"
+        className={`flex w-full flex-1 items-center justify-between gap-2 px-3.5 text-left transition ${
+          compact ? "py-1.5" : "py-2.5"
+        }`}
         style={{
-          background: open
-            ? "rgba(123,92,255,0.18)"
-            : set
-              ? "rgba(123,92,255,0.12)"
-              : t.control,
-          boxShadow: set ? `inset 0 -3px 0 ${ACCENT}` : "none",
+          // A set value does NOT tint. Only "open" raises the tone, because
+          // only "open" is live state. The value below the label already says
+          // what is selected; a purple wash on top of it says nothing.
+          background: open ? t.control2 : compact ? "transparent" : t.control,
         }}
       >
         <span className="flex min-w-0 flex-col gap-0.5">
           <span
-            className="font-mono-label flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em]"
-            style={{ color: t.inkDim }}
+            className="font-mono-label flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-[0.12em]"
+            style={{ color: t.inkFaint }}
           >
             {index ? `${index} ${label}` : label}
-            {set ? (
-              <span style={{ color: ACCENT }} className="font-bold">
-                · selected
-              </span>
-            ) : optional ? (
-              <span style={{ color: t.inkDim }} className="font-bold">
+            {optional ? (
+              <span style={{ color: t.inkFaint }} className="font-normal">
                 · optional
               </span>
             ) : null}
           </span>
           <span
-            className="truncate text-[16px]"
+            className={`truncate ${compact ? "text-[14px]" : "text-[16px]"}`}
             style={{
               color: set ? t.ink : t.inkDim,
               fontWeight: set ? 700 : 500,
@@ -1935,7 +1936,7 @@ function Selector({
           height="16"
           viewBox="0 0 24 24"
           fill="none"
-          stroke={set ? ACCENT : t.inkDim}
+          stroke={t.inkDim}
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -1987,7 +1988,7 @@ function Selector({
                 <button
                   onClick={onToggle}
                   className="font-mono-label px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em]"
-                  style={{ color: ACCENT }}
+                  style={{ color: t.inkDim }}
                   aria-label="Close"
                 >
                   Close
@@ -2032,7 +2033,7 @@ function GroupedOptions({
       {heading && (
         <div
           className="font-mono-label px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.18em]"
-          style={{ color: ACCENT }}
+          style={{ color: t.inkFaint }}
         >
           {heading}
         </div>
@@ -2126,18 +2127,18 @@ function Collapsible({
   return (
     <div
       className="rb-rise mt-3 overflow-hidden"
-      style={{ border: `1.5px solid rgba(123,92,255,0.32)` }}
+      style={{ border: `1.5px solid ${t.line}` }}
     >
       <button
         onClick={onToggle}
         className="flex w-full items-center justify-between px-4 py-2.5 transition"
         style={{
-          background: open ? "rgba(123,92,255,0.13)" : "rgba(123,92,255,0.07)",
+          background: open ? t.control2 : t.control,
         }}
       >
         <span
           className="font-mono-label flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-[0.14em]"
-          style={{ color: ACCENT }}
+          style={{ color: t.ink }}
         >
           <span
             aria-hidden
@@ -2145,7 +2146,7 @@ function Collapsible({
               width: 7,
               height: 7,
               borderRadius: 999,
-              background: ACCENT,
+              background: t.inkFaint,
               display: "inline-block",
             }}
           />
@@ -2156,7 +2157,7 @@ function Collapsible({
           height="16"
           viewBox="0 0 24 24"
           fill="none"
-          stroke={ACCENT}
+          stroke={t.inkDim}
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -2189,7 +2190,7 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="font-mono-label flex-1 rounded-[10px] px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:bg-[rgba(123,92,255,0.08)] disabled:opacity-50"
+      className="font-mono-label flex-1 rounded-[10px] px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:bg-[rgba(128,128,128,0.12)] disabled:opacity-50"
       style={{ background: "transparent", color: t.inkDim }}
     >
       {children}
