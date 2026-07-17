@@ -29,6 +29,7 @@ import {
   LIMIT_REACHED_MESSAGE,
   TOO_LARGE_MESSAGE,
 } from "@/lib/config";
+import type { GlossaryEntry } from "@/lib/glossary";
 
 const MAX_MINUTES = Math.round(MAX_RECORDING_SECONDS / 60);
 const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
@@ -118,6 +119,23 @@ function formatTime(total: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// "Your words" rows. The UI always holds both fields as strings (controlled
+// inputs); the wire shape drops a blank meaning entirely.
+type GlossaryRow = { word: string; meaning: string };
+const EMPTY_GLOSSARY: GlossaryRow[] = [{ word: "", meaning: "" }];
+
+/** Rows -> what we send: a word is required, a blank meaning is left off. */
+function toGlossaryEntries(rows: GlossaryRow[]): GlossaryEntry[] {
+  const entries: GlossaryEntry[] = [];
+  for (const row of rows) {
+    const word = row.word.trim();
+    if (!word) continue;
+    const meaning = row.meaning.trim();
+    entries.push(meaning ? { word, meaning } : { word });
+  }
+  return entries;
+}
+
 export default function RambleBabbleApp({
   userId,
   userEmail,
@@ -141,7 +159,10 @@ export default function RambleBabbleApp({
   const [inputText, setInputText] = useState(reopen?.transcript ?? "");
   const [outputType, setOutputType] = useState(reopen?.output_type ?? "note");
   const [tone, setTone] = useState(reopen?.tone ?? "");
-  const [vocabulary, setVocabulary] = useState("");
+  // "Your words": the speaker's own terms, each with what it means, so the app
+  // can tell their term from the ordinary word it sounds like. One empty row
+  // to start, so the feature is obvious without being noisy.
+  const [glossary, setGlossary] = useState<GlossaryRow[]>(EMPTY_GLOSSARY);
   const [accent, setAccent] = useState("");
   const [persona, setPersona] = useState("");
   const [targetLanguage, setTargetLanguage] = useState("");
@@ -236,7 +257,10 @@ export default function RambleBabbleApp({
         const form = new FormData();
         const ext = blob.type.includes("mp4") ? "mp4" : "webm";
         form.append("audio", blob, `ramble.${ext}`);
-        if (vocabulary.trim()) form.append("vocabulary", vocabulary.trim());
+        // Send the speaker's own terms up front: transcription is biased
+        // toward their spellings instead of guessing and being repaired later.
+        const entries = toGlossaryEntries(glossary);
+        if (entries.length) form.append("glossary", JSON.stringify(entries));
         const res = await fetch("/api/transcribe", { method: "POST", body: form });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Transcription failed.");
@@ -249,7 +273,7 @@ export default function RambleBabbleApp({
         setTranscribing(false);
       }
     },
-    [vocabulary],
+    [glossary],
   );
 
   const handleAutoStop = useCallback(
@@ -313,6 +337,7 @@ export default function RambleBabbleApp({
       setCopyLabel("Copy");
       setLoadingWord(pickLoading());
       setCleaning(true);
+      const glossaryEntries = toGlossaryEntries(glossary);
       try {
         const res = await fetch("/api/cleanup", {
           method: "POST",
@@ -326,7 +351,7 @@ export default function RambleBabbleApp({
             accent: accent || undefined,
             persona: persona || undefined,
             targetLanguage: targetLanguage || undefined,
-            vocabulary: vocabulary.trim() || undefined,
+            glossary: glossaryEntries.length ? glossaryEntries : undefined,
             cleanProfanity,
             modifier,
           }),
@@ -376,7 +401,7 @@ export default function RambleBabbleApp({
       accent,
       persona,
       targetLanguage,
-      vocabulary,
+      glossary,
       userId,
     ],
   );
@@ -401,7 +426,7 @@ export default function RambleBabbleApp({
   const handleClear = useCallback(() => {
     if (recorder.status === "recording") recorder.cancel();
     setInputText("");
-    setVocabulary("");
+    setGlossary(EMPTY_GLOSSARY);
     setCustomInstruction("");
     setCleaned("");
     setKeyPoints([]);
@@ -417,9 +442,32 @@ export default function RambleBabbleApp({
     setAccent("");
     setPersona("");
     setTargetLanguage("");
+    setGlossary(EMPTY_GLOSSARY);
     setCleanProfanity(false);
     setOpenDropdown(null);
   };
+
+  // "Your words" rows. Removing the last remaining row leaves one empty row
+  // rather than nothing, so the feature never disappears off the screen.
+  const setGlossaryField = (
+    index: number,
+    field: keyof GlossaryRow,
+    value: string,
+  ) =>
+    setGlossary((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
+    );
+  const addGlossaryRow = () =>
+    setGlossary((rows) => [...rows, { word: "", meaning: "" }]);
+  const removeGlossaryRow = (index: number) =>
+    setGlossary((rows) =>
+      rows.length > 1 ? rows.filter((_, i) => i !== index) : EMPTY_GLOSSARY,
+    );
+  // Nothing to remove when all that exists is the one blank starter row.
+  const glossaryIsEmpty =
+    glossary.length === 1 &&
+    !glossary[0].word.trim() &&
+    !glossary[0].meaning.trim();
 
   const words = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
   const chars = inputText.length;
@@ -706,8 +754,10 @@ export default function RambleBabbleApp({
                     <b>Language</b> translates the whole thing.
                   </li>
                   <li>
-                    <b>Keep these spellings</b> locks names or words so the app
-                    never changes them.
+                    <b>Your words</b> locks your own names and terms to the
+                    exact spelling, and tells the app what they mean, so it
+                    knows when you mean your word and when you mean the
+                    ordinary one.
                   </li>
                 </ul>
                 <p className="mt-3 text-[13px]" style={{ color: t.inkDim }}>
@@ -1050,44 +1100,130 @@ export default function RambleBabbleApp({
                 </div>
               </div>
 
-              {/* Keep these spellings: a real label, an obviously typeable
-                  box, the explanation underneath where it belongs. */}
+              {/* Your words: the speaker's own terms. A flat spelling list
+                  could not do this job — "recruiter" and their app "Rekrutr"
+                  sound identical, so the app needs to know what the word MEANS
+                  to pick the right one. Word and meaning ride ONE row wherever
+                  there is width (contract rule 5) and only stack on a narrow
+                  phone. */}
               <div>
-                <label
-                  htmlFor="rb-vocabulary"
+                <span
                   className="font-mono-label mb-1.5 block text-[9px] font-medium uppercase tracking-[0.12em]"
                   style={{ color: t.inkFaint }}
                 >
-                  Keep these spellings{" "}
+                  Your words{" "}
                   <span className="font-normal" style={{ color: t.inkFaint }}>
                     · optional
                   </span>
-                </label>
-                <input
-                  id="rb-vocabulary"
-                  value={vocabulary}
-                  onChange={(e) => setVocabulary(e.target.value)}
-                  placeholder="e.g. Siobhan, Dr. Achebe, ProTools, Nauticon"
-                  className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
-                  style={
-                    {
-                      // t.panel, not t.panel2: this field sits ON the
-                      // t.control drawer, and in Day panel2 (#f0f2f5) on
-                      // control (#eef1f4) is tone-on-tone. panel is a real
-                      // well in both themes (white on grey / black on grey).
-                      background: t.panel,
-                      border: `1px solid ${t.lineStrong}`,
-                      color: t.ink,
-                      "--rb-ph": t.inkFaint,
-                    } as React.CSSProperties
-                  }
-                />
-                <p className="mt-1.5 text-[12px]" style={{ color: t.inkDim }}>
-                  Type any names, brands, or unusual words you want spelled
-                  exactly this way, so the app keeps them word-for-word and
-                  never &ldquo;corrects&rdquo; them. Leave blank if you
-                  don&rsquo;t have any.
+                </span>
+                <p className="mb-2 text-[12px]" style={{ color: t.inkDim }}>
+                  Names, brands, or words you use that we should get right.
+                  Tell us what they mean so we know when you mean them.
                 </p>
+
+                <div className="flex flex-col gap-2">
+                  {glossary.map((row, i) => (
+                    /* One row on any real width; only a narrow phone wraps,
+                       and even there it wraps to TWO lines (word, then meaning
+                       + remove) rather than three, because this drawer's
+                       height is charged against Record and Babble it. */
+                    <div key={i} className="flex flex-wrap items-end gap-2">
+                      <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+                        <label
+                          htmlFor={`rb-word-${i}`}
+                          className="font-mono-label mb-1 block text-[9px] uppercase tracking-[0.12em]"
+                          style={{ color: t.inkFaint }}
+                        >
+                          Word
+                        </label>
+                        <input
+                          id={`rb-word-${i}`}
+                          value={row.word}
+                          onChange={(e) =>
+                            setGlossaryField(i, "word", e.target.value)
+                          }
+                          placeholder="Rekrutr"
+                          className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+                          style={
+                            {
+                              // t.panel, not t.panel2: these fields sit ON the
+                              // t.control drawer, and in Day panel2 (#f0f2f5)
+                              // on control (#eef1f4) is tone-on-tone. panel is
+                              // a real well in both themes (white on grey /
+                              // black on grey).
+                              background: t.panel,
+                              border: `1px solid ${t.lineStrong}`,
+                              color: t.ink,
+                              "--rb-ph": t.inkFaint,
+                            } as React.CSSProperties
+                          }
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 sm:basis-0 sm:flex-[1.4]">
+                        <label
+                          htmlFor={`rb-meaning-${i}`}
+                          className="font-mono-label mb-1 block text-[9px] uppercase tracking-[0.12em]"
+                          style={{ color: t.inkFaint }}
+                        >
+                          What it is
+                        </label>
+                        <input
+                          id={`rb-meaning-${i}`}
+                          value={row.meaning}
+                          onChange={(e) =>
+                            setGlossaryField(i, "meaning", e.target.value)
+                          }
+                          placeholder="my recruiting app"
+                          className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+                          style={
+                            {
+                              background: t.panel,
+                              border: `1px solid ${t.lineStrong}`,
+                              color: t.ink,
+                              "--rb-ph": t.inkFaint,
+                            } as React.CSSProperties
+                          }
+                        />
+                      </div>
+                      {/* Quiet, and disabled rather than hidden on the lone
+                          starter row so the row geometry never jumps. */}
+                      <button
+                        type="button"
+                        onClick={() => removeGlossaryRow(i)}
+                        disabled={glossaryIsEmpty}
+                        aria-label={
+                          row.word.trim()
+                            ? `Remove ${row.word.trim()}`
+                            : "Remove this word"
+                        }
+                        title="Remove"
+                        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] text-[15px] transition active:translate-y-px"
+                        style={{
+                          background: t.control2,
+                          border: `1px solid ${t.lineStrong}`,
+                          color: t.inkDim,
+                          opacity: glossaryIsEmpty ? 0.35 : 1,
+                          cursor: glossaryIsEmpty ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        <span aria-hidden>&#215;</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addGlossaryRow}
+                  className="font-mono-label mt-2 rounded-[8px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  style={{
+                    background: t.control2,
+                    border: `1px solid ${t.lineStrong}`,
+                    color: t.ink,
+                  }}
+                >
+                  + Add another
+                </button>
               </div>
 
               {/* Profanity and Reset choices share one row: both are small, and
@@ -1202,7 +1338,7 @@ export default function RambleBabbleApp({
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="Spill it here. The voice memos, the half-baked ideas, the texts you shouldn't send yet."
-                className="rb-hero-input h-[clamp(140px,calc(100dvh_-_35rem),250px)] w-full resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:h-[clamp(150px,calc(100dvh_-_31.5rem),300px)] sm:p-5 sm:text-[17px]"
+                className="rb-hero-input h-[clamp(140px,calc(100dvh_-_33rem),250px)] w-full resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:h-[clamp(150px,calc(100dvh_-_29rem),300px)] sm:p-5 sm:text-[17px]"
                 style={
                   {
                     color: t.ink,

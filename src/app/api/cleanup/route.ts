@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
 import { getOutputType, getTone, getAccent, getPersona } from "@/lib/options";
 import { stripBanned, stripBannedList, stripMarkdown } from "@/lib/sanitize";
+import { resolveGlossary } from "@/lib/glossary";
 import { RATE_LIMIT_MESSAGE } from "@/lib/config";
 import { getClientIp, checkRateLimit } from "@/lib/ratelimit";
 
@@ -24,6 +25,10 @@ export async function POST(req: NextRequest) {
       accent?: string;
       persona?: string;
       targetLanguage?: string;
+      // "Your words": the speaker's own terms. Typed as unknown because it is
+      // untrusted client input; resolveGlossary validates and caps it.
+      glossary?: unknown;
+      // Legacy flat spelling list, still accepted from older clients.
       vocabulary?: string;
       cleanProfanity?: boolean;
       modifier?: string;
@@ -90,6 +95,12 @@ export async function POST(req: NextRequest) {
     const kind: "work" | "fun" =
       formatIsFun || hasCharacter || toneIsExpressive ? "fun" : "work";
 
+    // Structured entries win. A request carrying only the legacy flat
+    // vocabulary string (an old client, a saved ramble) is split on commas
+    // into meaning-less entries, so it keeps working exactly as before.
+    // Malformed input never throws here: it resolves to an empty glossary.
+    const glossary = resolveGlossary(body.glossary, body.vocabulary);
+
     const provider = getProvider();
     const result = await provider.cleanup({
       transcript,
@@ -98,7 +109,7 @@ export async function POST(req: NextRequest) {
       accentInstruction: accent?.instruction,
       personaInstruction: persona?.instruction,
       targetLanguage: body.targetLanguage?.trim() || undefined,
-      vocabulary: body.vocabulary,
+      glossary,
       kind,
       cleanProfanity: body.cleanProfanity === true,
       modifier: typeof body.modifier === "string" ? body.modifier : undefined,

@@ -2,6 +2,8 @@
 // these interfaces — never on a concrete vendor SDK. Add a new provider by
 // implementing AIProvider and wiring it in ./index.ts.
 
+import type { GlossaryEntry } from "../glossary";
+
 export interface TranscribeInput {
   /** Raw audio bytes captured from the browser. */
   audio: Buffer;
@@ -9,8 +11,13 @@ export interface TranscribeInput {
   filename: string;
   /** MIME type of the audio, e.g. "audio/webm". */
   mimeType: string;
-  /** Optional vocabulary to bias the transcription (brand names, jargon). */
+  /**
+   * Legacy: a flat comma-separated spelling list. Kept so older clients keep
+   * working; prefer `glossary`, which is what the app sends now.
+   */
   vocabulary?: string;
+  /** The speaker's own terms. Their WORDS bias the transcription up front. */
+  glossary?: GlossaryEntry[];
 }
 
 export interface CleanupInput {
@@ -26,8 +33,17 @@ export interface CleanupInput {
   personaInstruction?: string;
   /** Optional target language for the output, e.g. "Spanish". */
   targetLanguage?: string;
-  /** Optional terms to preserve or correct exactly. */
+  /**
+   * Legacy: a flat comma-separated list of terms to preserve exactly. Kept for
+   * backward compatibility; it is read only when `glossary` is absent.
+   */
   vocabulary?: string;
+  /**
+   * The speaker's own terms, each an exact spelling plus optionally what it
+   * means, so the model can tell their term from the ordinary word it sounds
+   * like.
+   */
+  glossary?: GlossaryEntry[];
   /** "work" = practical/useful output, "fun" = playful output. */
   kind: "work" | "fun";
   /** When true, strip profanity from the output but keep the speaker's anger. */

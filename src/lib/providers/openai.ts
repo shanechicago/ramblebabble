@@ -7,6 +7,7 @@ import type {
   TranscribeInput,
 } from "./types";
 import { CLEANUP_SYSTEM_PROMPT, buildCleanupUserMessage } from "../prompt";
+import { glossaryWords, resolveGlossary } from "../glossary";
 
 // OpenAI implementation of the provider interface.
 // Models are overridable via env so we can tune without code changes.
@@ -34,11 +35,19 @@ export const openAIProvider: AIProvider = {
       type: input.mimeType,
     });
 
+    // Bias Whisper toward the speaker's own terms up front, so the right
+    // spelling lands in the transcript instead of being repaired later. Only
+    // the WORDS matter here; the meanings are for the cleanup model. A legacy
+    // flat vocabulary string still resolves to the same thing.
+    const words = glossaryWords(
+      resolveGlossary(input.glossary, input.vocabulary),
+    );
+
     const res = await openai.audio.transcriptions.create({
       file,
       model: TRANSCRIBE_MODEL,
       // Biases the model toward these terms without storing anything.
-      prompt: input.vocabulary?.trim() || undefined,
+      prompt: words || undefined,
     });
 
     return res.text?.trim() ?? "";

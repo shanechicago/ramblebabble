@@ -3,6 +3,7 @@ import { getProvider } from "@/lib/providers";
 import { MAX_UPLOAD_BYTES, RATE_LIMIT_MESSAGE } from "@/lib/config";
 import { getClientIp, checkRateLimit } from "@/lib/ratelimit";
 import { stripBanned } from "@/lib/sanitize";
+import { parseGlossaryJson, resolveGlossary } from "@/lib/glossary";
 
 export const runtime = "nodejs";
 // Audio is never persisted — it lives only in memory for the request.
@@ -49,7 +50,13 @@ export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
     const audio = form.get("audio");
-    const vocabulary = (form.get("vocabulary") as string | null) || undefined;
+    // "Your words" rides along as JSON so the same validation covers both
+    // routes; only the words are used to bias transcription. An older client
+    // sending the flat "vocabulary" string still resolves to the same entries.
+    const glossary = resolveGlossary(
+      parseGlossaryJson(form.get("glossary")),
+      form.get("vocabulary"),
+    );
 
     if (!(audio instanceof File)) {
       return NextResponse.json(
@@ -79,7 +86,7 @@ export async function POST(req: NextRequest) {
       audio: buffer,
       filename: audio.name || "audio.webm",
       mimeType: audio.type || "audio/webm",
-      vocabulary,
+      glossary,
     });
 
     return NextResponse.json({
