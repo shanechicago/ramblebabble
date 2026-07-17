@@ -126,6 +126,8 @@ export const ACCENTS: Option[] = [
   { id: "australian", label: "Aussie", hint: "G'day, mate", instruction: "Give it a laid-back Aussie voice: 'g'day', 'mate', 'no worries', 'reckon', 'heaps', 'arvo', 'crikey', shortened words, easygoing and cheeky." },
   { id: "canadian", label: "Canadian", hint: "Eh, sorry", instruction: "Give it a friendly Canadian voice: 'eh' on the end of things, a lot of 'sorry', 'aboot', 'for sure', 'beauty', 'take off', 'give'r', polite and warm, hockey and Tim Hortons energy." },
   { id: "minnesotan", label: "Minnesotan", hint: "You betcha, ohh yah", instruction: "Give it an Upper-Midwest 'Fargo' accent, respelled: 'you betcha', 'ohh yah', 'you guys', 'oh geez', 'don'tcha know', 'real good', 'uff da'. Sing-song, aggressively nice, and cheerfully understated." },
+  { id: "indian", label: "Indian", hint: "Warm, precise, musical", instruction: "Give it authentic Indian English with its warm, musical rhythm and unhurried, courteous cadence: real phrasing like 'kindly', 'do the needful', 'I am telling you', 'what to do', 'good name', 'prepone', 'only' and 'itself' used for emphasis ('today only', 'here itself'), tag questions like 'isn't it?' and 'no?', and the present continuous where others would use the simple present ('I am thinking', 'she is having'). Crisp, fully-articulated consonants and precise, slightly formal diction. This is a fluent, educated Indian English speaker: warm, precise, and confident, never broken English and NEVER a mocking caricature." },
+  { id: "german", label: "German", hint: "Crisp, direct, precise", instruction: "Give it authentic German-accented English: hard, fully-pronounced consonants respelled where it lands ('ze', 'zis', 'zat', 'vell', 'vhat', 'ver'), with the occasional 'ja', 'nein', 'natürlich', 'genau'. Let German word order bleed through (the verb pushed late, 'Since three years I am waiting'), and reach for a long compound noun when one fits. Blunt, efficient, and exact: no hedging, no filler, every point stated as plain fact, with a dry precision that lands as its own kind of funny. This is a confident, warm German speaker being direct, NEVER a war-film caricature." },
   { id: "shakespeare", label: "Shakespearean", hint: "Thee, thou, hark", instruction: "Give it full Elizabethan Shakespearean English: thee, thou, thy, hath, doth, 'tis, prithee, forsooth, hark, verily. Use archaic verb endings (-eth, -est), inverted word order, and grandiose theatrical flourish." },
   { id: "street", label: "Street", hint: "Modern urban slang", instruction: "Give it modern urban street slang: 'fr', 'on god', 'no cap', 'deadass', 'bet', 'lowkey', 'finna'. Confident and current, lean all the way in." },
 ];
@@ -228,6 +230,8 @@ export const ACCENT_GROUPS: OptionGroup[] = [
       "australian",
       "canadian",
       "minnesotan",
+      "indian",
+      "german",
       "shakespeare",
     ],
   },
