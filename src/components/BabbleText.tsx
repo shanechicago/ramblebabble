@@ -25,14 +25,32 @@ const WORD = "Babble";
 export function BabbleWave({
   className,
   style,
+  duration = "1.6s",
+  offset = "0s",
 }: {
   className?: string;
   style?: React.CSSProperties;
+  /** Cycle length for THIS instance. Two instances on screen must use durations
+   *  that don't divide evenly into each other (1.6s and 1.9s) so they drift in
+   *  and out of phase forever instead of locking into a mechanical lockstep. */
+  duration?: string;
+  /** Starting phase for THIS instance, added on top of the per-letter stagger.
+   *  A negative value means the wave is already mid-roll on first paint. */
+  offset?: string;
 }) {
   const letters = [...WORD];
   const n = letters.length;
   return (
-    <span className={`font-babble inline-block ${className ?? ""}`} style={style}>
+    <span
+      className={`font-babble inline-block ${className ?? ""}`}
+      style={
+        {
+          "--rb-wave-dur": duration,
+          "--rb-wave-offset": offset,
+          ...style,
+        } as React.CSSProperties
+      }
+    >
       {letters.map((ch, i) => (
         <span
           key={i}

@@ -161,13 +161,6 @@ export default function RambleBabbleApp({
   const [view, setView] = useState<"compose" | "result">(
     reopen?.cleaned ? "result" : "compose",
   );
-  const [rambleCopied, setRambleCopied] = useState(false);
-  const copyRamble = useCallback(() => {
-    if (!inputText.trim()) return;
-    void navigator.clipboard?.writeText(inputText);
-    setRambleCopied(true);
-    setTimeout(() => setRambleCopied(false), 1300);
-  }, [inputText]);
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
   // Bumped on every new result so the letter-by-letter fly-in remounts and
@@ -194,22 +187,6 @@ export default function RambleBabbleApp({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
-  // Measure the sticky top zone so the Ramble/Babble headers can stick right
-  // below it (keeping Record / Babble it / Copy reachable while scrolling).
-  const topZoneRef = useRef<HTMLDivElement>(null);
-  const [topH, setTopH] = useState(0);
-  useEffect(() => {
-    const measure = () => {
-      if (topZoneRef.current) setTopH(topZoneRef.current.offsetHeight);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    const id = setInterval(measure, 1000);
-    return () => {
-      window.removeEventListener("resize", measure);
-      clearInterval(id);
-    };
-  }, []);
 
   // Cursor spotlight (editorial signature).
   useEffect(() => {
@@ -454,15 +431,6 @@ export default function RambleBabbleApp({
     setOpenDropdown(null);
   };
 
-  const pasteIn = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) setInputText((p) => (p.trim() ? `${p.trim()}\n\n${text}` : text));
-    } catch {
-      setError("Couldn't read the clipboard. Paste with Ctrl+V instead.");
-    }
-  };
-
   const words = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
   const chars = inputText.length;
   const hasResult = !!cleaned;
@@ -542,7 +510,6 @@ export default function RambleBabbleApp({
       {/* STICKY TOP — the whole header stays put: the brand, the title, and
           your highlighted choices stay visible no matter how far you scroll. */}
       <div
-        ref={topZoneRef}
         className="sticky top-0 z-30"
         style={{
           background: t.chrome,
@@ -772,621 +739,595 @@ export default function RambleBabbleApp({
         className="relative z-10 mx-auto w-full px-4 pb-4 pt-3 sm:px-8"
         style={{ maxWidth: 1760 }}
       >
-        {/* Persistent two-panel workspace: LEFT is where you work (style, ramble,
-            record, Babble it), RIGHT is the payoff (your Babble). Side by side on
-            tablet/desktop, stacked on phones. The whole thing fits under the
-            sticky header so nothing important needs a page scroll. */}
-        <div
-          className="flex flex-col gap-4 md:grid md:h-[calc(100dvh_-_var(--rb-topz)_-_28px)] md:grid-cols-2"
-          style={
-            {
-              // 28px = <main>'s own pt-3 + pb-4. Subtracting it is what actually
-              // keeps the workspace inside the viewport, so tablet/desktop get no
-              // page scroll at all: each panel scrolls internally instead.
-              minHeight: `calc(100dvh - ${topH}px - 28px)`,
-              "--rb-topz": `${topH}px`,
-            } as React.CSSProperties
-          }
-        >
+        {/* Persistent two-panel workspace: LEFT is where you work (format,
+            options, ramble, record, Babble it), RIGHT is the payoff (your
+            Babble). Side by side on tablet/desktop, stacked on phones.
+            NO viewport height cap anywhere: the row is exactly as tall as the
+            LEFT panel's own content, and the payoff panel stretches to match it,
+            so the two read as balanced and neither one grows a scrollbar of its
+            own. Nested scrollbars were the whole disease; height was the cause. */}
+        <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
           {/* ============ LEFT PANEL — workspace ============ */}
-          {/* max-h caps the panel at one screen. On tablet/desktop the grid row
-              above already does this, so it changes nothing there. On phones the
-              panel is content-sized and nothing bounded it, so opening the drawer
-              used to shove Babble it off the bottom of the page. Capped, the
-              content region scrolls inside instead and Babble it stays put. */}
+          {/* Content-height, and nothing inside it scrolls, ever. Format and
+              Options share one line, then the ramble, then the quiet chips with
+              Record first, then the one primary. All of it is on screen from the
+              first frame, drawer open or shut. */}
           <section
-            className="flex max-h-[calc(100dvh_-_var(--rb-topz)_-_28px)] min-h-0 flex-col rounded-[20px] p-4 sm:p-5"
+            className="flex flex-col gap-3 rounded-[20px] p-4 sm:p-5"
             style={{ background: t.panel, border: `1px solid ${t.line}` }}
           >
-            {/* Everything above Babble it lives in ONE internally scrolling
-                column: Format, Options, the ramble, the quiet chips. Scrolling
-                up and down in here is fine. Sideways never is, so every control
-                is full width and nothing is ever cut off. */}
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden">
-              {/* 1. FORMAT — the one required choice. Always visible, full width,
-                  never buried in a sheet. Its own dropdown still portals out. */}
-              <div className="shrink-0">
+            {/* ROW 1 — FORMAT (the one required choice) and OPTIONS, side by
+                side on ONE line. Format is the primary choice so it takes the
+                majority of the row; Options sits compact beside it. Both
+                dropdowns portal out, so nothing here is ever clipped. */}
+            <div className="flex items-stretch gap-2">
+              <div
+                className="min-w-0 flex-1 overflow-hidden rounded-[12px]"
+                style={{ border: `1px solid ${t.lineStrong}` }}
+              >
+                <Selector
+                  t={t}
+                  label="Format"
+                  value={
+                    outputType === "custom"
+                      ? "Something else"
+                      : (selectedStyle?.label ?? "")
+                  }
+                  placeholder="Choose a format"
+                  open={openDropdown === "format"}
+                  onToggle={() =>
+                    setOpenDropdown((d) => (d === "format" ? null : "format"))
+                  }
+                >
+                  <div
+                    className="font-mono-label px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em]"
+                    style={{ color: ACCENT }}
+                  >
+                    Just refine
+                  </div>
+                  <OptionRow
+                    t={t}
+                    label="Clean & Concise"
+                    active={outputType === "note"}
+                    onClick={() => {
+                      setOutputType("note");
+                      setOpenDropdown(null);
+                    }}
+                  />
+                  <GroupedOptions
+                    t={t}
+                    heading="Practical"
+                    groups={USEFUL_GROUPS}
+                    options={OUTPUT_TYPES}
+                    value={outputType}
+                    onPick={(id) => {
+                      setOutputType(id);
+                      setOpenDropdown(null);
+                    }}
+                  />
+                  <GroupedOptions
+                    t={t}
+                    heading="Fun"
+                    groups={FUN_GROUPS}
+                    options={OUTPUT_TYPES}
+                    value={outputType}
+                    onPick={(id) => {
+                      setOutputType(id);
+                      setOpenDropdown(null);
+                    }}
+                  />
+                  <OptionRow
+                    t={t}
+                    label="Something else"
+                    active={outputType === "custom"}
+                    onClick={() => {
+                      setOutputType("custom");
+                      setOpenDropdown(null);
+                    }}
+                  />
+                </Selector>
+              </div>
+
+              {/* OPTIONS — everything secondary behind one compact control,
+                  riding beside Format instead of eating a whole row of its own.
+                  Closed by default. The accent dot means something in there is
+                  set, so a closed drawer never hides a live choice. The round
+                  "?" opens help without also toggling the drawer. */}
+              <button
+                type="button"
+                onClick={() => setShowOptions((o) => !o)}
+                aria-expanded={showOptions}
+                className="flex shrink-0 items-center gap-2 rounded-[12px] px-3 text-left transition active:translate-y-px"
+                style={{
+                  background: t.control,
+                  border: `1px solid ${t.lineStrong}`,
+                  minHeight: 44,
+                }}
+                title="Tone, character, accent, language, spellings, profanity"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={ACCENT}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                  style={{
+                    flexShrink: 0,
+                    transform: showOptions ? "rotate(180deg)" : "none",
+                    transition: "transform 0.15s",
+                  }}
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+                <span
+                  className="font-mono-label text-[12px] font-bold uppercase tracking-[0.14em]"
+                  style={{ color: t.ink }}
+                >
+                  Options
+                </span>
+                {optionsTouched && (
+                  <span
+                    role="img"
+                    aria-label="Some options are set"
+                    title="Some options are set"
+                    style={{
+                      width: 7,
+                      height: 7,
+                      flexShrink: 0,
+                      borderRadius: 999,
+                      background: ACCENT,
+                    }}
+                  />
+                )}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHelpOpen(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHelpOpen(true);
+                    }
+                  }}
+                  aria-label="How the style options work"
+                  title="How the style options work"
+                  className="font-mono-label flex h-6 w-6 shrink-0 items-center justify-center text-[12px] font-bold transition hover:brightness-110"
+                  style={{
+                    background: "transparent",
+                    border: `1px solid ${ACCENT}`,
+                    color: ACCENT,
+                    borderRadius: 999,
+                  }}
+                >
+                  ?
+                </span>
+              </button>
+            </div>
+
+            {/* The custom instruction belongs right under the choice that asked
+                for it, not in some other drawer. Full width, under Row 1. */}
+            {outputType === "custom" && (
+              <input
+                value={customInstruction}
+                onChange={(e) => setCustomInstruction(e.target.value)}
+                placeholder="Turn it into... e.g. a wedding toast, a recipe"
+                aria-label="Turn it into"
+                className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+                style={
+                  {
+                    background: t.panel2,
+                    border: `1px solid ${t.lineStrong}`,
+                    borderBottom: `2px solid ${ACCENT}`,
+                    color: t.ink,
+                    "--rb-ph": t.inkFaint,
+                  } as React.CSSProperties
+                }
+              />
+            )}
+
+            {/* The drawer opens INLINE, as a real settings panel: one control
+                per row, full width, label above input, room to breathe. It grows
+                the panel rather than scrolling inside it. */}
+            {showOptions && (
+              <div
+                className="flex flex-col gap-4 rounded-[14px] p-3.5"
+                style={{ background: t.control, border: `1px solid ${t.line}` }}
+              >
                 <div
-                  className="overflow-hidden rounded-[12px]"
+                  className="overflow-hidden rounded-[10px]"
                   style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
                     t={t}
-                    label="Format"
-                    value={
-                      outputType === "custom"
-                        ? "Something else"
-                        : (selectedStyle?.label ?? "")
-                    }
-                    placeholder="Choose a format"
-                    open={openDropdown === "format"}
+                    label="Tone"
+                    optional
+                    value={selectedTone?.label ?? ""}
+                    placeholder="Choose a tone"
+                    open={openDropdown === "tone"}
                     onToggle={() =>
-                      setOpenDropdown((d) => (d === "format" ? null : "format"))
+                      setOpenDropdown((d) => (d === "tone" ? null : "tone"))
                     }
                   >
-                    <div
-                      className="font-mono-label px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em]"
-                      style={{ color: ACCENT }}
-                    >
-                      Just refine
-                    </div>
-                    <OptionRow
-                      t={t}
-                      label="Clean & Concise"
-                      active={outputType === "note"}
-                      onClick={() => {
-                        setOutputType("note");
-                        setOpenDropdown(null);
-                      }}
-                    />
                     <GroupedOptions
                       t={t}
-                      heading="Practical"
-                      groups={USEFUL_GROUPS}
-                      options={OUTPUT_TYPES}
-                      value={outputType}
+                      groups={TONE_GROUPS}
+                      options={TONES}
+                      value={tone}
+                      noneLabel="No set tone"
                       onPick={(id) => {
-                        setOutputType(id);
-                        setOpenDropdown(null);
-                      }}
-                    />
-                    <GroupedOptions
-                      t={t}
-                      heading="Fun"
-                      groups={FUN_GROUPS}
-                      options={OUTPUT_TYPES}
-                      value={outputType}
-                      onPick={(id) => {
-                        setOutputType(id);
-                        setOpenDropdown(null);
-                      }}
-                    />
-                    <OptionRow
-                      t={t}
-                      label="Something else"
-                      active={outputType === "custom"}
-                      onClick={() => {
-                        setOutputType("custom");
+                        setTone(id);
                         setOpenDropdown(null);
                       }}
                     />
                   </Selector>
                 </div>
 
-                {/* The custom instruction belongs right under the choice that
-                    asked for it, not in some other drawer. */}
-                {outputType === "custom" && (
+                <div
+                  className="overflow-hidden rounded-[10px]"
+                  style={{ border: `1px solid ${t.lineStrong}` }}
+                >
+                  <Selector
+                    t={t}
+                    label="Character"
+                    optional
+                    value={selectedPersona?.label ?? ""}
+                    placeholder="Add a character"
+                    open={openDropdown === "character"}
+                    onToggle={() =>
+                      setOpenDropdown((d) =>
+                        d === "character" ? null : "character",
+                      )
+                    }
+                  >
+                    <GroupedOptions
+                      t={t}
+                      groups={PERSONA_GROUPS}
+                      options={PERSONAS}
+                      value={persona}
+                      noneLabel="No character"
+                      onPick={(id) => {
+                        setPersona(id);
+                        setOpenDropdown(null);
+                      }}
+                    />
+                  </Selector>
+                </div>
+
+                <div
+                  className="overflow-hidden rounded-[10px]"
+                  style={{ border: `1px solid ${t.lineStrong}` }}
+                >
+                  <Selector
+                    t={t}
+                    label="Accent"
+                    optional
+                    value={selectedAccent?.label ?? ""}
+                    placeholder="Add an accent"
+                    open={openDropdown === "accent"}
+                    onToggle={() =>
+                      setOpenDropdown((d) => (d === "accent" ? null : "accent"))
+                    }
+                  >
+                    <GroupedOptions
+                      t={t}
+                      groups={ACCENT_GROUPS}
+                      options={ACCENTS}
+                      value={accent}
+                      noneLabel="No accent"
+                      onPick={(id) => {
+                        setAccent(id);
+                        setOpenDropdown(null);
+                      }}
+                    />
+                  </Selector>
+                </div>
+
+                {/* LANGUAGE — its own axis, not buried under Accent. Accent =
+                    English spoken with an accent. Language = the output
+                    written in that language. */}
+                <div
+                  className="overflow-hidden rounded-[10px]"
+                  style={{ border: `1px solid ${t.lineStrong}` }}
+                >
+                  <Selector
+                    t={t}
+                    label="Language"
+                    optional
+                    value={targetLanguage}
+                    placeholder="Same as input"
+                    open={openDropdown === "language"}
+                    onToggle={() =>
+                      setOpenDropdown((d) =>
+                        d === "language" ? null : "language",
+                      )
+                    }
+                  >
+                    <OptionRow
+                      t={t}
+                      label="Same as input (no translation)"
+                      active={!targetLanguage}
+                      onClick={() => {
+                        setTargetLanguage("");
+                        setOpenDropdown(null);
+                      }}
+                    />
+                    <div
+                      className="font-mono-label px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.18em]"
+                      style={{ color: ACCENT }}
+                    >
+                      Translate the output to
+                    </div>
+                    {LANGUAGES.map((l) => (
+                      <OptionRow
+                        t={t}
+                        key={l}
+                        label={l}
+                        active={targetLanguage === l}
+                        onClick={() => {
+                          setTargetLanguage(l);
+                          setOpenDropdown(null);
+                        }}
+                      />
+                    ))}
+                  </Selector>
+                </div>
+
+                {/* Keep these spellings: a real label, an obviously typeable
+                    box, the explanation underneath where it belongs. */}
+                <div>
+                  <label
+                    htmlFor="rb-vocabulary"
+                    className="font-mono-label mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em]"
+                    style={{ color: t.ink }}
+                  >
+                    Keep these spellings{" "}
+                    <span className="font-bold" style={{ color: ACCENT }}>
+                      · optional
+                    </span>
+                  </label>
                   <input
-                    value={customInstruction}
-                    onChange={(e) => setCustomInstruction(e.target.value)}
-                    placeholder="Turn it into... e.g. a wedding toast, a recipe"
-                    aria-label="Turn it into"
-                    className="rb-hero-input mt-2 w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+                    id="rb-vocabulary"
+                    value={vocabulary}
+                    onChange={(e) => setVocabulary(e.target.value)}
+                    placeholder="e.g. Siobhan, Dr. Achebe, ProTools, Nauticon"
+                    className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
                     style={
                       {
-                        background: t.panel2,
+                        // t.panel, not t.panel2: this field sits ON the
+                        // t.control drawer, and in Day panel2 (#f0f2f5) on
+                        // control (#eef1f4) is tone-on-tone. panel is a real
+                        // well in both themes (white on grey / black on grey).
+                        background: t.panel,
                         border: `1px solid ${t.lineStrong}`,
-                        borderBottom: `2px solid ${ACCENT}`,
                         color: t.ink,
                         "--rb-ph": t.inkFaint,
                       } as React.CSSProperties
                     }
                   />
-                )}
-              </div>
+                  <p className="mt-1.5 text-[12px]" style={{ color: t.inkDim }}>
+                    Type any names, brands, or unusual words you want spelled
+                    exactly this way, so the app keeps them word-for-word and
+                    never &ldquo;corrects&rdquo; them. Leave blank if you
+                    don&rsquo;t have any.
+                  </p>
+                </div>
 
-              {/* 2. OPTIONS — everything secondary behind one collapsed row.
-                  Closed by default. The accent dot means something in there is
-                  set, so a closed drawer never hides a live choice. The round
-                  "?" opens help without also toggling the drawer. */}
-              <div className="shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowOptions((o) => !o)}
-                  aria-expanded={showOptions}
-                  className="flex w-full items-center gap-2.5 rounded-[12px] px-3.5 text-left transition active:translate-y-px"
-                  style={{
-                    background: t.control,
-                    border: `1px solid ${t.lineStrong}`,
-                    minHeight: 44,
-                  }}
-                  title="Tone, character, accent, language, spellings, profanity"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={ACCENT}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                    style={{
-                      flexShrink: 0,
-                      transform: showOptions ? "rotate(180deg)" : "none",
-                      transition: "transform 0.15s",
-                    }}
-                  >
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
+                <div>
                   <span
-                    className="font-mono-label text-[12px] font-bold uppercase tracking-[0.14em]"
+                    className="font-mono-label mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em]"
                     style={{ color: t.ink }}
                   >
-                    Options
+                    Profanity{" "}
+                    <span className="font-bold" style={{ color: ACCENT }}>
+                      · optional
+                    </span>
                   </span>
-                  {optionsTouched && (
-                    <span
-                      role="img"
-                      aria-label="Some options are set"
-                      title="Some options are set"
-                      style={{
-                        width: 7,
-                        height: 7,
-                        flexShrink: 0,
-                        borderRadius: 999,
-                        background: ACCENT,
-                      }}
-                    />
-                  )}
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setHelpOpen(true);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setHelpOpen(true);
-                      }
-                    }}
-                    aria-label="How the style options work"
-                    title="How the style options work"
-                    className="font-mono-label ml-auto flex h-6 w-6 shrink-0 items-center justify-center text-[12px] font-bold transition hover:brightness-110"
-                    style={{
-                      background: "transparent",
-                      border: `1px solid ${ACCENT}`,
-                      color: ACCENT,
-                      borderRadius: 999,
-                    }}
-                  >
-                    ?
-                  </span>
-                </button>
-
-                {/* The drawer opens INLINE, as a real settings panel: one control
-                    per row, full width, label above input, room to breathe. */}
-                {showOptions && (
-                  <div
-                    className="mt-2 flex flex-col gap-4 rounded-[14px] p-3.5"
-                    style={{ background: t.control, border: `1px solid ${t.line}` }}
-                  >
-                    <div
-                      className="overflow-hidden rounded-[10px]"
-                      style={{ border: `1px solid ${t.lineStrong}` }}
-                    >
-                      <Selector
-                        t={t}
-                        label="Tone"
-                        optional
-                        value={selectedTone?.label ?? ""}
-                        placeholder="Choose a tone"
-                        open={openDropdown === "tone"}
-                        onToggle={() =>
-                          setOpenDropdown((d) => (d === "tone" ? null : "tone"))
-                        }
-                      >
-                        <GroupedOptions
-                          t={t}
-                          groups={TONE_GROUPS}
-                          options={TONES}
-                          value={tone}
-                          noneLabel="No set tone"
-                          onPick={(id) => {
-                            setTone(id);
-                            setOpenDropdown(null);
-                          }}
-                        />
-                      </Selector>
-                    </div>
-
-                    <div
-                      className="overflow-hidden rounded-[10px]"
-                      style={{ border: `1px solid ${t.lineStrong}` }}
-                    >
-                      <Selector
-                        t={t}
-                        label="Character"
-                        optional
-                        value={selectedPersona?.label ?? ""}
-                        placeholder="Add a character"
-                        open={openDropdown === "character"}
-                        onToggle={() =>
-                          setOpenDropdown((d) =>
-                            d === "character" ? null : "character",
-                          )
-                        }
-                      >
-                        <GroupedOptions
-                          t={t}
-                          groups={PERSONA_GROUPS}
-                          options={PERSONAS}
-                          value={persona}
-                          noneLabel="No character"
-                          onPick={(id) => {
-                            setPersona(id);
-                            setOpenDropdown(null);
-                          }}
-                        />
-                      </Selector>
-                    </div>
-
-                    <div
-                      className="overflow-hidden rounded-[10px]"
-                      style={{ border: `1px solid ${t.lineStrong}` }}
-                    >
-                      <Selector
-                        t={t}
-                        label="Accent"
-                        optional
-                        value={selectedAccent?.label ?? ""}
-                        placeholder="Add an accent"
-                        open={openDropdown === "accent"}
-                        onToggle={() =>
-                          setOpenDropdown((d) => (d === "accent" ? null : "accent"))
-                        }
-                      >
-                        <GroupedOptions
-                          t={t}
-                          groups={ACCENT_GROUPS}
-                          options={ACCENTS}
-                          value={accent}
-                          noneLabel="No accent"
-                          onPick={(id) => {
-                            setAccent(id);
-                            setOpenDropdown(null);
-                          }}
-                        />
-                      </Selector>
-                    </div>
-
-                    {/* LANGUAGE — its own axis, not buried under Accent. Accent =
-                        English spoken with an accent. Language = the output
-                        written in that language. */}
-                    <div
-                      className="overflow-hidden rounded-[10px]"
-                      style={{ border: `1px solid ${t.lineStrong}` }}
-                    >
-                      <Selector
-                        t={t}
-                        label="Language"
-                        optional
-                        value={targetLanguage}
-                        placeholder="Same as input"
-                        open={openDropdown === "language"}
-                        onToggle={() =>
-                          setOpenDropdown((d) =>
-                            d === "language" ? null : "language",
-                          )
-                        }
-                      >
-                        <OptionRow
-                          t={t}
-                          label="Same as input (no translation)"
-                          active={!targetLanguage}
-                          onClick={() => {
-                            setTargetLanguage("");
-                            setOpenDropdown(null);
-                          }}
-                        />
-                        <div
-                          className="font-mono-label px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.18em]"
-                          style={{ color: ACCENT }}
-                        >
-                          Translate the output to
-                        </div>
-                        {LANGUAGES.map((l) => (
-                          <OptionRow
-                            t={t}
-                            key={l}
-                            label={l}
-                            active={targetLanguage === l}
-                            onClick={() => {
-                              setTargetLanguage(l);
-                              setOpenDropdown(null);
-                            }}
-                          />
-                        ))}
-                      </Selector>
-                    </div>
-
-                    {/* Keep these spellings: a real label, an obviously typeable
-                        box, the explanation underneath where it belongs. */}
-                    <div>
-                      <label
-                        htmlFor="rb-vocabulary"
-                        className="font-mono-label mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em]"
-                        style={{ color: t.ink }}
-                      >
-                        Keep these spellings{" "}
-                        <span className="font-bold" style={{ color: ACCENT }}>
-                          · optional
-                        </span>
-                      </label>
-                      <input
-                        id="rb-vocabulary"
-                        value={vocabulary}
-                        onChange={(e) => setVocabulary(e.target.value)}
-                        placeholder="e.g. Siobhan, Dr. Achebe, ProTools, Nauticon"
-                        className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
-                        style={
-                          {
-                            // t.panel, not t.panel2: this field sits ON the
-                            // t.control drawer, and in Day panel2 (#f0f2f5) on
-                            // control (#eef1f4) is tone-on-tone. panel is a real
-                            // well in both themes (white on grey / black on grey).
-                            background: t.panel,
-                            border: `1px solid ${t.lineStrong}`,
-                            color: t.ink,
-                            "--rb-ph": t.inkFaint,
-                          } as React.CSSProperties
-                        }
-                      />
-                      <p className="mt-1.5 text-[12px]" style={{ color: t.inkDim }}>
-                        Type any names, brands, or unusual words you want spelled
-                        exactly this way, so the app keeps them word-for-word and
-                        never &ldquo;corrects&rdquo; them. Leave blank if you
-                        don&rsquo;t have any.
-                      </p>
-                    </div>
-
-                    <div>
-                      <span
-                        className="font-mono-label mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em]"
-                        style={{ color: t.ink }}
-                      >
-                        Profanity{" "}
-                        <span className="font-bold" style={{ color: ACCENT }}>
-                          · optional
-                        </span>
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setCleanProfanity(false)}
-                          className="font-mono-label rounded-[8px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
-                          style={
-                            !cleanProfanity
-                              ? {
-                                  background: t.ink,
-                                  color: t.panel,
-                                  border: `1px solid ${t.ink}`,
-                                }
-                              : {
-                                  background: t.control2,
-                                  color: t.ink,
-                                  border: `1px solid ${t.lineStrong}`,
-                                }
-                          }
-                        >
-                          Keep it
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCleanProfanity(true)}
-                          className="font-mono-label rounded-[8px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
-                          style={
-                            cleanProfanity
-                              ? {
-                                  background: t.ink,
-                                  color: t.panel,
-                                  border: `1px solid ${t.ink}`,
-                                }
-                              : {
-                                  background: t.control2,
-                                  color: t.ink,
-                                  border: `1px solid ${t.lineStrong}`,
-                                }
-                          }
-                        >
-                          Clean it up
-                        </button>
-                      </div>
-                    </div>
-
+                  <div className="flex flex-wrap gap-1.5">
                     <button
-                      onClick={resetChoices}
-                      className="font-mono-label flex items-center gap-1.5 self-start rounded-[10px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
-                      style={{ background: t.ink, color: t.panel }}
+                      type="button"
+                      onClick={() => setCleanProfanity(false)}
+                      className="font-mono-label rounded-[8px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                      style={
+                        !cleanProfanity
+                          ? {
+                              background: t.ink,
+                              color: t.panel,
+                              border: `1px solid ${t.ink}`,
+                            }
+                          : {
+                              background: t.control2,
+                              color: t.ink,
+                              border: `1px solid ${t.lineStrong}`,
+                            }
+                      }
                     >
-                      <span aria-hidden>&#8635;</span> Reset choices
+                      Keep it
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCleanProfanity(true)}
+                      className="font-mono-label rounded-[8px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                      style={
+                        cleanProfanity
+                          ? {
+                              background: t.ink,
+                              color: t.panel,
+                              border: `1px solid ${t.ink}`,
+                            }
+                          : {
+                              background: t.control2,
+                              color: t.ink,
+                              border: `1px solid ${t.lineStrong}`,
+                            }
+                      }
+                    >
+                      Clean it up
                     </button>
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* 3. The ramble textarea fills the room between the controls and
-                  the Babble it button, bounded by the panel (never the page). */}
-              <div className="relative flex flex-1 flex-col">
-                <textarea
-                  ref={inputRef}
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Ramble in, Babble out. Spill your messiest rambles right here: the voice memos, the half-baked ideas, the texts you definitely shouldn't send yet. Then choose how it should sound above and press Babble it."
-                  className="rb-hero-input w-full flex-1 resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:p-5 sm:text-[17px]"
-                  style={
-                    {
-                      color: t.ink,
-                      background: t.panel2,
-                      border: `1px solid ${t.line}`,
-                      minHeight: "26vh",
-                      "--rb-ph": t.inkFaint,
-                    } as React.CSSProperties
-                  }
-                />
-                {recording && (
-                  <div
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-[16px]"
-                    style={{ background: t.panel2 }}
-                  >
-                    <div className="flex h-12 items-end gap-1.5">
-                      {[14, 30, 46, 24, 38, 18, 42].map((h, i) => (
-                        <span
-                          key={i}
-                          className="rb-wave-bar w-1.5"
-                          style={{
-                            height: h,
-                            background: ACCENT,
-                            animationDuration: `${0.5 + (i % 4) * 0.1}s`,
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div
-                      className="font-mono-timer text-[34px] font-bold"
-                      style={{ color: t.ink }}
-                    >
-                      {formatTime(recorder.seconds)}
-                    </div>
-                    {showWarning ? (
-                      <p
-                        className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
-                        style={{ color: "#ff5a3c" }}
-                      >
-                        {WARNING_MESSAGE}
-                      </p>
-                    ) : (
-                      <p
-                        className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
-                        style={{ color: t.inkDim }}
-                      >
-                        Listening. Tap stop when done.
-                      </p>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={recorder.cancel}
-                        className="font-mono-label px-4 py-2 text-[11px] uppercase tracking-[0.12em]"
-                        style={{ border: `1px solid ${t.lineStrong}`, color: t.ink }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleStop}
-                        className="font-mono-label px-4 py-2 text-[11px] uppercase tracking-[0.12em] text-white"
-                        style={{ background: ACCENT }}
-                      >
-                        Stop
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <button
+                  onClick={resetChoices}
+                  className="font-mono-label flex items-center gap-1.5 self-start rounded-[10px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  style={{ background: t.ink, color: t.panel }}
+                >
+                  <span aria-hidden>&#8635;</span> Reset choices
+                </button>
               </div>
+            )}
 
-              {/* 4. Small, quiet controls attached under the textarea. Record turns
-                  into Stop while a take is live; Paste and Clear stay out of the way
-                  so the one primary below never has competition. */}
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <button
-                  onClick={recording ? handleStop : handleStart}
-                  disabled={transcribing}
-                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
-                  style={{
-                    background: "transparent",
-                    border: `1px solid ${recording ? ACCENT : t.line}`,
-                    color: recording ? ACCENT : t.inkDim,
-                  }}
-                >
-                  {transcribing ? (
-                    <span
-                      className="rb-spin inline-block h-3 w-3 rounded-full border-2"
-                      style={{ borderColor: "rgba(123,92,255,0.3)", borderTopColor: ACCENT }}
-                    />
-                  ) : (
-                    <span
-                      className={recording ? "rb-blink" : ""}
-                      style={{ display: "inline-block", height: 9, width: 9, borderRadius: 999, background: ACCENT }}
-                    />
-                  )}
-                  {transcribing ? `${loadingWord}…` : recording ? "Stop" : "Record"}
-                </button>
-                <button
-                  onClick={pasteIn}
-                  className="font-mono-label whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px"
-                  style={{ background: "transparent", border: `1px solid ${t.line}`, color: t.inkDim }}
-                >
-                  Paste
-                </button>
-                <button
-                  onClick={copyRamble}
-                  disabled={!inputText.trim()}
-                  className="font-mono-label whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
-                  style={{
-                    background: "transparent",
+            {/* ROW 2 — the ramble. A FIXED, generous height: tall enough to
+                show a real ramble with no scrollbar at rest, and it no longer
+                fights the panel for the leftover room, which is what used to
+                nest one scrollbar inside another. */}
+            <div className="relative flex flex-col">
+              <textarea
+                ref={inputRef}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Ramble in, Babble out. Spill your messiest rambles right here: the voice memos, the half-baked ideas, the texts you definitely shouldn't send yet. Then choose how it should sound above and press Babble it."
+                className="rb-hero-input h-[260px] w-full resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:h-[300px] sm:p-5 sm:text-[17px]"
+                style={
+                  {
+                    color: t.ink,
+                    background: t.panel2,
                     border: `1px solid ${t.line}`,
-                    color: rambleCopied ? ACCENT : t.inkDim,
-                  }}
+                    "--rb-ph": t.inkFaint,
+                  } as React.CSSProperties
+                }
+              />
+              {recording && (
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-[16px]"
+                  style={{ background: t.panel2 }}
                 >
-                  {rambleCopied ? "Copied" : "Copy"}
-                </button>
-                <button
-                  onClick={() => {
-                    if (recorder.status === "recording") recorder.cancel();
-                    setInputText("");
-                    setError(null);
-                    setLimitNotice(null);
-                  }}
-                  disabled={!inputText}
-                  className="font-mono-label flex items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
-                  style={{ background: "transparent", color: t.inkFaint }}
-                >
-                  <span aria-hidden style={{ color: "#ff6b68", fontSize: 14 }}>
-                    &times;
-                  </span>{" "}
-                  Clear
-                </button>
-              </div>
+                  <div className="flex h-12 items-end gap-1.5">
+                    {[14, 30, 46, 24, 38, 18, 42].map((h, i) => (
+                      <span
+                        key={i}
+                        className="rb-wave-bar w-1.5"
+                        style={{
+                          height: h,
+                          background: ACCENT,
+                          animationDuration: `${0.5 + (i % 4) * 0.1}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div
+                    className="font-mono-timer text-[34px] font-bold"
+                    style={{ color: t.ink }}
+                  >
+                    {formatTime(recorder.seconds)}
+                  </div>
+                  {showWarning ? (
+                    <p
+                      className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
+                      style={{ color: "#ff5a3c" }}
+                    >
+                      {WARNING_MESSAGE}
+                    </p>
+                  ) : (
+                    <p
+                      className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
+                      style={{ color: t.inkDim }}
+                    >
+                      Listening. Tap stop when done.
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={recorder.cancel}
+                      className="font-mono-label px-4 py-2 text-[11px] uppercase tracking-[0.12em]"
+                      style={{ border: `1px solid ${t.lineStrong}`, color: t.ink }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleStop}
+                      className="font-mono-label px-4 py-2 text-[11px] uppercase tracking-[0.12em] text-white"
+                      style={{ background: ACCENT }}
+                    >
+                      Stop
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* 5. The ONE emphasized action, pinned to the bottom of the panel and
-                ALWAYS visible without scrolling, drawer open or shut. The word
-                count and any limit notice sit quietly above it. */}
-            <div className="mt-3 flex shrink-0 flex-col gap-1.5">
+            {/* ROW 3 — the quiet chips, directly under the ramble and visible
+                with zero scrolling: Record is the app's core input, so it is
+                never below the fold. It turns into Stop while a take is live.
+                Clear stays out of the way, and the live word count rides the
+                far end of the same row instead of costing a row of its own.
+                No Paste chip: the browser cannot read the clipboard silently,
+                so it prompts, and Ctrl+V / long-press already do it in fewer
+                taps. No Copy chip either: copying your own ramble back out of
+                the box you just typed it into serves nobody. */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={recording ? handleStop : handleStart}
+                disabled={transcribing}
+                className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
+                style={{
+                  background: "transparent",
+                  border: `1px solid ${recording ? ACCENT : t.line}`,
+                  color: recording ? ACCENT : t.inkDim,
+                }}
+              >
+                {transcribing ? (
+                  <span
+                    className="rb-spin inline-block h-3 w-3 rounded-full border-2"
+                    style={{ borderColor: "rgba(123,92,255,0.3)", borderTopColor: ACCENT }}
+                  />
+                ) : (
+                  <span
+                    className={recording ? "rb-blink" : ""}
+                    style={{ display: "inline-block", height: 9, width: 9, borderRadius: 999, background: ACCENT }}
+                  />
+                )}
+                {transcribing ? `${loadingWord}…` : recording ? "Stop" : "Record"}
+              </button>
+              <button
+                onClick={() => {
+                  if (recorder.status === "recording") recorder.cancel();
+                  setInputText("");
+                  setError(null);
+                  setLimitNotice(null);
+                }}
+                disabled={!inputText}
+                className="font-mono-label flex items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
+                style={{ background: "transparent", color: t.inkFaint }}
+              >
+                <span aria-hidden style={{ color: "#ff6b68", fontSize: 14 }}>
+                  &times;
+                </span>{" "}
+                Clear
+              </button>
+              <span
+                className="font-mono-label ml-auto text-[10px] tracking-[0.06em]"
+                style={{ color: t.inkFaint }}
+              >
+                {words} words
+              </span>
+            </div>
+
+            {/* ROW 4 — the ONE emphasized action, full panel width. Any limit
+                notice sits quietly above it. */}
+            <div className="flex flex-col gap-1.5">
               {limitNotice && (
                 <p className="font-mono-label text-[11px]" style={{ color: "#ff5a3c" }}>
                   {limitNotice}
                 </p>
               )}
-              <span
-                className="font-mono-label self-end text-[10px] tracking-[0.06em]"
-                style={{ color: t.inkFaint }}
-              >
-                {words} words
-              </span>
               <button
                 onClick={() => runCleanup()}
                 disabled={cleaning || !inputText.trim()}
@@ -1434,11 +1375,22 @@ export default function RambleBabbleApp({
               style={{ background: t.panel2, borderBottom: `1px solid ${t.line}` }}
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <span
-                  className="rb-babbleit font-babble inline-block bg-clip-text text-transparent"
-                  style={{ backgroundImage: GRADIENT, fontSize: 21, lineHeight: 1.1 }}
-                >
-                  Your Babble
+                {/* Same lockup logic as the header wordmark: the first word sits
+                    still in solid ink and only "Babble" rides the wave. Its
+                    1.9s cycle and -0.7s head start are deliberate, so this wave
+                    and the logo's 1.6s one never fall into rhythm. */}
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <span
+                    className="font-bric font-extrabold"
+                    style={{ color: t.ink, fontSize: 16, letterSpacing: "-0.02em" }}
+                  >
+                    Your
+                  </span>
+                  <BabbleWave
+                    duration="1.9s"
+                    offset="-0.7s"
+                    style={{ fontSize: 21, lineHeight: 1.1 }}
+                  />
                 </span>
                 {cleaning ? (
                   <span

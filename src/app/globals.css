@@ -326,25 +326,6 @@ a:hover,
   animation: rb-glowpulse 2.6s ease-in-out infinite;
 }
 
-/* "Babble it" header wordmark — glow + jiggle + pulse all at once, so it's
-   unmistakably alive and clickable. */
-@keyframes rb-babbleit {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 1px rgba(123, 92, 255, 0.4))
-      drop-shadow(0 0 5px rgba(123, 92, 255, 0.22));
-    transform: rotate(-1.5deg) scale(1);
-  }
-  50% {
-    filter: drop-shadow(0 0 8px rgba(255, 77, 157, 0.75))
-      drop-shadow(0 0 18px rgba(123, 92, 255, 0.55));
-    transform: rotate(1.5deg) scale(1.06);
-  }
-}
-.rb-babbleit {
-  display: inline-block;
-  animation: rb-babbleit 2.2s ease-in-out infinite;
-}
 
 /* Processing indicator: a soft pulsing ring so it's obvious the app is
    actively working (transcribing / babbling), not frozen. */
@@ -375,13 +356,13 @@ a:hover,
     transform: translateY(0);
   }
   25% {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
   }
   50% {
     transform: translateY(0);
   }
   75% {
-    transform: translateY(5px);
+    transform: translateY(8px);
   }
 }
 .rb-waveletter {
@@ -391,15 +372,17 @@ a:hover,
   color: transparent;
   background-size: 600% 100%;
   background-position: calc(var(--i) * 20%) 0;
-  animation: rb-wordwave 2.8s ease-in-out infinite;
-  /* The phase difference IS the effect. At 0.25s per letter, six letters span
-     1.25s of a 2.8s cycle: ~45%, near half a wavelength, so the far end of the
-     word is close to opposite the near end and letters are visibly up while
-     others are down. The old 0.08s spanned 14% of a cycle, which left every
-     letter nearly in phase: a bounce, not a wave. Increasing delay with index
-     means each letter replays what its left neighbour did, so the wave travels
-     left to right. */
-  animation-delay: calc(var(--i) * 0.25s);
+  /* Duration and base offset are per-instance so two wordmarks can share this
+     one class (and these exact keyframes) yet never march in lockstep: the
+     motion can't drift apart, only the timing does. */
+  animation: rb-wordwave var(--rb-wave-dur, 1.6s) ease-in-out infinite;
+  /* The phase difference IS the effect. At 0.14s per letter, six letters span
+     0.7s of the 1.6s cycle: ~44%, near half a wavelength, so the far end of the
+     word sits close to opposite the near end and some letters are visibly up
+     while others are down. Delay increasing with index means each letter
+     replays what its left neighbour just did, so the wave travels left to
+     right. The base offset shifts a whole instance's starting phase. */
+  animation-delay: calc(var(--rb-wave-offset, 0s) + var(--i) * 0.14s);
   will-change: transform;
 }
 
