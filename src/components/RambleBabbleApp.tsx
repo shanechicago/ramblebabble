@@ -1184,17 +1184,22 @@ export default function RambleBabbleApp({
               </div>
             )}
 
-            {/* ROW 2 — the ramble. A FIXED, generous height: tall enough to
-                show a real ramble with no scrollbar at rest, and it no longer
-                fights the panel for the leftover room, which is what used to
-                nest one scrollbar inside another. */}
+            {/* ROW 2 — the ramble. The textarea is the ADJUSTABLE variable in
+                this panel (layout contract rule 1: content gets smaller, the
+                panel never scrolls inside itself). Its height is derived from
+                the viewport so everything above it plus Record and Babble it
+                always fit on one screen: on a short viewport it gives up its
+                own height rather than pushing the primary action below the fold
+                (rules 2 and 3). The 300px ceiling keeps it from turning into a
+                void on tall screens; the 140px floor keeps it usable. It never
+                scrolls at rest. */}
             <div className="relative flex flex-col">
               <textarea
                 ref={inputRef}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="Ramble in, Babble out. Spill your messiest rambles right here: the voice memos, the half-baked ideas, the texts you definitely shouldn't send yet. Then choose how it should sound above and press Babble it."
-                className="rb-hero-input h-[260px] w-full resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:h-[300px] sm:p-5 sm:text-[17px]"
+                className="rb-hero-input h-[clamp(140px,calc(100dvh_-_27rem),250px)] w-full resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:h-[clamp(150px,calc(100dvh_-_23rem),300px)] sm:p-5 sm:text-[17px]"
                 style={
                   {
                     color: t.ink,
