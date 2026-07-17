@@ -132,12 +132,6 @@ a:hover,
     transform: translateY(0) scale(1) rotate(0);
   }
 }
-.rb-wacky-word {
-  display: inline-block;
-  opacity: 0;
-  animation: rb-popin 0.55s ease-out forwards;
-}
-
 /* ----- Editorial direction: fonts + marquee ----- */
 .font-bric {
   font-family: "Bricolage Grotesque", "Space Grotesk", sans-serif;
@@ -378,16 +372,16 @@ a:hover,
 @keyframes rb-wordwave {
   0%,
   100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0);
   }
   25% {
-    transform: translateY(-3.5px) rotate(1.6deg);
+    transform: translateY(-5px);
   }
   50% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0);
   }
   75% {
-    transform: translateY(3.5px) rotate(-1.6deg);
+    transform: translateY(5px);
   }
 }
 .rb-waveletter {
@@ -398,7 +392,14 @@ a:hover,
   background-size: 600% 100%;
   background-position: calc(var(--i) * 20%) 0;
   animation: rb-wordwave 2.8s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.08s);
+  /* The phase difference IS the effect. At 0.25s per letter, six letters span
+     1.25s of a 2.8s cycle: ~45%, near half a wavelength, so the far end of the
+     word is close to opposite the near end and letters are visibly up while
+     others are down. The old 0.08s spanned 14% of a cycle, which left every
+     letter nearly in phase: a bounce, not a wave. Increasing delay with index
+     means each letter replays what its left neighbour did, so the wave travels
+     left to right. */
+  animation-delay: calc(var(--i) * 0.25s);
   will-change: transform;
 }
 
