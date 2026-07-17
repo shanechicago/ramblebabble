@@ -45,3 +45,4 @@ next-env.d.ts
 # big media, keep on disk not in git
 *.mp4
 *.zip
+.env
