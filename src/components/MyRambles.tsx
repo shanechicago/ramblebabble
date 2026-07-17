@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
+import { BabbleWave } from "./BabbleText";
 
 const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
 const ACCENT = "#7b5cff";
@@ -159,12 +160,7 @@ export default function MyRambles({
             Ramble
           </span>
           <span className="inline-block" style={{ transform: "rotate(-7deg)" }}>
-            <span
-              className="rb-shake font-babble inline-block bg-clip-text text-transparent"
-              style={{ backgroundImage: GRADIENT, fontSize: "1.75em" }}
-            >
-              Babble
-            </span>
+            <BabbleWave style={{ fontSize: "1.75em" }} />
           </span>
         </div>
         <div className="flex items-center gap-5">

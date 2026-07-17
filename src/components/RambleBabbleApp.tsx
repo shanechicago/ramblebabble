@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRecorder } from "./useRecorder";
 import { getSupabase } from "@/lib/supabase/client";
+import { BabbleWave, FlyInText } from "./BabbleText";
 import type { SavedRamble } from "./MyRambles";
 import {
   OUTPUT_TYPES,
@@ -32,8 +33,6 @@ import {
 const MAX_MINUTES = Math.round(MAX_RECORDING_SECONDS / 60);
 const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
 const ACCENT = "#7b5cff";
-const GLYPHS =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#%&*<>/";
 
 const FUN_LOADING = [
   "Razzle dazzling",
@@ -171,8 +170,9 @@ export default function RambleBabbleApp({
   }, [inputText]);
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
-  const [revealText, setRevealText] = useState(reopen?.cleaned ?? "");
-  const [revealing, setRevealing] = useState(false);
+  // Bumped on every new result so the letter-by-letter fly-in remounts and
+  // replays. The text itself is always fully present, so Copy never waits.
+  const [revealKey, setRevealKey] = useState(0);
   const [keyPoints, setKeyPoints] = useState<string[]>(reopen?.key_points ?? []);
   const [followUps, setFollowUps] = useState<string[]>(reopen?.follow_ups ?? []);
   const [keyOpen, setKeyOpen] = useState(true);
@@ -220,12 +220,6 @@ export default function RambleBabbleApp({
     };
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (revealRef.current) clearInterval(revealRef.current);
-    };
   }, []);
 
   // Auto-dismiss the error toast after a few seconds.
@@ -313,27 +307,6 @@ export default function RambleBabbleApp({
     !!vocabulary.trim() ||
     cleanProfanity;
 
-  const startReveal = useCallback((final: string) => {
-    if (revealRef.current) clearInterval(revealRef.current);
-    setRevealing(true);
-    let shown = 0;
-    revealRef.current = setInterval(() => {
-      shown += 6;
-      if (shown >= final.length) {
-        if (revealRef.current) clearInterval(revealRef.current);
-        setRevealText(final);
-        setRevealing(false);
-        return;
-      }
-      let s = final.slice(0, shown);
-      for (let i = shown; i < final.length; i++) {
-        const c = final[i];
-        s += /\s/.test(c) ? c : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-      }
-      setRevealText(s);
-    }, 26);
-  }, []);
-
   const handleStart = useCallback(() => {
     setError(null);
     setLimitNotice(null);
@@ -399,7 +372,7 @@ export default function RambleBabbleApp({
         setFollowUps(Array.isArray(data.followUps) ? data.followUps : []);
         setKeyOpen(true);
         setFollowOpen(true);
-        startReveal(out);
+        setRevealKey((k) => k + 1);
         setView("result");
         if (!modifier) {
           // The Supabase builder is lazy: it only runs when awaited / .then'd.
@@ -438,7 +411,6 @@ export default function RambleBabbleApp({
       targetLanguage,
       vocabulary,
       userId,
-      startReveal,
     ],
   );
 
@@ -465,7 +437,6 @@ export default function RambleBabbleApp({
     setVocabulary("");
     setCustomInstruction("");
     setCleaned("");
-    setRevealText("");
     setKeyPoints([]);
     setFollowUps([]);
     setError(null);
@@ -495,7 +466,6 @@ export default function RambleBabbleApp({
   const words = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
   const chars = inputText.length;
   const hasResult = !!cleaned;
-  const shownOutput = revealing ? revealText : cleaned;
   const metaLabel = [
     outputType === "custom" ? "Something else" : selectedStyle?.label,
     selectedTone?.label,
@@ -1509,7 +1479,7 @@ export default function RambleBabbleApp({
                   </button>
                   <button
                     onClick={handleCopy}
-                    disabled={!cleaned || revealing}
+                    disabled={!cleaned}
                     className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
                     style={{
                       backgroundImage: GRADIENT,
@@ -1576,18 +1546,21 @@ export default function RambleBabbleApp({
                   </div>
                 ) : (
                   <div>
-                    <div
+                    {/* The Babble assembles itself left to right, a character
+                        at a time. The whole string is in the DOM from frame
+                        one, so it stays selectable and copyable throughout. */}
+                    <FlyInText
+                      key={revealKey}
+                      text={cleaned}
                       className="whitespace-pre-wrap text-[17px] leading-[1.5]"
                       style={{
                         color: t.ink,
                         fontFamily: '"Space Grotesk", system-ui, sans-serif',
                         maxWidth: "82ch",
                       }}
-                    >
-                      {cleaning && !shownOutput ? "" : shownOutput}
-                    </div>
+                    />
 
-                    {!revealing && hasResult && keyPoints.length > 0 && (
+                    {hasResult && keyPoints.length > 0 && (
                       <Collapsible
                         t={t}
                         label="Key points"
@@ -1614,7 +1587,7 @@ export default function RambleBabbleApp({
                       </Collapsible>
                     )}
 
-                    {!revealing && hasResult && followUps.length > 0 && (
+                    {hasResult && followUps.length > 0 && (
                       <Collapsible
                         t={t}
                         label="Suggested follow ups"
@@ -1645,7 +1618,7 @@ export default function RambleBabbleApp({
               </div>
             </div>
 
-            {hasResult && !revealing && (
+            {hasResult && (
               <div
                 className="flex shrink-0 flex-wrap gap-1 p-2"
                 style={{ borderTop: `1px solid ${t.line}` }}
@@ -1757,17 +1730,13 @@ function Wordmark({ color }: { color: string }) {
       <span className="font-bric font-extrabold" style={{ letterSpacing: "-0.02em" }}>
         Ramble
       </span>
-      {/* Bigger and tilted (b dips low, e kicks up), still vibrating. */}
+      {/* Bigger and tilted (b dips low, e kicks up). The letters ride a wave
+          that travels through the word, like a snapped bedsheet. */}
       <span
         className="inline-block"
         style={{ transform: "rotate(-7deg)", transformOrigin: "center" }}
       >
-        <span
-          className="rb-shake font-babble inline-block bg-clip-text text-transparent"
-          style={{ backgroundImage: GRADIENT, fontSize: "1.75em" }}
-        >
-          Babble
-        </span>
+        <BabbleWave style={{ fontSize: "1.75em" }} />
       </span>
     </div>
   );

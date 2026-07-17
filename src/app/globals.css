@@ -132,19 +132,6 @@ a:hover,
     transform: translateY(0) scale(1) rotate(0);
   }
 }
-@keyframes rb-jiggle {
-  0%,
-  100% {
-    transform: rotate(-1.6deg);
-  }
-  50% {
-    transform: rotate(1.6deg) translateY(-2px);
-  }
-}
-.rb-wacky {
-  display: inline-block;
-  animation: rb-jiggle 3.4s ease-in-out infinite;
-}
 .rb-wacky-word {
   display: inline-block;
   opacity: 0;
@@ -378,6 +365,61 @@ a:hover,
 }
 .rb-procpulse {
   animation: rb-procpulse 1.4s ease-in-out infinite;
+}
+
+/* ----- Wordmark: a travelling wave, not a shiver -----
+   Each letter of "Babble" gets a gentle vertical sine with a touch of rotation,
+   and the per-letter animation-delay is what makes the wave TRAVEL left to
+   right (snapping a bedsheet) instead of the whole word bouncing at once.
+   Splitting the word into letters breaks background-clip:text on the parent,
+   so every letter carries its own slice of the shared gradient: the image is
+   sized to the whole word (600% for six letters) and shifted per letter, which
+   reassembles into one continuous sweep across the wordmark. */
+@keyframes rb-wordwave {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-3.5px) rotate(1.6deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(3.5px) rotate(-1.6deg);
+  }
+}
+.rb-waveletter {
+  display: inline-block;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 600% 100%;
+  background-position: calc(var(--i) * 20%) 0;
+  animation: rb-wordwave 2.8s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.08s);
+  will-change: transform;
+}
+
+/* ----- Output: letter-by-letter fly-in -----
+   The whole string is in the DOM from the first frame, so the text is fully
+   selectable and copyable during and after the flourish. `backwards` fill is
+   what hides each character during its delay; the base state stays visible, so
+   when animations are switched off below the text simply appears. */
+@keyframes rb-flyin {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em) rotate(-6deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rb-flychar {
+  display: inline-block;
+  animation: rb-flyin 0.34s cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
