@@ -75,16 +75,16 @@ function prefersReducedMotion(): boolean {
 }
 
 const FUN_LOADING = [
-  "Razzle dazzling",
-  "Reticulating",
-  "Lollygagging",
-  "Boogeying",
-  "Marinating",
-  "Pontificating",
-  "Wordsmithing",
-  "Percolating",
-  "Finessing",
-  "Noodling",
+  "Deleting the ums",
+  "Untangling your bullshit",
+  "Finding your actual point",
+  "Sobering up your syntax",
+  "Making you sound employed",
+  "Translating from drunk",
+  "Cutting three of your five tangents",
+  "Putting pants on it",
+  "Reading it back so you don't have to",
+  "Doing the part your brain skipped",
 ];
 function pickLoading() {
   return FUN_LOADING[Math.floor(Math.random() * FUN_LOADING.length)];
@@ -143,28 +143,33 @@ const THEMES = {
     // 5.36 on panel, 4.61 on panel2.
     accentOnPanel: "#4317ff",
   },
-  // NIGHT = the spec's "Ink" — but the spec is WRONG here and this fixes it.
-  // It puts #16181d panels on a #070809 canvas: 1.13:1. Invisible. That is the
-  // exact muddy tone-on-tone this rebuild exists to kill, and it violates the
-  // spec's own law. The panel is lifted until it reads as dark paper on a
-  // black desk.
+  // NIGHT = black desk, black paper, but the paper has a defined EDGE and sits
+  // slightly proud of the desk. The earlier attempt lightened the FILL toward
+  // mid-grey (#3d424c), which is the wrong lever: it read as grey-on-grey mush
+  // and still only hit 1.99:1 against the canvas. In a real dark UI the panels
+  // stay genuinely dark and a visible border does the separating. So the fill
+  // difference here is intentionally tiny; the lineStrong edge is what makes a
+  // panel read as an object on the void.
   night: {
     canvas: "#070809",
     chrome: "rgba(7,8,9,0.78)",
     cInk: "#eef1f3", // 17.67 on canvas
     cDim: "#8b929b", // 6.38 on canvas
     cLine: "rgba(238,241,243,0.13)",
-    cLineStrong: "rgba(238,241,243,0.30)",
-    panel: "#3d424c", // 1.99 vs canvas (the spec's own value was 1.13)
-    panel2: "#4e545f",
-    ink: "#eef1f3", // 8.89 on panel
-    inkDim: "#c1c8d1", // 5.98 panel / 4.52 panel2 (the wells)
-    inkFaint: "#c1c8cf", // 5.97 panel / 4.51 panel2
+    cLineStrong: "#5c5d62", // canvas-level border, 3.05 on canvas
+    panel: "#16181d", // genuinely dark (the spec's own paper); the EDGE defines it, not the fill
+    panel2: "#0e0f14", // wells sit DARKER than the panel, inset, and carry the edge too
+    ink: "#eef1f3", // 15.65 panel / 16.87 well
+    inkDim: "#8a929c", // 5.64 panel / 6.08 well
+    inkFaint: "#7a828c", // 4.57 panel / 4.92 well
     line: "rgba(238,241,243,0.12)", // decorative hairlines and dividers ONLY
-    lineStrong: "#a2a3a5", // identifies interactive controls. 4.00 panel / 3.02 panel2.
-    // 2.31:1 on this paper — it fails even the 3:1 graphic bar. 6.13 on panel,
-    // 4.63 on panel2.
-    accentOnPanel: "#cdc2ff",
+    // The defining edge: >=3:1 against the canvas AND the panel AND the wells,
+    // so every dark surface reads as its own object. 3.43 canvas / 3.04 panel /
+    // 3.28 well.
+    lineStrong: "#62656b",
+    // Brand violet is only 4.07 on this dark paper (fails small text); lifted
+    // toward white to 4.54 panel / 4.89 well, same hue.
+    accentOnPanel: "#8467ff",
   },
 } as const;
 
@@ -290,10 +295,11 @@ export default function RambleBabbleApp({
   // on screen together).
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
-  // The Options toggle in the control band. The floating layer is positioned
-  // off this element's rect, so the panel stays visually attached to the
-  // control that opened it without occupying a single pixel of the flow.
-  const optionsToggleRef = useRef<HTMLButtonElement>(null);
+  // The options anchor in the control band (the chip row, or the quiet
+  // "Options" affordance when nothing is armed). The floating layer is
+  // positioned off this element's rect, so the panel stays visually attached to
+  // the control that opened it without occupying a single pixel of the flow.
+  const optionsToggleRef = useRef<HTMLDivElement>(null);
 
   // Measure the toggle and clamp the panel inside the viewport: never off an
   // edge, flip above when there is more room up there, bottom sheet on a phone.
@@ -447,7 +453,7 @@ export default function RambleBabbleApp({
   const transcribeBlob = useCallback(
     async (blob: Blob | null) => {
       if (!blob || blob.size === 0) {
-        setError("Nothing was recorded. Try again.");
+        setError("That was silence. Beautiful, useless silence. Make some noise this time.");
         return;
       }
       if (blob.size > MAX_UPLOAD_BYTES) {
@@ -471,7 +477,11 @@ export default function RambleBabbleApp({
           prev.trim() ? `${prev.trim()}\n\n${data.transcript}` : data.transcript,
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Transcription failed.");
+        setError(
+        err instanceof Error
+          ? err.message
+          : "Couldn't hear you. The mic's being dramatic, or you were. Try again.",
+      );
       } finally {
         setTranscribing(false);
       }
@@ -500,6 +510,17 @@ export default function RambleBabbleApp({
   const selectedTone = TONES.find((x) => x.id === tone);
   const selectedAccent = getAccent(accent);
   const selectedPersona = getPersona(persona);
+  // The secondary options currently armed. They ride the header as chips so the
+  // user always SEES exactly what is stacked before hitting Babble it: after a
+  // babble, switching Format used to leave tone/character/accent silently armed
+  // and invisible, causing an accidental stacked babble. These chips are that
+  // visibility; "Clear all" is the deliberate way to drop them.
+  const activeOptionChips = [
+    selectedTone?.label,
+    selectedPersona?.label,
+    selectedAccent?.label,
+    targetLanguage || undefined,
+  ].filter((v): v is string => !!v);
 
   const handleStart = useCallback(() => {
     setError(null);
@@ -517,15 +538,15 @@ export default function RambleBabbleApp({
   const runCleanup = useCallback(
     async (modifier?: string) => {
       if (!inputText.trim()) {
-        setError("Record or paste your ramble first, then Babble it.");
+        setError("There's nothing here. Say literally anything. A grocery list, a threat, I don't care. Give me something.");
         return;
       }
       if (!outputType) {
-        setError("Pick a format first. What should your ramble become?");
+        setError("Pick a format first. I'm not a mind reader, I'm barely a word reader.");
         return;
       }
       if (outputType === "custom" && !customInstruction.trim()) {
-        setError("Tell us what to turn it into.");
+        setError("You picked 'something else' and then said nothing else. Finish the sentence.");
         return;
       }
       const selected = OUTPUT_TYPES.find((o) => o.id === outputType);
@@ -560,7 +581,11 @@ export default function RambleBabbleApp({
           }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Cleanup failed.");
+        if (!res.ok)
+          throw new Error(
+            data.error ||
+              "It broke. Could be us, could be the void. Hit it again and we'll both pretend that didn't happen.",
+          );
         const out = data.cleaned || "";
         setCleaned(out);
         setKeyPoints(Array.isArray(data.keyPoints) ? data.keyPoints : []);
@@ -591,7 +616,11 @@ export default function RambleBabbleApp({
             });
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Cleanup failed.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "It broke. Could be us, could be the void. Hit it again and we'll both pretend that didn't happen.",
+        );
       } finally {
         setCleaning(false);
       }
@@ -623,7 +652,7 @@ export default function RambleBabbleApp({
       setCopyLabel("Copied");
       setTimeout(() => setCopyLabel("Copy"), 1600);
     } catch {
-      setError("Couldn't copy.");
+      setError("Your clipboard said no. Even it has boundaries, apparently.");
     }
   }, [cleaned]);
 
@@ -646,8 +675,11 @@ export default function RambleBabbleApp({
     setView("compose");
   }, [recorder]);
 
+  // Clears the SECONDARY options (the chips: tone, character, accent, language,
+  // your words, profanity). It deliberately leaves the Format alone: Format is
+  // the one required, primary choice with its own control, and "Clear all"
+  // dropping it would force a re-pick nobody asked for.
   const resetChoices = () => {
-    setOutputType("");
     setTone("");
     setAccent("");
     setPersona("");
@@ -703,15 +735,6 @@ export default function RambleBabbleApp({
     if (window.matchMedia("(min-width: 768px)").matches) return;
     rightPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [hasResult, cleaning]);
-
-  // Edit brings you back to the ramble on the left (both panels are always
-  // visible now, so there's no view to switch — just focus the text).
-  const focusRamble = () => {
-    const el = inputRef.current;
-    if (!el) return;
-    el.focus();
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
 
   const navBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
@@ -1008,8 +1031,8 @@ export default function RambleBabbleApp({
             className="font-mono-label text-[11px] uppercase leading-[1.45] tracking-[0.1em] sm:text-[12px] sm:text-right"
             style={{ color: t.cDim, maxWidth: 300 }}
           >
-            Talk or paste your ramble on the left. Stack the controls. Babble
-            it.
+            Talk like a maniac. Stack whatever you want. Hit babble it and we'll
+            figure out what the hell you were trying to say.
           </p>
         </div>
 
@@ -1027,10 +1050,12 @@ export default function RambleBabbleApp({
             secondary choices are the same decision continued. The card says so.
             It is deliberately NOT full page width: Format's value is one or two
             words ("Email"), so stretching it across 1800px only manufactures a
-            vast empty bar. The space to the right stays empty on purpose. */}
+            vast empty bar. To Format's right ride the ACTIVE OPTION chips (tone,
+            character, accent, language) so nothing is ever silently stacked, and
+            Babble it holds the far end. */}
         <div className="mb-4">
           <div
-            className="w-full p-2.5 sm:max-w-[620px]"
+            className="w-full p-2.5 sm:max-w-[840px]"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
           {/* FORMAT and BABBLE IT share the console's top row. Babble it USED to
@@ -1043,7 +1068,7 @@ export default function RambleBabbleApp({
               row (layout contract rule 5 is about controls that DO fit). */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
           <div
-            className="min-w-0 flex-1"
+            className="min-w-0 w-full sm:w-auto sm:max-w-[340px]"
             style={{ border: `1px solid ${t.lineStrong}` }}
           >
             <Selector
@@ -1109,6 +1134,98 @@ export default function RambleBabbleApp({
             </Selector>
           </div>
 
+          {/* ACTIVE OPTIONS ride here as chips, one per armed secondary choice,
+              so the stack is always VISIBLE and never silently carried into a
+              babble. Each chip opens the Options overlay; "Clear all" drops them
+              all in one deliberate move. When nothing is armed, this collapses
+              to the quiet "Options" affordance. The ref anchors the floating
+              Options layer, so it is on a wrapper that is ALWAYS rendered
+              (either state), never on a button that can vanish. */}
+          <div
+            ref={optionsToggleRef}
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5"
+          >
+            {activeOptionChips.length > 0 ? (
+              <>
+                {activeOptionChips.map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={toggleOptions}
+                    aria-haspopup="dialog"
+                    className="font-mono-label px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                    style={{
+                      background: "transparent",
+                      border: `1px solid ${t.lineStrong}`,
+                      color: t.ink,
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={resetChoices}
+                  className="font-mono-label flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  style={{ background: t.ink, color: t.panel }}
+                >
+                  <span aria-hidden>&times;</span> Clear all
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={toggleOptions}
+                aria-expanded={showOptions}
+                aria-haspopup="dialog"
+                className="flex items-center gap-1.5 text-left transition active:translate-y-px"
+                style={{ background: "transparent" }}
+                title="Tone, character, accent, language, spellings, profanity"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={t.inkDim}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                  style={{
+                    flexShrink: 0,
+                    transform: showOptions ? "rotate(180deg)" : "none",
+                    transition: "transform 0.15s",
+                  }}
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+                <span
+                  className="font-mono-label text-[11px] font-medium uppercase tracking-[0.12em]"
+                  style={{ color: t.inkDim }}
+                >
+                  Options
+                </span>
+              </button>
+            )}
+            {/* How the style options work. Quiet, no fill, so the border IS the
+                control (lineStrong, not line). */}
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              aria-label="How the style options work"
+              title="How the style options work"
+              className="font-mono-label flex h-6 w-6 shrink-0 items-center justify-center text-[12px] font-bold transition"
+              style={{
+                background: "transparent",
+                border: `1px solid ${t.lineStrong}`,
+                color: t.inkDim,
+              }}
+            >
+              ?
+            </button>
+          </div>
+
             {/* THE one hero action. It wears the brand gradient because it is
                 the only thing here that earns it. The label is dark, not white:
                 white fails AA on two of the gradient's three stops, and the
@@ -1165,66 +1282,6 @@ export default function RambleBabbleApp({
               }
             />
           )}
-
-          {/* OPTIONS — the same decision continued, so it lives INSIDE the card
-              directly under Format. Deliberately no divider and no box of its
-              own: a rule here would split one unit into two and put Advanced
-              back in its own element. Quiet and left-aligned, so it never
-              competes with Format. Closed by default. The "?" sits beside it and
-              opens help without touching the drawer. */}
-          <div className="flex items-center gap-2 px-1 pb-0.5 pt-2">
-            <button
-              type="button"
-              ref={optionsToggleRef}
-              onClick={toggleOptions}
-              aria-expanded={showOptions}
-              aria-haspopup="dialog"
-              className="flex items-center gap-1.5 text-left transition active:translate-y-px"
-              style={{ background: "transparent" }}
-              title="Tone, character, accent, language, spellings, profanity"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={t.inkDim}
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-                style={{
-                  flexShrink: 0,
-                  transform: showOptions ? "rotate(180deg)" : "none",
-                  transition: "transform 0.15s",
-                }}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-              <span
-                className="font-mono-label text-[11px] font-medium uppercase tracking-[0.12em]"
-                style={{ color: t.inkDim }}
-              >
-                Options
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setHelpOpen(true)}
-              aria-label="How the style options work"
-              title="How the style options work"
-              className="font-mono-label flex h-6 w-6 shrink-0 items-center justify-center text-[12px] font-bold transition"
-              style={{
-                background: "transparent",
-                // lineStrong, not line: this control has no fill, so the border
-                // IS the control. At 1.2:1 there was nothing to aim at.
-                border: `1px solid ${t.lineStrong}`,
-                color: t.inkDim,
-              }}
-            >
-              ?
-            </button>
-          </div>
           </div>
 
           {/* The drawer is a FLOATING LAYER, portalled to <body>. It used to
@@ -1780,41 +1837,45 @@ export default function RambleBabbleApp({
                 own ramble back out of the box you just typed it into serves
                 nobody. */}
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={recording ? handleStop : handleStart}
-                disabled={transcribing}
-                className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
-                style={{
-                  background: "transparent",
-                  // lineStrong, not line: no fill, so the border is the chip.
-                  border: `1px solid ${recording ? t.accentOnPanel : t.lineStrong}`,
-                  color: recording ? t.accentOnPanel : t.inkDim,
-                }}
-              >
-                {transcribing ? (
-                  <span
-                    className="rb-spin inline-block h-3 w-3 rounded-full border-2"
-                    style={{
-                      borderColor: "transparent",
-                      borderTopColor: t.accentOnPanel,
-                    }}
-                  />
-                ) : (
-                  /* The record status dot: one of only two things on this
-                     screen still allowed to be round. */
-                  <span
-                    className={recording ? "rb-blink" : ""}
-                    style={{
-                      display: "inline-block",
-                      height: 9,
-                      width: 9,
-                      borderRadius: 999,
-                      background: t.accentOnPanel,
-                    }}
-                  />
-                )}
-                {transcribing ? `${loadingWord}…` : recording ? "Stop" : "Record"}
-              </button>
+              {/* While recording, this chip is HIDDEN: the live take already has
+                  its Stop (and Cancel) on the recording overlay, sitting with the
+                  timer and equalizer, so there is exactly ONE Stop on screen. */}
+              {!recording && (
+                <button
+                  onClick={handleStart}
+                  disabled={transcribing}
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
+                  style={{
+                    background: "transparent",
+                    // lineStrong, not line: no fill, so the border is the chip.
+                    border: `1px solid ${t.lineStrong}`,
+                    color: t.inkDim,
+                  }}
+                >
+                  {transcribing ? (
+                    <span
+                      className="rb-spin inline-block h-3 w-3 rounded-full border-2"
+                      style={{
+                        borderColor: "transparent",
+                        borderTopColor: t.accentOnPanel,
+                      }}
+                    />
+                  ) : (
+                    /* The record status dot: one of only two things on this
+                       screen still allowed to be round. */
+                    <span
+                      style={{
+                        display: "inline-block",
+                        height: 9,
+                        width: 9,
+                        borderRadius: 999,
+                        background: t.accentOnPanel,
+                      }}
+                    />
+                  )}
+                  {transcribing ? `${loadingWord}…` : "Record"}
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (recorder.status === "recording") recorder.cancel();
@@ -1831,6 +1892,25 @@ export default function RambleBabbleApp({
                 </span>{" "}
                 Clear
               </button>
+
+              {/* The ramble controls live on the LEFT, with the notes: the right
+                  panel is OUTPUT ONLY. "New ramble" clears everything and starts
+                  over, shown once there is a result to move on from. (There is no
+                  "Edit": the notes are always right here, so clicking them is the
+                  edit.) */}
+              {hasResult && (
+                <button
+                  onClick={handleClear}
+                  className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px"
+                  style={{
+                    background: "transparent",
+                    border: `1px solid ${t.lineStrong}`,
+                    color: t.inkDim,
+                  }}
+                >
+                  New ramble
+                </button>
+              )}
             </div>
 
             {/* Babble it used to live here, and this is exactly why it kept
@@ -1874,32 +1954,21 @@ export default function RambleBabbleApp({
                     {resultMeta}
                   </span>
                 )}
+                {/* OUTPUT ONLY: just Copy here. The ramble controls (Edit, New
+                    ramble) moved to the left, with the notes. */}
                 {hasResult && !cleaning && (
-                  <>
-                    <button
-                      onClick={focusRamble}
-                      title="Edit this ramble (jumps back to the text on the left)"
-                      className="font-mono-label flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px"
-                      style={{ background: "transparent", border: `1px solid ${t.lineStrong}`, color: t.inkDim }}
-                    >
-                      <span aria-hidden style={{ fontSize: 13 }}>
-                        &larr;
-                      </span>{" "}
-                      Edit
-                    </button>
-                    <button
-                      onClick={handleCopy}
-                      disabled={!cleaned}
-                      className="font-mono-label flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
-                      style={{
-                        background: "transparent",
-                        border: `1px solid ${t.lineStrong}`,
-                        color: t.inkDim,
-                      }}
-                    >
-                      {copyLabel}
-                    </button>
-                  </>
+                  <button
+                    onClick={handleCopy}
+                    disabled={!cleaned}
+                    className="font-mono-label flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
+                    style={{
+                      background: "transparent",
+                      border: `1px solid ${t.lineStrong}`,
+                      color: t.inkDim,
+                    }}
+                  >
+                    {copyLabel}
+                  </button>
                 )}
               </div>
             </div>
@@ -1943,8 +2012,9 @@ export default function RambleBabbleApp({
                       className="mt-4 max-w-[260px] text-[16px] leading-[1.5]"
                       style={{ color: t.inkDim }}
                     >
-                      Your refined or ridiculous text resolves right here. Stack
-                      a few controls, then babble it.
+                      Nothing here yet. Feed the machine your mess and it hands
+                      back something you can actually send. Or something unhinged
+                      enough to get you blocked. Depends what you clicked.
                     </p>
                   </div>
                 ) : (
@@ -2039,9 +2109,6 @@ export default function RambleBabbleApp({
                 </ActionBtn>
                 <ActionBtn t={t} onClick={() => runCleanup("again")} disabled={busy}>
                   Try again
-                </ActionBtn>
-                <ActionBtn t={t} onClick={handleClear}>
-                  New ramble
                 </ActionBtn>
               </div>
             )}
