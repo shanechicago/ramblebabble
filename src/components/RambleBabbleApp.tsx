@@ -82,16 +82,23 @@ const THEMES = {
     cInk: "#f2f2f3",
     cDim: "#a5a7ab",
     cLine: "rgba(255,255,255,0.09)",
-    cLineStrong: "rgba(255,255,255,0.18)",
+    // Solid, not a wash: at 18% white over the canvas this outlined chrome
+    // controls at 1.64:1, which is not a border, it is a rumour. 3.01:1.
+    cLineStrong: "#5c5d62",
     panel: "#18181a",
     panel2: "#212124",
     control: "#292a2d",
     control2: "#34353a",
     ink: "#f2f2f3",
     inkDim: "#a9abaf",
-    inkFaint: "#74767b",
+    // 4.55:1 on control, 5.62 on panel, 5.09 on panel2. The old #74767b was
+    // 3.16 on control: quiet had crossed over into unreadable.
+    inkFaint: "#8f9196",
     line: "rgba(255,255,255,0.08)",
-    lineStrong: "rgba(255,255,255,0.16)",
+    // Solid, and the ONLY outline allowed on an interactive control: panel2 on
+    // panel is just 1.4:1, so the border is the whole reason you can see the
+    // control at all. 3.03 on control, 3.39 on panel2, 3.75 on panel.
+    lineStrong: "#727378",
   },
   // Calm light: white writing sheet, soft neutral controls, dark ink.
   day: {
@@ -100,16 +107,22 @@ const THEMES = {
     cInk: "#14161b",
     cDim: "#4b525c",
     cLine: "rgba(19,22,26,0.10)",
-    cLineStrong: "rgba(19,22,26,0.20)",
+    // Solid, not a wash: 20% ink over the canvas outlined chrome controls at
+    // 1.53:1. 3.03:1.
+    cLineStrong: "#8b8e94",
     panel: "#ffffff",
     panel2: "#f0f2f5",
     control: "#eef1f4",
     control2: "#e2e6ec",
     ink: "#14161b",
     inkDim: "#4b525c",
-    inkFaint: "#6a717a",
+    // 4.55:1 on control, 5.16 on panel, 4.60 on panel2. #6a717a was 4.35 on
+    // control: a near miss is still a miss.
+    inkFaint: "#676e77",
     line: "rgba(19,22,26,0.10)",
-    lineStrong: "rgba(19,22,26,0.22)",
+    // Solid, and the ONLY outline allowed on an interactive control.
+    // 3.01 on control, 3.05 on panel2, 3.42 on panel.
+    lineStrong: "#888b91",
   },
 } as const;
 
@@ -123,6 +136,26 @@ function formatTime(total: number): string {
 // inputs); the wire shape drops a blank meaning entirely.
 type GlossaryRow = { word: string; meaning: string };
 const EMPTY_GLOSSARY: GlossaryRow[] = [{ word: "", meaning: "" }];
+
+// Where the floating Options layer sits. It is measured off the Options toggle
+// and portalled to <body>, so it spends NO layout height in the control band:
+// opening it moves the notes column, Record and Babble it by exactly zero
+// pixels (layout contract rules 2 and 3). An inline drawer cannot do that: on
+// a 700px-tall viewport the fixed chrome plus the drawer is ~688px, so there is
+// no textarea height, not even zero, that keeps Babble it above the fold.
+// A phone gets a bottom sheet; anything wider gets a panel anchored under the
+// toggle, flipped above it when there is more room up there, and always clamped
+// inside all four viewport edges.
+type OptionsPlacement =
+  | { mode: "sheet" }
+  | { mode: "below"; left: number; top: number; width: number; maxHeight: number }
+  | { mode: "above"; left: number; bottom: number; width: number; maxHeight: number };
+
+const OPTIONS_EDGE = 8; // never touch a viewport edge
+const OPTIONS_GAP = 6; // breathing room between the toggle and the panel
+const OPTIONS_MAX_WIDTH = 760;
+const OPTIONS_MIN_HEIGHT = 160;
+const OPTIONS_SHEET_BELOW = 640; // narrower than this, anchoring buys nothing
 
 /** Rows -> what we send: a word is required, a blank meaning is left off. */
 function toGlossaryEntries(rows: GlossaryRow[]): GlossaryEntry[] {
@@ -171,10 +204,12 @@ export default function RambleBabbleApp({
   // Toggle "Clean it up" to strip the curse words while keeping the anger.
   const [cleanProfanity, setCleanProfanity] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  // Drives the inline Options drawer in the left panel (tone, character, accent,
-  // language, spellings, profanity). Format lives outside it, always visible.
-  // Shut by default on every size, so the ramble gets the screen.
+  // Drives the floating Options layer (tone, character, accent, language,
+  // spellings, profanity). Format lives outside it, always visible. Shut by
+  // default on every size, so the ramble gets the screen.
   const [showOptions, setShowOptions] = useState(false);
+  const [optionsPlacement, setOptionsPlacement] =
+    useState<OptionsPlacement | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   // ONE thing at a time, full screen: "compose" (ramble + options) or "result"
   // (the Babble, full width, with room to read it all). Babble it -> result;
@@ -207,7 +242,83 @@ export default function RambleBabbleApp({
   // on screen together).
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
+  // The Options toggle in the control band. The floating layer is positioned
+  // off this element's rect, so the panel stays visually attached to the
+  // control that opened it without occupying a single pixel of the flow.
+  const optionsToggleRef = useRef<HTMLButtonElement>(null);
 
+  // Measure the toggle and clamp the panel inside the viewport: never off an
+  // edge, flip above when there is more room up there, bottom sheet on a phone.
+  const placeOptions = useCallback(() => {
+    const btn = optionsToggleRef.current;
+    if (typeof window === "undefined" || !btn) return;
+    const r = btn.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    if (vw < OPTIONS_SHEET_BELOW) {
+      setOptionsPlacement({ mode: "sheet" });
+      return;
+    }
+
+    const width = Math.min(OPTIONS_MAX_WIDTH, vw - OPTIONS_EDGE * 2);
+    let left = r.left;
+    if (left + width > vw - OPTIONS_EDGE) left = vw - OPTIONS_EDGE - width;
+    if (left < OPTIONS_EDGE) left = OPTIONS_EDGE;
+
+    const roomBelow = vh - r.bottom - OPTIONS_GAP - OPTIONS_EDGE;
+    const roomAbove = r.top - OPTIONS_GAP - OPTIONS_EDGE;
+    if (roomBelow >= roomAbove) {
+      setOptionsPlacement({
+        mode: "below",
+        left,
+        top: r.bottom + OPTIONS_GAP,
+        width,
+        maxHeight: Math.max(OPTIONS_MIN_HEIGHT, roomBelow),
+      });
+    } else {
+      setOptionsPlacement({
+        mode: "above",
+        left,
+        bottom: vh - r.top + OPTIONS_GAP,
+        width,
+        maxHeight: Math.max(OPTIONS_MIN_HEIGHT, roomAbove),
+      });
+    }
+  }, []);
+
+  // The placement itself is measured up front, on the click, while the toggle
+  // is already on screen (see toggleOptions), so the layer paints in the right
+  // place on its very first frame with no flash. This effect only SUBSCRIBES:
+  // it re-measures when something moves the anchor under the open layer, and
+  // wires up Escape.
+  useEffect(() => {
+    if (!showOptions) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // A dropdown open INSIDE the panel takes the Escape first, so one press
+      // never yanks the whole layer out from under an open menu.
+      if (openDropdown) setOpenDropdown(null);
+      else setShowOptions(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", placeOptions);
+    window.addEventListener("scroll", placeOptions, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", placeOptions);
+      window.removeEventListener("scroll", placeOptions, true);
+    };
+  }, [showOptions, openDropdown, placeOptions]);
+
+  const toggleOptions = useCallback(() => {
+    if (showOptions) {
+      setShowOptions(false);
+      return;
+    }
+    placeOptions();
+    setShowOptions(true);
+  }, [showOptions, placeOptions]);
 
   // Cursor spotlight (editorial signature).
   useEffect(() => {
@@ -393,6 +504,12 @@ export default function RambleBabbleApp({
         setCleaning(false);
       }
     },
+    // Every value the closure READS has to be here. cleanProfanity was not.
+    // So if Profanity was the last thing you touched before Babble it (the
+    // natural order: open Options, hit Clean it up, Done, Babble it), nothing
+    // else in this list changed, the memoized closure was reused, and it
+    // shipped the PREVIOUS profanity choice. Your pick was silently dropped on
+    // exactly the run you made it for.
     [
       inputText,
       outputType,
@@ -402,6 +519,7 @@ export default function RambleBabbleApp({
       persona,
       targetLanguage,
       glossary,
+      cleanProfanity,
       userId,
     ],
   );
@@ -897,8 +1015,10 @@ export default function RambleBabbleApp({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setShowOptions((o) => !o)}
+              ref={optionsToggleRef}
+              onClick={toggleOptions}
               aria-expanded={showOptions}
+              aria-haspopup="dialog"
               className="flex items-center gap-1.5 text-left transition active:translate-y-px"
               style={{ background: "transparent" }}
               title="Tone, character, accent, language, spellings, profanity"
@@ -936,7 +1056,9 @@ export default function RambleBabbleApp({
               className="font-mono-label flex h-6 w-6 shrink-0 items-center justify-center text-[12px] font-bold transition"
               style={{
                 background: "transparent",
-                border: `1px solid ${t.line}`,
+                // lineStrong, not line: this control has no fill, so the border
+                // IS the control. At 1.2:1 there was nothing to aim at.
+                border: `1px solid ${t.lineStrong}`,
                 color: t.inkDim,
                 borderRadius: 999,
               }}
@@ -945,20 +1067,97 @@ export default function RambleBabbleApp({
             </button>
           </div>
 
-          {/* The drawer opens INLINE, inside this band, across the whole page.
-              The four secondary choices ride a responsive grid so they spend
-              the width rather than stacking four deep and shoving the primary
-              action toward the fold. They are compact and quiet on purpose:
-              they must never read as equal to Format. */}
-          {showOptions && (
-            <div
-              className="flex flex-col gap-4 rounded-[14px] p-3.5"
-              style={{ background: t.control, border: `1px solid ${t.line}` }}
-            >
+          {/* The drawer is a FLOATING LAYER, portalled to <body>. It used to
+              open inline right here, which pushed the columns down and dropped
+              Babble it 226px below the fold at 1440x700, exactly when the user
+              has just picked a Character and is reaching for that button. It
+              renders nothing in the flow, so this band's height is identical
+              open or shut. Anchored under the toggle above, clamped to the
+              viewport, and dismissible three ways: Escape, click outside, Done.
+              The four secondary choices still ride a responsive grid so they
+              spend the width rather than stacking four deep, and they are still
+              compact and quiet: they must never read as equal to Format.
+              z-45/46 is deliberate and load-bearing: the Selector dropdowns
+              inside portal at z-60 and MUST still open above this layer. */}
+          {showOptions &&
+            optionsPlacement &&
+            typeof document !== "undefined" &&
+            createPortal(
+              <div
+                className="fixed inset-0 z-[45]"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Options"
+              >
+                {/* Click-outside. Dimmed only for the phone sheet, which covers
+                    the screen anyway; the anchored popover leaves the page
+                    bright so Babble it stays plainly readable behind it. */}
+                <div
+                  className="absolute inset-0"
+                  style={
+                    optionsPlacement.mode === "sheet"
+                      ? { background: "rgba(0,0,0,0.55)", touchAction: "none" }
+                      : undefined
+                  }
+                  onClick={() => setShowOptions(false)}
+                />
+                <div
+                  className={
+                    optionsPlacement.mode === "sheet"
+                      ? "absolute inset-x-0 bottom-0 z-[46] flex flex-col overflow-hidden rounded-t-[14px]"
+                      : "absolute z-[46] flex flex-col overflow-hidden rounded-[14px]"
+                  }
+                  style={{
+                    background: t.control,
+                    // line, not lineStrong: this is a panel edge, not a
+                    // control. The shadow is what lifts it off the page.
+                    border: `1px solid ${t.line}`,
+                    boxShadow: "0 24px 60px -16px rgba(0,0,0,0.6)",
+                    ...(optionsPlacement.mode === "sheet"
+                      ? { maxHeight: "85vh" }
+                      : optionsPlacement.mode === "below"
+                        ? {
+                            left: optionsPlacement.left,
+                            top: optionsPlacement.top,
+                            width: optionsPlacement.width,
+                            maxHeight: optionsPlacement.maxHeight,
+                          }
+                        : {
+                            left: optionsPlacement.left,
+                            bottom: optionsPlacement.bottom,
+                            width: optionsPlacement.width,
+                            maxHeight: optionsPlacement.maxHeight,
+                          }),
+                  }}
+                >
+                  <div
+                    className="flex shrink-0 items-center justify-between px-3.5 py-2"
+                    style={{ borderBottom: `1px solid ${t.line}` }}
+                  >
+                    <span
+                      className="font-mono-label text-[11px] font-medium uppercase tracking-[0.12em]"
+                      style={{ color: t.inkDim }}
+                    >
+                      Options
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowOptions(false)}
+                      className="font-mono-label px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px"
+                      style={{ background: "transparent", color: t.inkDim }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                  {/* The one legitimate scroll region on this screen: a
+                      transient overlay, not a page panel, so contract rule 1
+                      is intact. If the choices outgrow the space THIS scrolls.
+                      The page never does. */}
+                  <div className="flex flex-col gap-4 overflow-y-auto overscroll-contain p-3.5">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div
                   className="overflow-hidden rounded-[10px]"
-                  style={{ border: `1px solid ${t.line}` }}
+                  style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
                     t={t}
@@ -988,7 +1187,7 @@ export default function RambleBabbleApp({
 
                 <div
                   className="overflow-hidden rounded-[10px]"
-                  style={{ border: `1px solid ${t.line}` }}
+                  style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
                     t={t}
@@ -1020,7 +1219,7 @@ export default function RambleBabbleApp({
 
                 <div
                   className="overflow-hidden rounded-[10px]"
-                  style={{ border: `1px solid ${t.line}` }}
+                  style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
                     t={t}
@@ -1053,7 +1252,7 @@ export default function RambleBabbleApp({
                     written in that language. */}
                 <div
                   className="overflow-hidden rounded-[10px]"
-                  style={{ border: `1px solid ${t.line}` }}
+                  style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
                     t={t}
@@ -1291,8 +1490,11 @@ export default function RambleBabbleApp({
                   <span aria-hidden>&#8635;</span> Reset choices
                 </button>
               </div>
-            </div>
-          )}
+                  </div>
+                </div>
+              </div>,
+              document.body,
+            )}
         </div>
 
         {/* ============ TWO-COLUMN WORKSPACE ============ */}
@@ -1343,7 +1545,9 @@ export default function RambleBabbleApp({
                   {
                     color: t.ink,
                     background: t.panel2,
-                    border: `1px solid ${t.line}`,
+                    // lineStrong, not line: panel2 on panel is 1.4:1, so this
+                    // border is the only thing that says "type here".
+                    border: `1px solid ${t.lineStrong}`,
                     "--rb-ph": t.inkFaint,
                   } as React.CSSProperties
                 }
@@ -1422,7 +1626,8 @@ export default function RambleBabbleApp({
                 className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
                 style={{
                   background: "transparent",
-                  border: `1px solid ${recording ? ACCENT : t.line}`,
+                  // lineStrong, not line: no fill, so the border is the chip.
+                  border: `1px solid ${recording ? ACCENT : t.lineStrong}`,
                   color: recording ? ACCENT : t.inkDim,
                 }}
               >

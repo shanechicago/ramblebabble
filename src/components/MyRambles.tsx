@@ -6,6 +6,13 @@ import { BabbleWave } from "./BabbleText";
 
 const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
 const ACCENT = "#7b5cff";
+// The brand violet is 4.49:1 on this canvas: fine for large text and for icons
+// (3:1) but a hair under AA for small text (4.5:1). This lifted violet is the
+// same hue for SMALL TEXT only, and clears 4.5 on every dark ground we use.
+const ACCENT_TEXT = "#8b70ff";
+// C_LINE is a decorative hairline (1.36:1). Anything that OUTLINES an
+// interactive control needs 3:1, because the fill alone does not identify it.
+const C_LINE_STRONG = "#66676c";
 const COBALT = "#ff5a2a";
 const CANVAS = "#0b0c0f";
 const C_INK = "#f3f5f7";
@@ -173,7 +180,7 @@ export default function MyRambles({
           </button>
           <span
             className="font-mono-label text-[12px] uppercase tracking-[0.14em]"
-            style={{ color: ACCENT }}
+            style={{ color: ACCENT_TEXT }}
           >
             My Rambles
           </span>
@@ -229,13 +236,13 @@ export default function MyRambles({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search your rambles by word or phrase..."
                 className="w-full bg-transparent py-3 pl-11 pr-20 text-[15px] outline-none transition placeholder:text-[#7b828c] focus:border-[#7b5cff]"
-                style={{ border: `1px solid ${C_LINE}`, color: C_INK }}
+                style={{ border: `1px solid ${C_LINE_STRONG}`, color: C_INK }}
               />
               {query && (
                 <button
                   onClick={() => setQuery("")}
                   className="font-mono-label absolute right-3 text-[11px] font-bold uppercase tracking-[0.12em]"
-                  style={{ color: ACCENT }}
+                  style={{ color: ACCENT_TEXT }}
                 >
                   Clear
                 </button>
@@ -332,7 +339,7 @@ export default function MyRambles({
                   <path d="M6 9l6 6 6-6" />
                 </svg>
                 <span style={{ color: C_INK }}>{g}</span>
-                <span style={{ color: ACCENT }}>{groups[g].length}</span>
+                <span style={{ color: ACCENT_TEXT }}>{groups[g].length}</span>
               </button>
               {!isCollapsed && (
                 <div>
@@ -383,7 +390,7 @@ function RambleRow({
           onClick={() => onReopen(r)}
           className="block text-left text-[18px] font-medium transition"
           style={{ color: C_INK }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = ACCENT)}
+          onMouseEnter={(e) => (e.currentTarget.style.color = ACCENT_TEXT)}
           onMouseLeave={(e) => (e.currentTarget.style.color = C_INK)}
         >
           {titleOf(r)}
@@ -398,7 +405,7 @@ function RambleRow({
           {r.cleaned.replace(/\n+/g, " ")}
         </p>
         <div className="mt-2.5 flex flex-wrap gap-2">
-          <Tag color={ACCENT}>{r.output_label || r.output_type}</Tag>
+          <Tag color={ACCENT_TEXT}>{r.output_label || r.output_type}</Tag>
           {r.tone && <Tag color={COBALT}>{r.tone}</Tag>}
         </div>
       </div>
@@ -446,7 +453,7 @@ function FilterChip({
       style={
         active
           ? { background: ACCENT, color: "#fff" }
-          : { border: `1px solid ${C_LINE}`, color: C_DIM }
+          : { border: `1px solid ${C_LINE_STRONG}`, color: C_DIM }
       }
     >
       {children}
