@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRecorder } from "./useRecorder";
 import { getSupabase } from "@/lib/supabase/client";
-import { BabbleWave, FlyInText } from "./BabbleText";
+import { BabbleWave } from "./BabbleText";
 import type { SavedRamble } from "./MyRambles";
 import {
   OUTPUT_TYPES,
@@ -32,8 +32,47 @@ import {
 import type { GlossaryEntry } from "@/lib/glossary";
 
 const MAX_MINUTES = Math.round(MAX_RECORDING_SECONDS / 60);
+// The brand gradient. It earns its loudness by being RARE: exactly two things
+// in the whole product wear it, the wordmark and the one hero action below.
+// Everything else is quiet. When five things shouted, nothing was primary.
 const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
 const ACCENT = "#7b5cff";
+// White fails AA on this gradient at two of its three stops (violet 4.36, pink
+// 3.09, coral 2.73). Contrast is symmetric, so the label flips instead of the
+// brand: #070809 clears all three (violet 4.60, pink 6.49, coral 7.35). The
+// VIOLET stop is what binds — it is the darkest, so a dark label has the least
+// contrast there. #13161a (4.16) and #0b0c0f (4.49) both miss. Do not "round up".
+const ON_GRADIENT = "#070809";
+// The same arithmetic for a flat accent fill: white on #7b5cff is 4.36 and
+// fails; #070809 is 4.60 and passes.
+const ON_ACCENT = "#070809";
+
+// The signature reveal: a full-length block of noise that resolves left to
+// right into the real text. Straight from the design prototype.
+const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@$%&*<>/+=~";
+const SCRAMBLE_STEP = 6; // characters resolved per tick
+const SCRAMBLE_TICK = 26; // ms between ticks
+
+/** One frame of the decode: everything before `p` is real, the rest is noise.
+ *  Whitespace is never scrambled, so the block keeps the shape of the final
+ *  text from the very first frame and nothing reflows as it resolves. */
+function scrambleFrame(full: string, p: number): string {
+  let out = "";
+  for (let i = 0; i < full.length; i++) {
+    const c = full[i];
+    if (i < p) out += c;
+    else if (c === " " || c === "\n") out += c;
+    else out += GLYPHS[(Math.random() * GLYPHS.length) | 0];
+  }
+  return out;
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
 
 const FUN_LOADING = [
   "Razzle dazzling",
@@ -69,60 +108,63 @@ const LANGUAGES = [
   "Tagalog",
 ];
 
-// Two genuinely different modes: NIGHT (void-black chrome, bright paper panels)
-// and DAY (light chrome, white paper panels). No tone-on-tone in either.
+// ONE canvas: a near-black void, in BOTH themes. The toggle swaps the PAPER
+// lying on it, not the desk under it — light paper (Day) or dark paper (Night).
+// A light-canvas "day" mode used to live here; it was invented, it matched
+// neither design theme, and it is gone.
+//
+// Two text scales, and mixing them is the classic bug: `cInk`/`cDim` are for
+// things sitting on the black CANVAS, `ink`/`inkDim`/`inkFaint` are for things
+// inside a PANEL. In Day those two scales are near opposites.
 type Theme = "night" | "day";
 const THEMES = {
-  // Genuinely dark: the writing plane, chrome and canvas share one charcoal
-  // family and `ink` is LIGHT (it's the primary text on dark panels). Secondary
-  // buttons are ghost/outline, never `ink`-filled, so the light ink is safe.
-  night: {
-    canvas: "#0a0a0b",
-    chrome: "rgba(10,10,11,0.88)",
-    cInk: "#f2f2f3",
-    cDim: "#a5a7ab",
-    cLine: "rgba(255,255,255,0.09)",
-    // Solid, not a wash: at 18% white over the canvas this outlined chrome
-    // controls at 1.64:1, which is not a border, it is a rumour. 3.01:1.
-    cLineStrong: "#5c5d62",
-    panel: "#18181a",
-    panel2: "#212124",
-    control: "#292a2d",
-    control2: "#34353a",
-    ink: "#f2f2f3",
-    inkDim: "#a9abaf",
-    // 4.55:1 on control, 5.62 on panel, 5.09 on panel2. The old #74767b was
-    // 3.16 on control: quiet had crossed over into unreadable.
-    inkFaint: "#8f9196",
-    line: "rgba(255,255,255,0.08)",
-    // Solid, and the ONLY outline allowed on an interactive control: panel2 on
-    // panel is just 1.4:1, so the border is the whole reason you can see the
-    // control at all. 3.03 on control, 3.39 on panel2, 3.75 on panel.
-    lineStrong: "#727378",
-  },
-  // Calm light: white writing sheet, soft neutral controls, dark ink.
+  // DAY = the design spec's "Mist": light misty paper on the void.
   day: {
-    canvas: "#f4f6f8",
-    chrome: "rgba(244,246,248,0.88)",
-    cInk: "#14161b",
-    cDim: "#4b525c",
-    cLine: "rgba(19,22,26,0.10)",
-    // Solid, not a wash: 20% ink over the canvas outlined chrome controls at
-    // 1.53:1. 3.03:1.
-    cLineStrong: "#8b8e94",
-    panel: "#ffffff",
-    panel2: "#f0f2f5",
-    control: "#eef1f4",
-    control2: "#e2e6ec",
-    ink: "#14161b",
-    inkDim: "#4b525c",
-    // 4.55:1 on control, 5.16 on panel, 4.60 on panel2. #6a717a was 4.35 on
-    // control: a near miss is still a miss.
-    inkFaint: "#676e77",
-    line: "rgba(19,22,26,0.10)",
-    // Solid, and the ONLY outline allowed on an interactive control.
-    // 3.01 on control, 3.05 on panel2, 3.42 on panel.
-    lineStrong: "#888b91",
+    canvas: "#0b0c0f",
+    chrome: "rgba(11,12,15,0.78)",
+    cInk: "#eef1f3", // 17.24 on canvas
+    cDim: "#8b929b", // 6.22 on canvas
+    cLine: "rgba(238,241,243,0.13)",
+    cLineStrong: "rgba(238,241,243,0.30)",
+    panel: "#d6dbde", // 14.01 vs canvas — unmistakably paper on a desk
+    panel2: "#c6cccf", // deeper mist: hover/active, and input wells
+    ink: "#13161a", // 13.00 on panel
+    inkDim: "#50575d", // 5.26 panel / 4.52 panel2 (the wells)
+    // The spec says #878d93 here, which is 2.40:1 — it breaks the spec's OWN
+    // "no tone-on-tone, high contrast everywhere" law. 4.56:1.
+    inkFaint: "#51575d", // 5.24 panel / 4.51 panel2
+    line: "rgba(19,22,26,0.16)", // decorative hairlines and dividers ONLY
+    // Solid, and the ONLY outline allowed to IDENTIFY an interactive control:
+    // panel2 on panel is 1.09:1, so on a bare control the border IS the
+    // control. 3.44 on panel.
+    lineStrong: "#6c7277", // 3.49 panel / 3.00 panel2
+    // The brand violet is 3.12:1 on this paper — fine as a large graphic, a
+    // fail as text. Same hue (251deg), moved in lightness until it reads:
+    // 5.36 on panel, 4.61 on panel2.
+    accentOnPanel: "#4317ff",
+  },
+  // NIGHT = the spec's "Ink" — but the spec is WRONG here and this fixes it.
+  // It puts #16181d panels on a #070809 canvas: 1.13:1. Invisible. That is the
+  // exact muddy tone-on-tone this rebuild exists to kill, and it violates the
+  // spec's own law. The panel is lifted until it reads as dark paper on a
+  // black desk.
+  night: {
+    canvas: "#070809",
+    chrome: "rgba(7,8,9,0.78)",
+    cInk: "#eef1f3", // 17.67 on canvas
+    cDim: "#8b929b", // 6.38 on canvas
+    cLine: "rgba(238,241,243,0.13)",
+    cLineStrong: "rgba(238,241,243,0.30)",
+    panel: "#3d424c", // 1.99 vs canvas (the spec's own value was 1.13)
+    panel2: "#4e545f",
+    ink: "#eef1f3", // 8.89 on panel
+    inkDim: "#c1c8d1", // 5.98 panel / 4.52 panel2 (the wells)
+    inkFaint: "#c1c8cf", // 5.97 panel / 4.51 panel2
+    line: "rgba(238,241,243,0.12)", // decorative hairlines and dividers ONLY
+    lineStrong: "#a2a3a5", // identifies interactive controls. 4.00 panel / 3.02 panel2.
+    // 2.31:1 on this paper — it fails even the 3:1 graphic bar. 6.13 on panel,
+    // 4.63 on panel2.
+    accentOnPanel: "#cdc2ff",
   },
 } as const;
 
@@ -219,9 +261,15 @@ export default function RambleBabbleApp({
   );
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
-  // Bumped on every new result so the letter-by-letter fly-in remounts and
-  // replays. The text itself is always fully present, so Copy never waits.
+  // Bumped on every new result so the decode replays even when the engine
+  // hands back the exact same text (Try again on an unchanged ramble).
   const [revealKey, setRevealKey] = useState(0);
+  // What the output panel is PAINTING right now: glyph noise mid-decode, the
+  // real text once it settles. `cleaned` is always the real text, so Copy and
+  // Share can never pick up glyphs.
+  const [revealText, setRevealText] = useState(reopen?.cleaned ?? "");
+  // Key points and follow ups wait for the decode to finish, then fade up.
+  const [settled, setSettled] = useState(!!reopen?.cleaned);
   const [keyPoints, setKeyPoints] = useState<string[]>(reopen?.key_points ?? []);
   const [followUps, setFollowUps] = useState<string[]>(reopen?.follow_ups ?? []);
   const [keyOpen, setKeyOpen] = useState(true);
@@ -319,6 +367,50 @@ export default function RambleBabbleApp({
     placeOptions();
     setShowOptions(true);
   }, [showOptions, placeOptions]);
+
+  // THE SCRAMBLE-DECODE. The engine's real text arrives all at once; this is
+  // what turns that into the signature reveal. A full-length block of noise
+  // resolves left to right at 6 characters every 26ms, then settles.
+  //
+  // The interval is cleared on unmount, on Clear, and before every new run, so
+  // a fast second Babble can never leave two decoders fighting over one panel.
+  useEffect(() => {
+    const stop = () => {
+      if (revealRef.current) {
+        clearInterval(revealRef.current);
+        revealRef.current = null;
+      }
+    };
+    stop();
+
+    if (!cleaned) {
+      setRevealText("");
+      setSettled(false);
+      return;
+    }
+    // Reduced motion: no decode at all, just the finished text.
+    if (prefersReducedMotion()) {
+      setRevealText(cleaned);
+      setSettled(true);
+      return;
+    }
+
+    setSettled(false);
+    setRevealText(scrambleFrame(cleaned, 0));
+    let p = 0;
+    revealRef.current = setInterval(() => {
+      p += SCRAMBLE_STEP;
+      if (p >= cleaned.length) {
+        stop();
+        setRevealText(cleaned);
+        setSettled(true);
+        return;
+      }
+      setRevealText(scrambleFrame(cleaned, p));
+    }, SCRAMBLE_TICK);
+
+    return stop;
+  }, [cleaned, revealKey]);
 
   // Cursor spotlight (editorial signature).
   useEffect(() => {
@@ -429,7 +521,7 @@ export default function RambleBabbleApp({
         return;
       }
       if (!outputType) {
-        setError("Pick a format first — what should your ramble become?");
+        setError("Pick a format first. What should your ramble become?");
         return;
       }
       if (outputType === "custom" && !customInstruction.trim()) {
@@ -598,7 +690,9 @@ export default function RambleBabbleApp({
     targetLanguage,
   ]
     .filter(Boolean)
-    .join("  ·  ");
+    .join(" / ");
+  // The output panel's header meta: what it is doing, then what it made.
+  const resultMeta = cleaning ? "decoding..." : hasResult ? metaLabel : "";
 
   // Both panels now live on screen together. On mobile (stacked) the output
   // sits below the fold, so once a Babble lands, glide it into view. On
@@ -644,7 +738,7 @@ export default function RambleBabbleApp({
           }}
         >
           <span
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[13px]"
+            className="flex h-5 w-5 shrink-0 items-center justify-center text-[13px]"
             style={{ background: "rgba(255,255,255,0.25)" }}
           >
             !
@@ -653,13 +747,17 @@ export default function RambleBabbleApp({
         </button>
       )}
 
-      {/* cursor spotlight */}
+      {/* Film grain: the editorial signature, over everything, catching nothing. */}
+      <div aria-hidden className="rb-grain" />
+
+      {/* Cursor spotlight: an accent halo on the black canvas, tracking the
+          mouse. Sits behind the content (the main below is z-10). */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(440px circle at var(--mx,50%) var(--my,40%), rgba(123,92,255,0.16), transparent 64%)",
+            "radial-gradient(440px circle at var(--mx,50%) var(--my,28%), rgba(123,92,255,0.22), transparent 64%)",
         }}
       />
 
@@ -734,11 +832,7 @@ export default function RambleBabbleApp({
                 onClick={() => setAccountOpen((o) => !o)}
                 title={`Account (${accountName})`}
                 className="font-mono-label flex h-8 w-8 items-center justify-center text-[13px] font-bold transition active:translate-y-px"
-                style={{
-                  background: t.control2,
-                  border: `1px solid ${t.cLineStrong}`,
-                  color: t.cInk,
-                }}
+                style={{ background: ACCENT, color: ON_ACCENT }}
               >
                 {accountInitial}
               </button>
@@ -762,7 +856,7 @@ export default function RambleBabbleApp({
                     >
                       <span
                         className="font-mono-label flex h-7 w-7 items-center justify-center text-[12px] font-bold"
-                        style={{ background: t.control2, color: t.ink }}
+                        style={{ background: t.panel2, color: t.ink }}
                       >
                         {accountInitial}
                       </span>
@@ -891,39 +985,65 @@ export default function RambleBabbleApp({
         style={{ maxWidth: 1760 }}
       >
         {/* ============ TITLE BAND ============ */}
-        {/* What this screen is, and what to do, one line each. */}
-        <div className="mb-2">
+        {/* Oversized and tightly tracked, with the instruction riding the far
+            end of the same line rather than costing a row. This is the
+            editorial voice: the page says what it is at full volume. It can
+            afford the height because Babble it no longer lives below it. */}
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-x-5 gap-y-1">
           <h1
-            className="font-bric text-[20px] font-extrabold sm:text-[22px]"
-            style={{ color: t.cInk, letterSpacing: "-0.02em" }}
+            className="font-bric font-bold"
+            style={{
+              color: t.cInk,
+              fontSize: "clamp(34px,5vw,72px)",
+              lineHeight: 0.9,
+              letterSpacing: "-0.045em",
+            }}
           >
-            New ramble
+            Refine a{" "}
+            <span className="font-serif-i font-normal" style={{ color: ACCENT }}>
+              ramble
+            </span>
           </h1>
           <p
-            className="mt-0.5 text-[13px] sm:text-[14px]"
-            style={{ color: t.cDim }}
+            className="font-mono-label text-[11px] uppercase leading-[1.45] tracking-[0.1em] sm:text-[12px] sm:text-right"
+            style={{ color: t.cDim, maxWidth: 300 }}
           >
-            Pick a format, dump your notes, and hit Babble it.
+            Talk or paste your ramble on the left. Stack the controls. Babble
+            it.
           </p>
         </div>
 
         {/* ============ CONTROL BAND ============ */}
-        {/* Every choice lives here, full page width, ABOVE both columns. These
-            controls used to sit inside the left column, which made that column
-            do two jobs (settings AND notes) and pushed the ramble, Record and
-            Babble it down every time the drawer opened. Out here the drawer
-            spends WIDTH instead of height, and the workspace below keeps its
-            own geometry no matter what is open.
-            It is a BARE band, not a panel: no card of its own. Panel chrome here
-            cost ~40px of vertical budget on a 700px screen and bought nothing,
-            and it made the settings look like a third peer panel. Reading as
-            chrome above the two panels is both truer and cheaper. */}
-        <div className="mb-4 flex flex-col gap-3">
-          {/* FORMAT — the one required choice, full page width, and visibly
-              heavier than anything in the drawer below it. Its dropdown portals
-              out, so nothing here is ever clipped. */}
+        {/* Every choice lives here, ABOVE both columns. These controls used to
+            sit inside the left column, which made that column do two jobs
+            (settings AND notes) and pushed the ramble, Record and Babble it down
+            every time the drawer opened. Out here the drawer spends WIDTH
+            instead of height, and the workspace below keeps its own geometry no
+            matter what is open.
+            ONE CARD, not two floating line items. Format and Advanced were bare
+            controls stacked on the page with nothing containing them, so they
+            read as two unrelated rows and Advanced looked like an afterthought
+            belonging to nothing. They are one unit: you pick a format, and the
+            secondary choices are the same decision continued. The card says so.
+            It is deliberately NOT full page width: Format's value is one or two
+            words ("Email"), so stretching it across 1800px only manufactures a
+            vast empty bar. The space to the right stays empty on purpose. */}
+        <div className="mb-4">
           <div
-            className="overflow-hidden rounded-[12px]"
+            className="w-full p-2.5 sm:max-w-[620px]"
+            style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
+          >
+          {/* FORMAT and BABBLE IT share the console's top row. Babble it USED to
+              live at the bottom of the notes column, which is what kept burying
+              it: every control that grew above it pushed it further down, and
+              on a short screen it fell off the bottom exactly when you reached
+              for it. Up here it is above the fold BY CONSTRUCTION — nothing can
+              ever push it down, because nothing is above it but the title.
+              They stack only on a phone, where they genuinely do not fit on one
+              row (layout contract rule 5 is about controls that DO fit). */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+          <div
+            className="min-w-0 flex-1"
             style={{ border: `1px solid ${t.lineStrong}` }}
           >
             <Selector
@@ -942,7 +1062,7 @@ export default function RambleBabbleApp({
             >
               <div
                 className="font-mono-label px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em]"
-                style={{ color: t.inkFaint }}
+                style={{ color: t.accentOnPanel }}
               >
                 Just refine
               </div>
@@ -989,6 +1109,43 @@ export default function RambleBabbleApp({
             </Selector>
           </div>
 
+            {/* THE one hero action. It wears the brand gradient because it is
+                the only thing here that earns it. The label is dark, not white:
+                white fails AA on two of the gradient's three stops, and the
+                brand is not the thing that gives way. */}
+            <button
+              onClick={() => runCleanup()}
+              disabled={cleaning || !inputText.trim()}
+              className={
+                "font-bric flex shrink-0 items-center justify-center gap-2.5 whitespace-nowrap px-7 py-3 text-[16px] font-bold transition hover:brightness-[1.1] active:translate-y-px disabled:opacity-45 disabled:saturate-50 sm:py-0" +
+                (inputText.trim() && !cleaning ? " rb-glowpulse" : "")
+              }
+              style={{
+                backgroundImage: GRADIENT,
+                color: ON_GRADIENT,
+                letterSpacing: "0.01em",
+                boxShadow: "0 12px 30px -10px rgba(123,92,255,0.55)",
+              }}
+            >
+              {cleaning ? (
+                <>
+                  <span
+                    className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                    style={{
+                      borderColor: "rgba(7,8,9,0.35)",
+                      borderTopColor: ON_GRADIENT,
+                    }}
+                  />
+                  {loadingWord}&hellip;
+                </>
+              ) : (
+                <>
+                  Babble it <span aria-hidden>&rarr;</span>
+                </>
+              )}
+            </button>
+          </div>
+
           {/* The custom instruction belongs right under the choice that asked
               for it, not in some other drawer. */}
           {outputType === "custom" && (
@@ -997,7 +1154,7 @@ export default function RambleBabbleApp({
               onChange={(e) => setCustomInstruction(e.target.value)}
               placeholder="Turn it into... e.g. a wedding toast, a recipe"
               aria-label="Turn it into"
-              className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+              className="rb-hero-input mt-2 w-full px-3 py-2.5 text-[16px] outline-none"
               style={
                 {
                   background: t.panel2,
@@ -1009,10 +1166,13 @@ export default function RambleBabbleApp({
             />
           )}
 
-          {/* OPTIONS — a quiet text toggle, not a boxed control competing with
-              Format. Closed by default. The "?" sits beside it as its own
-              button and opens help without touching the drawer. */}
-          <div className="flex items-center gap-2">
+          {/* OPTIONS — the same decision continued, so it lives INSIDE the card
+              directly under Format. Deliberately no divider and no box of its
+              own: a rule here would split one unit into two and put Advanced
+              back in its own element. Quiet and left-aligned, so it never
+              competes with Format. Closed by default. The "?" sits beside it and
+              opens help without touching the drawer. */}
+          <div className="flex items-center gap-2 px-1 pb-0.5 pt-2">
             <button
               type="button"
               ref={optionsToggleRef}
@@ -1060,11 +1220,11 @@ export default function RambleBabbleApp({
                 // IS the control. At 1.2:1 there was nothing to aim at.
                 border: `1px solid ${t.lineStrong}`,
                 color: t.inkDim,
-                borderRadius: 999,
               }}
             >
               ?
             </button>
+          </div>
           </div>
 
           {/* The drawer is a FLOATING LAYER, portalled to <body>. It used to
@@ -1104,14 +1264,12 @@ export default function RambleBabbleApp({
                 <div
                   className={
                     optionsPlacement.mode === "sheet"
-                      ? "absolute inset-x-0 bottom-0 z-[46] flex flex-col overflow-hidden rounded-t-[14px]"
-                      : "absolute z-[46] flex flex-col overflow-hidden rounded-[14px]"
+                      ? "absolute inset-x-0 bottom-0 z-[46] flex flex-col overflow-hidden"
+                      : "absolute z-[46] flex flex-col overflow-hidden"
                   }
                   style={{
-                    background: t.control,
-                    // line, not lineStrong: this is a panel edge, not a
-                    // control. The shadow is what lifts it off the page.
-                    border: `1px solid ${t.line}`,
+                    background: t.panel,
+                    border: `1px solid ${t.lineStrong}`,
                     boxShadow: "0 24px 60px -16px rgba(0,0,0,0.6)",
                     ...(optionsPlacement.mode === "sheet"
                       ? { maxHeight: "85vh" }
@@ -1156,7 +1314,7 @@ export default function RambleBabbleApp({
                   <div className="flex flex-col gap-4 overflow-y-auto overscroll-contain p-3.5">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div
-                  className="overflow-hidden rounded-[10px]"
+                  className="overflow-hidden"
                   style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
@@ -1186,7 +1344,7 @@ export default function RambleBabbleApp({
                 </div>
 
                 <div
-                  className="overflow-hidden rounded-[10px]"
+                  className="overflow-hidden"
                   style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
@@ -1218,7 +1376,7 @@ export default function RambleBabbleApp({
                 </div>
 
                 <div
-                  className="overflow-hidden rounded-[10px]"
+                  className="overflow-hidden"
                   style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
@@ -1251,7 +1409,7 @@ export default function RambleBabbleApp({
                     English spoken with an accent. Language = the output
                     written in that language. */}
                 <div
-                  className="overflow-hidden rounded-[10px]"
+                  className="overflow-hidden"
                   style={{ border: `1px solid ${t.lineStrong}` }}
                 >
                   <Selector
@@ -1342,15 +1500,14 @@ export default function RambleBabbleApp({
                             setGlossaryField(i, "word", e.target.value)
                           }
                           placeholder="Rekrutr"
-                          className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+                          className="rb-hero-input w-full px-3 py-2.5 text-[16px] outline-none"
                           style={
                             {
-                              // t.panel, not t.panel2: these fields sit ON the
-                              // t.control drawer, and in Day panel2 (#f0f2f5)
-                              // on control (#eef1f4) is tone-on-tone. panel is
-                              // a real well in both themes (white on grey /
-                              // black on grey).
-                              background: t.panel,
+                              // panel2, not panel: these wells sit ON the
+                              // panel-coloured drawer, so they need the deeper
+                              // tone plus a lineStrong outline to read as
+                              // fields at all rather than as bare paper.
+                              background: t.panel2,
                               border: `1px solid ${t.lineStrong}`,
                               color: t.ink,
                               "--rb-ph": t.inkFaint,
@@ -1373,10 +1530,10 @@ export default function RambleBabbleApp({
                             setGlossaryField(i, "meaning", e.target.value)
                           }
                           placeholder="my recruiting app"
-                          className="rb-hero-input w-full rounded-[10px] px-3 py-2.5 text-[16px] outline-none"
+                          className="rb-hero-input w-full px-3 py-2.5 text-[16px] outline-none"
                           style={
                             {
-                              background: t.panel,
+                              background: t.panel2,
                               border: `1px solid ${t.lineStrong}`,
                               color: t.ink,
                               "--rb-ph": t.inkFaint,
@@ -1396,9 +1553,9 @@ export default function RambleBabbleApp({
                             : "Remove this word"
                         }
                         title="Remove"
-                        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] text-[15px] transition active:translate-y-px"
+                        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center text-[15px] transition active:translate-y-px"
                         style={{
-                          background: t.control2,
+                          background: t.panel2,
                           border: `1px solid ${t.lineStrong}`,
                           color: t.inkDim,
                           opacity: glossaryIsEmpty ? 0.35 : 1,
@@ -1414,9 +1571,9 @@ export default function RambleBabbleApp({
                 <button
                   type="button"
                   onClick={addGlossaryRow}
-                  className="font-mono-label mt-2 rounded-[8px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  className="font-mono-label mt-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
                   style={{
-                    background: t.control2,
+                    background: t.panel2,
                     border: `1px solid ${t.lineStrong}`,
                     color: t.ink,
                   }}
@@ -1442,7 +1599,7 @@ export default function RambleBabbleApp({
                     <button
                       type="button"
                       onClick={() => setCleanProfanity(false)}
-                      className="font-mono-label rounded-[8px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                      className="font-mono-label px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
                       style={
                         !cleanProfanity
                           ? {
@@ -1451,7 +1608,7 @@ export default function RambleBabbleApp({
                               border: `1px solid ${t.ink}`,
                             }
                           : {
-                              background: t.control2,
+                              background: t.panel2,
                               color: t.ink,
                               border: `1px solid ${t.lineStrong}`,
                             }
@@ -1462,7 +1619,7 @@ export default function RambleBabbleApp({
                     <button
                       type="button"
                       onClick={() => setCleanProfanity(true)}
-                      className="font-mono-label rounded-[8px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                      className="font-mono-label px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
                       style={
                         cleanProfanity
                           ? {
@@ -1471,7 +1628,7 @@ export default function RambleBabbleApp({
                               border: `1px solid ${t.ink}`,
                             }
                           : {
-                              background: t.control2,
+                              background: t.panel2,
                               color: t.ink,
                               border: `1px solid ${t.lineStrong}`,
                             }
@@ -1484,7 +1641,7 @@ export default function RambleBabbleApp({
 
                 <button
                   onClick={resetChoices}
-                  className="font-mono-label flex items-center gap-1.5 rounded-[10px] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                  className="font-mono-label flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
                   style={{ background: t.ink, color: t.panel }}
                 >
                   <span aria-hidden>&#8635;</span> Reset choices
@@ -1506,23 +1663,23 @@ export default function RambleBabbleApp({
           {/* It now does ONE job: the ramble, Record, and Babble it. Nothing in
               here moves when the Options drawer opens. */}
           <section
-            className="flex flex-col gap-2 rounded-[20px] p-4 sm:p-5"
-            style={{ background: t.panel, border: `1px solid ${t.line}` }}
+            className="flex flex-col gap-2 p-4 sm:p-5"
+            style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
-            {/* Heading for the column, with the live word count riding the far
-                end of the same line instead of costing a row of its own. */}
+            {/* Heading for the column, with the live count riding the far end of
+                the same line instead of costing a row of its own. */}
             <div className="flex items-baseline justify-between gap-2">
               <span
-                className="font-mono-label text-[11px] font-medium uppercase tracking-[0.12em]"
+                className="font-mono-label text-[11px] font-medium uppercase tracking-[0.16em]"
                 style={{ color: t.inkDim }}
               >
-                Your notes
+                Ramble
               </span>
               <span
-                className="font-mono-label text-[10px] tracking-[0.06em]"
+                className="font-mono-label text-[10px] uppercase tracking-[0.06em]"
                 style={{ color: t.inkFaint }}
               >
-                {words} words
+                {words} words / {chars} chars
               </span>
             </div>
 
@@ -1540,7 +1697,7 @@ export default function RambleBabbleApp({
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="Spill it here. The voice memos, the half-baked ideas, the texts you shouldn't send yet."
-                className="rb-hero-input h-[clamp(140px,calc(100dvh_-_33rem),250px)] w-full resize-none rounded-[16px] p-4 text-[16px] leading-[1.6] outline-none sm:h-[clamp(150px,calc(100dvh_-_29rem),300px)] sm:p-5 sm:text-[17px]"
+                className="rb-hero-input h-[clamp(120px,calc(100dvh_-_35rem),210px)] w-full resize-none p-4 text-[16px] leading-[1.6] outline-none sm:h-[clamp(150px,calc(100dvh_-_27rem),300px)] sm:p-5 sm:text-[17px]"
                 style={
                   {
                     color: t.ink,
@@ -1554,18 +1711,21 @@ export default function RambleBabbleApp({
               />
               {recording && (
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-[16px]"
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4"
                   style={{ background: t.panel2 }}
                 >
+                  {/* Five full-height bars, alternating accent and ink, each a
+                      beat behind the last so the meter reads as one travelling
+                      pulse. The spec's third bar is cobalt; cobalt measures
+                      2.23:1 on Day paper, so it does not go here. */}
                   <div className="flex h-12 items-end gap-1.5">
-                    {[14, 30, 46, 24, 38, 18, 42].map((h, i) => (
+                    {[0, 1, 2, 3, 4].map((i) => (
                       <span
                         key={i}
-                        className="rb-wave-bar w-1.5"
+                        className="rb-wave-bar h-full w-1.5"
                         style={{
-                          height: h,
-                          background: ACCENT,
-                          animationDuration: `${0.5 + (i % 4) * 0.1}s`,
+                          background: i % 2 === 0 ? t.accentOnPanel : t.ink,
+                          animationDelay: `${i * 0.12}s`,
                         }}
                       />
                     ))}
@@ -1601,8 +1761,8 @@ export default function RambleBabbleApp({
                     </button>
                     <button
                       onClick={handleStop}
-                      className="font-mono-label px-4 py-2 text-[11px] uppercase tracking-[0.12em] text-white"
-                      style={{ background: ACCENT }}
+                      className="font-mono-label px-4 py-2 text-[11px] uppercase tracking-[0.12em]"
+                      style={{ background: ACCENT, color: ON_ACCENT }}
                     >
                       Stop
                     </button>
@@ -1623,23 +1783,34 @@ export default function RambleBabbleApp({
               <button
                 onClick={recording ? handleStop : handleStart}
                 disabled={transcribing}
-                className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
+                className="font-mono-label flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-50"
                 style={{
                   background: "transparent",
                   // lineStrong, not line: no fill, so the border is the chip.
-                  border: `1px solid ${recording ? ACCENT : t.lineStrong}`,
-                  color: recording ? ACCENT : t.inkDim,
+                  border: `1px solid ${recording ? t.accentOnPanel : t.lineStrong}`,
+                  color: recording ? t.accentOnPanel : t.inkDim,
                 }}
               >
                 {transcribing ? (
                   <span
                     className="rb-spin inline-block h-3 w-3 rounded-full border-2"
-                    style={{ borderColor: "rgba(123,92,255,0.3)", borderTopColor: ACCENT }}
+                    style={{
+                      borderColor: "transparent",
+                      borderTopColor: t.accentOnPanel,
+                    }}
                   />
                 ) : (
+                  /* The record status dot: one of only two things on this
+                     screen still allowed to be round. */
                   <span
                     className={recording ? "rb-blink" : ""}
-                    style={{ display: "inline-block", height: 9, width: 9, borderRadius: 999, background: ACCENT }}
+                    style={{
+                      display: "inline-block",
+                      height: 9,
+                      width: 9,
+                      borderRadius: 999,
+                      background: t.accentOnPanel,
+                    }}
                   />
                 )}
                 {transcribing ? `${loadingWord}…` : recording ? "Stop" : "Record"}
@@ -1662,199 +1833,132 @@ export default function RambleBabbleApp({
               </button>
             </div>
 
-            {/* The ONE emphasized action, full column width. Any limit notice
-                sits quietly above it. */}
-            <div className="flex flex-col gap-1.5">
-              {limitNotice && (
-                <p className="font-mono-label text-[11px]" style={{ color: "#ff5a3c" }}>
-                  {limitNotice}
-                </p>
-              )}
-              <button
-                onClick={() => runCleanup()}
-                disabled={cleaning || !inputText.trim()}
-                className={
-                  "font-mono-label flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-[14px] px-6 text-[14px] font-bold uppercase tracking-[0.12em] text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-45 disabled:saturate-50" +
-                  (inputText.trim() && !cleaning ? " rb-glowpulse" : "")
-                }
-                style={{
-                  backgroundImage: GRADIENT,
-                  boxShadow: "0 12px 30px -10px rgba(123,92,255,0.55)",
-                  height: 48,
-                  textShadow: "0 1px 2px rgba(0,0,0,0.32)",
-                }}
-              >
-                {cleaning ? (
-                  <>
-                    <span
-                      className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
-                      style={{ borderColor: "rgba(255,255,255,0.4)", borderTopColor: "#fff" }}
-                    />
-                    {loadingWord}&hellip;
-                  </>
-                ) : (
-                  <>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                      <path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z" />
-                    </svg>
-                    Babble it
-                    <span aria-hidden>&rarr;</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Babble it used to live here, and this is exactly why it kept
+                getting buried. It is in the console now. */}
+            {limitNotice && (
+              <p className="font-mono-label text-[11px]" style={{ color: "#ff5a3c" }}>
+                {limitNotice}
+              </p>
+            )}
           </section>
 
           {/* ============ RIGHT PANEL — payoff ============ */}
           <section
             ref={rightPanelRef}
-            className="flex min-h-0 flex-col overflow-hidden rounded-[20px]"
-            style={{ background: t.panel, border: `1px solid ${t.line}` }}
+            className="flex min-h-0 flex-col overflow-hidden"
+            style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
-            {/* Compact header: the Babble wordmark plus the result controls. */}
+            {/* Panel header: what this side is, and a right-aligned meta line
+                saying what it is doing ("decoding...") or what it made. */}
             <div
-              className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-4 py-2.5"
-              style={{ background: t.panel2, borderBottom: `1px solid ${t.line}` }}
+              className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5"
+              style={{ borderBottom: `1px solid ${t.line}` }}
             >
-              <div className="flex min-w-0 items-center gap-2.5">
-                {/* Same lockup logic as the header wordmark: the first word sits
-                    still in solid ink and only "Babble" rides the wave. Its
-                    1.9s cycle and -0.7s head start are deliberate, so this wave
-                    and the logo's 1.6s one never fall into rhythm. */}
-                <span className="flex shrink-0 items-center gap-1.5">
+              <span
+                className="font-mono-label shrink-0 text-[11px] font-medium uppercase tracking-[0.16em]"
+                style={{ color: t.accentOnPanel }}
+              >
+                Babble
+              </span>
+              <div className="flex min-w-0 items-center gap-2">
+                {resultMeta && (
                   <span
-                    className="font-bric font-extrabold"
-                    style={{ color: t.ink, fontSize: 16, letterSpacing: "-0.02em" }}
+                    className="font-mono-label truncate text-[10px] uppercase tracking-[0.08em]"
+                    style={{ color: t.inkFaint }}
                   >
-                    Your
+                    {resultMeta}
                   </span>
-                  <BabbleWave
-                    duration="1.9s"
-                    offset="-0.7s"
-                    style={{ fontSize: 21, lineHeight: 1.1 }}
-                  />
-                </span>
-                {cleaning ? (
-                  <span
-                    className="rb-procpulse font-mono-label flex items-center gap-2 px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.12em]"
-                    style={{ background: "rgba(123,92,255,0.16)", color: ACCENT }}
-                  >
-                    <span
-                      className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
-                      style={{ borderColor: "rgba(123,92,255,0.3)", borderTopColor: ACCENT }}
-                    />
-                    {loadingWord}&hellip;
-                  </span>
-                ) : null}
+                )}
+                {hasResult && !cleaning && (
+                  <>
+                    <button
+                      onClick={focusRamble}
+                      title="Edit this ramble (jumps back to the text on the left)"
+                      className="font-mono-label flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px"
+                      style={{ background: "transparent", border: `1px solid ${t.lineStrong}`, color: t.inkDim }}
+                    >
+                      <span aria-hidden style={{ fontSize: 13 }}>
+                        &larr;
+                      </span>{" "}
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleCopy}
+                      disabled={!cleaned}
+                      className="font-mono-label flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${t.lineStrong}`,
+                        color: t.inkDim,
+                      }}
+                    >
+                      {copyLabel}
+                    </button>
+                  </>
+                )}
               </div>
-              {hasResult && !cleaning && (
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    onClick={focusRamble}
-                    title="Edit this ramble (jumps back to the text on the left)"
-                    className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
-                    style={{ background: "transparent", border: `1px solid ${t.lineStrong}`, color: t.inkDim }}
-                  >
-                    <span aria-hidden style={{ fontSize: 13 }}>
-                      &larr;
-                    </span>{" "}
-                    Edit
-                  </button>
-                  <button
-                    onClick={handleClear}
-                    title="Start a new ramble (clears this and starts fresh)"
-                    className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
-                    style={{ background: "transparent", border: `1px solid ${t.lineStrong}`, color: t.inkDim }}
-                  >
-                    <span aria-hidden style={{ fontSize: 14 }}>
-                      +
-                    </span>{" "}
-                    New ramble
-                  </button>
-                  <button
-                    onClick={handleCopy}
-                    disabled={!cleaned}
-                    className="font-mono-label flex items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px disabled:opacity-40"
-                    style={{
-                      background: "transparent",
-                      border: `1px solid ${t.lineStrong}`,
-                      color: t.inkDim,
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
-                      <rect x="9" y="9" width="11" height="11" rx="1.5" />
-                      <path d="M5 15V5a1 1 0 011-1h9" />
-                    </svg>
-                    {copyLabel}
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Body scrolls internally; the panel itself never pushes the page. */}
             <div className="min-h-0 flex-1 overflow-y-auto">
-              {hasResult && !cleaning && metaLabel && (
-                <div
-                  className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-1.5"
-                  style={{ background: t.panel2, borderBottom: `1px solid ${t.line}` }}
-                >
-                  <span
-                    className="font-mono-label text-[10px] uppercase tracking-[0.14em]"
-                    style={{ color: t.inkDim }}
-                  >
-                    Styled as
-                  </span>
-                  <span className="text-[13px] font-bold" style={{ color: t.ink }}>
-                    {metaLabel}
-                  </span>
-                </div>
-              )}
-
               {/* min-h-full + flex-col is what lets the empty state actually
                   centre itself in the panel; with a result it just flows. */}
               <div className="flex min-h-full flex-col px-5 py-4 sm:px-6">
-                {!hasResult && !cleaning ? (
+                {cleaning && !hasResult ? (
+                  /* Working: the engine has the ramble and has not answered
+                     yet. There is nothing to decode until it does. */
                   <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
                     <span
-                      className="font-serif-i text-[64px] leading-none"
-                      style={{ color: t.inkFaint }}
+                      className="font-serif-i rb-breathe text-[64px] leading-none"
+                      style={{ color: t.accentOnPanel }}
                     >
                       b
                     </span>
                     <p
-                      className="mt-3 max-w-xs text-[18px] font-semibold"
-                      style={{ color: t.ink }}
-                    >
-                      Your babble lands right here.
-                    </p>
-                    <p
-                      className="mt-2 max-w-xs text-[14px] leading-[1.5]"
+                      className="font-mono-label mt-4 text-[11px] uppercase tracking-[0.14em]"
                       style={{ color: t.inkDim }}
                     >
-                      Pick how it should sound, dump your notes on the left, and hit{" "}
-                      <span style={{ color: t.ink }} className="font-semibold">
-                        Babble it
-                      </span>
-                      .
+                      {loadingWord}&hellip;
+                    </p>
+                  </div>
+                ) : !hasResult ? (
+                  <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
+                    <span
+                      className="font-serif-i text-[64px] leading-none"
+                      style={{ color: t.accentOnPanel }}
+                    >
+                      b
+                    </span>
+                    <p
+                      className="mt-4 max-w-[260px] text-[16px] leading-[1.5]"
+                      style={{ color: t.inkDim }}
+                    >
+                      Your refined or ridiculous text resolves right here. Stack
+                      a few controls, then babble it.
                     </p>
                   </div>
                 ) : (
                   <div>
-                    {/* The Babble assembles itself left to right, a character
-                        at a time. The whole string is in the DOM from frame
-                        one, so it stays selectable and copyable throughout. */}
-                    <FlyInText
-                      key={revealKey}
-                      text={cleaned}
-                      className="whitespace-pre-wrap text-[17px] leading-[1.5]"
+                    {/* THE REVEAL. A block of glyph noise resolving left to
+                        right into the real text. `cleaned` (never this) is what
+                        Copy and Share read, so the buttons cannot hand anyone a
+                        mouthful of noise, and once it settles this IS the real
+                        string: selectable and copyable straight off the page. */}
+                    <div
+                      className="font-serif-i whitespace-pre-wrap"
                       style={{
                         color: t.ink,
-                        fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                        maxWidth: "82ch",
+                        fontStyle: "normal",
+                        fontSize: 23,
+                        lineHeight: 1.5,
+                        letterSpacing: "0.005em",
+                        maxWidth: "62ch",
                       }}
-                    />
+                    >
+                      {revealText}
+                    </div>
 
-                    {hasResult && keyPoints.length > 0 && (
+                    {settled && keyPoints.length > 0 && (
                       <Collapsible
                         t={t}
                         label="Key points"
@@ -1870,7 +1974,7 @@ export default function RambleBabbleApp({
                             >
                               <span
                                 className="font-mono-label text-[12px]"
-                                style={{ color: t.inkFaint }}
+                                style={{ color: t.accentOnPanel }}
                               >
                                 {String(i + 1).padStart(2, "0")}
                               </span>
@@ -1881,7 +1985,7 @@ export default function RambleBabbleApp({
                       </Collapsible>
                     )}
 
-                    {hasResult && followUps.length > 0 && (
+                    {settled && followUps.length > 0 && (
                       <Collapsible
                         t={t}
                         label="Suggested follow ups"
@@ -1894,11 +1998,11 @@ export default function RambleBabbleApp({
                               key={i}
                               className="flex items-center gap-2 py-2 text-[15px]"
                               style={{
-                                color: t.ink,
+                                color: t.inkDim,
                                 borderTop: i ? `1px solid ${t.line}` : undefined,
                               }}
                             >
-                              <span style={{ color: t.inkDim }} aria-hidden>
+                              <span style={{ color: t.accentOnPanel }} aria-hidden>
                                 &rarr;
                               </span>
                               {f}
@@ -2189,10 +2293,12 @@ function PlanCard({
         disabled={disabled}
         className="font-mono-label mt-4 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-50"
         style={
-          // The one primary action inside its own modal, so it may stay
-          // emphasized. Flat solid accent, no gradient, no glow.
+          // The one primary action inside its own modal, so it may carry the
+          // accent. No gradient and no glow: the brand gradient belongs to the
+          // wordmark and to Babble it, and nothing else. The label is dark
+          // because white on this violet is 4.36:1 and fails AA.
           highlight
-            ? { background: ACCENT, color: "#fff" }
+            ? { background: ACCENT, color: ON_ACCENT }
             : { background: t.ink, color: t.panel }
         }
       >
@@ -2235,7 +2341,7 @@ function Selector({
   return (
     <div
       className={`relative flex flex-col ${className ?? ""}`}
-      style={{ background: compact ? "transparent" : t.control }}
+      style={{ background: "transparent" }}
     >
       <button
         onClick={onToggle}
@@ -2246,7 +2352,7 @@ function Selector({
           // A set value does NOT tint. Only "open" raises the tone, because
           // only "open" is live state. The value below the label already says
           // what is selected; a purple wash on top of it says nothing.
-          background: open ? t.control2 : compact ? "transparent" : t.control,
+          background: open ? t.panel2 : "transparent",
         }}
       >
         <span className="flex min-w-0 flex-col gap-0.5">
@@ -2309,7 +2415,7 @@ function Selector({
             {/* the sheet itself is position:fixed (via the portal), so it is NOT
                 trapped inside the sticky console and scrolls reliably on touch */}
             <div
-              className="relative z-[61] flex max-h-[85vh] w-full flex-col overflow-hidden sm:w-[460px] sm:max-h-[80vh] sm:rounded-xl"
+              className="relative z-[61] flex max-h-[85vh] w-full flex-col overflow-hidden sm:w-[460px] sm:max-h-[80vh]"
               style={{
                 background: t.panel,
                 border: `1px solid ${t.lineStrong}`,
@@ -2318,7 +2424,7 @@ function Selector({
             >
               <div
                 className="flex shrink-0 items-center justify-between px-4 py-3"
-                style={{ borderBottom: `1px solid ${t.line}`, background: t.control }}
+                style={{ borderBottom: `1px solid ${t.line}`, background: t.panel2 }}
               >
                 <span
                   className="font-mono-label text-[11px] font-bold uppercase tracking-[0.14em]"
@@ -2374,7 +2480,7 @@ function GroupedOptions({
       {heading && (
         <div
           className="font-mono-label px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.18em]"
-          style={{ color: t.inkFaint }}
+          style={{ color: t.accentOnPanel }}
         >
           {heading}
         </div>
@@ -2427,24 +2533,32 @@ function OptionRow({
   active: boolean;
   onClick: () => void;
 }) {
+  // The chosen row is marked by TONE plus an accent bullet, never by tinting
+  // its label accent: the brand violet is 2.3-3.1:1 on this paper and would be
+  // the one row you cannot read.
+  const rest = () => ({
+    background: active ? t.panel2 : "transparent",
+    color: active ? t.ink : t.inkDim,
+  });
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[14px] transition hover:pl-4"
-      style={{ color: active ? ACCENT : t.ink }}
+      className="rb-optrow flex w-full items-center gap-2 px-3 py-2 text-left text-[14px] transition hover:pl-5"
+      style={rest()}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = t.ink;
         e.currentTarget.style.color = t.panel;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = active ? ACCENT : t.ink;
+        const r = rest();
+        e.currentTarget.style.background = r.background;
+        e.currentTarget.style.color = r.color;
       }}
     >
       {active && (
         <span
-          className="h-1.5 w-1.5 shrink-0 rounded-full"
-          style={{ background: ACCENT }}
+          className="rb-optdot h-1.5 w-1.5 shrink-0"
+          style={{ background: t.accentOnPanel }}
         />
       )}
       {label}
@@ -2474,7 +2588,7 @@ function Collapsible({
         onClick={onToggle}
         className="flex w-full items-center justify-between px-4 py-2.5 transition"
         style={{
-          background: open ? t.control2 : t.control,
+          background: open ? t.panel2 : "transparent",
         }}
       >
         <span
@@ -2486,8 +2600,7 @@ function Collapsible({
             style={{
               width: 7,
               height: 7,
-              borderRadius: 999,
-              background: t.inkFaint,
+              background: t.accentOnPanel,
               display: "inline-block",
             }}
           />
@@ -2531,7 +2644,7 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="font-mono-label flex-1 rounded-[10px] px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:bg-[rgba(128,128,128,0.12)] disabled:opacity-50"
+      className="font-mono-label flex-1 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:bg-[rgba(128,128,128,0.12)] disabled:opacity-50"
       style={{ background: "transparent", color: t.inkDim }}
     >
       {children}

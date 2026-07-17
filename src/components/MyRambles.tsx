@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { BabbleWave } from "./BabbleText";
 
-const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
 const ACCENT = "#7b5cff";
 // The brand violet is 4.49:1 on this canvas: fine for large text and for icons
 // (3:1) but a hair under AA for small text (4.5:1). This lifted violet is the
 // same hue for SMALL TEXT only, and clears 4.5 on every dark ground we use.
 const ACCENT_TEXT = "#8b70ff";
+// White on the brand violet is 4.36:1 and fails AA. Flipping the label to
+// near-black gives 4.60:1. Same arithmetic as the Babble it button.
+const ON_ACCENT = "#070809";
 // C_LINE is a decorative hairline (1.36:1). Anything that OUTLINES an
 // interactive control needs 3:1, because the fill alone does not identify it.
 const C_LINE_STRONG = "#66676c";
@@ -100,6 +102,18 @@ export default function MyRambles({
     };
   }, []);
 
+  // Feeds the cursor spotlight above. Same custom properties as the workspace,
+  // so the halo does not jump when you move between screens.
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const root = document.documentElement;
+      root.style.setProperty("--mx", `${e.clientX}px`);
+      root.style.setProperty("--my", `${e.clientY}px`);
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
   const remove = useCallback(async (id: string) => {
     setRambles((prev) => prev?.filter((r) => r.id !== id) ?? prev);
     await getSupabase().from("rambles").delete().eq("id", id);
@@ -157,6 +171,18 @@ export default function MyRambles({
 
   return (
     <div style={{ background: CANVAS, color: C_INK, minHeight: "100vh" }}>
+      {/* Film grain and the cursor spotlight: the editorial signature belongs on
+          every screen, not just the workspace. */}
+      <div aria-hidden className="rb-grain" />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(440px circle at var(--mx,50%) var(--my,28%), rgba(123,92,255,0.22), transparent 64%)",
+        }}
+      />
+
       {/* Header */}
       <header
         className="sticky top-0 z-30 flex items-center justify-between px-7 py-3.5 backdrop-blur"
@@ -187,24 +213,24 @@ export default function MyRambles({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1000px] px-7 py-10">
+      <main className="relative z-10 mx-auto w-full max-w-[1000px] px-7 py-10">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <h1
-            className="font-bric font-extrabold leading-[0.95]"
-            style={{ fontSize: "clamp(36px,4.6vw,58px)", letterSpacing: "-0.04em" }}
+            className="font-bric font-bold leading-[0.9]"
+            style={{ fontSize: "clamp(40px,6vw,80px)", letterSpacing: "-0.05em" }}
           >
-            My{" "}
-            <span className="font-serif-i" style={{ color: ACCENT }}>
-              Rambles
+            The{" "}
+            <span className="font-serif-i font-normal" style={{ color: ACCENT }}>
+              archive
             </span>
           </h1>
+          {/* This screen's primary action, so it carries the accent — but NOT
+              the brand gradient. That belongs to the wordmark and to Babble it,
+              and to nothing else. */}
           <button
             onClick={onBack}
-            className="group flex items-center gap-2 px-5 py-3 text-[14px] font-semibold text-white"
-            style={{
-              backgroundImage: GRADIENT,
-              boxShadow: "0 12px 30px -12px rgba(123,92,255,0.7)",
-            }}
+            className="group flex items-center gap-2 px-5 py-3 text-[14px] font-bold transition"
+            style={{ background: ACCENT, color: ON_ACCENT }}
           >
             New ramble{" "}
             <span className="transition-all group-hover:ml-1" aria-hidden>
@@ -294,8 +320,8 @@ export default function MyRambles({
             </span>
             <button
               onClick={onBack}
-              className="mt-5 px-5 py-3 text-[14px] font-semibold text-white"
-              style={{ backgroundImage: GRADIENT }}
+              className="mt-5 px-5 py-3 text-[14px] font-bold"
+              style={{ background: ACCENT, color: ON_ACCENT }}
             >
               Refine your first ramble
             </button>
@@ -413,8 +439,8 @@ function RambleRow({
       <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
         <button
           onClick={() => onReopen(r)}
-          className="font-mono-label px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] text-white"
-          style={{ background: ACCENT }}
+          className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em]"
+          style={{ background: ACCENT, color: ON_ACCENT }}
         >
           Open
         </button>
@@ -452,7 +478,7 @@ function FilterChip({
       className="font-mono-label flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] transition"
       style={
         active
-          ? { background: ACCENT, color: "#fff" }
+          ? { background: ACCENT, color: ON_ACCENT }
           : { border: `1px solid ${C_LINE_STRONG}`, color: C_DIM }
       }
     >
@@ -465,7 +491,7 @@ function Count({ active, children }: { active: boolean; children: React.ReactNod
   return (
     <span
       className="text-[10px]"
-      style={{ color: active ? "rgba(255,255,255,0.75)" : "#5d646c" }}
+      style={{ color: active ? "rgba(7,8,9,0.72)" : "#5d646c" }}
     >
       {children}
     </span>
