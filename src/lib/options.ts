@@ -211,29 +211,34 @@ export const TONE_GROUPS: OptionGroup[] = [
 
 // Accents are not split into sub-groups: they are all just accents. One flat,
 // neutral list (empty group label renders no header).
+// Grouped by region, same header pattern as Format/Tone/Character. Within each
+// group: regional accents first, then character-style ones. Reorganization of
+// the DISPLAY only; no labels or instructions changed, none added or removed.
 export const ACCENT_GROUPS: OptionGroup[] = [
   {
-    label: "",
+    label: "American",
     ids: [
-      "street",
-      "surfer",
-      "valley",
       "newyork",
       "boston",
+      "minnesotan",
       "cowboy",
       "hillbilly",
       "southern",
-      "british",
-      "cockney",
-      "scottish",
-      "irish",
-      "australian",
-      "canadian",
-      "minnesotan",
-      "indian",
-      "german",
-      "shakespeare",
+      "valley",
+      "surfer",
+      "street",
     ],
+  },
+  {
+    label: "British Isles",
+    // "shakespeare" is Elizabethan English, not a modern regional accent, so it
+    // has no clean home; placed here (English by origin) as the least-wrong fit.
+    // Flagged for Shane to move if he'd rather it sit elsewhere.
+    ids: ["british", "cockney", "scottish", "irish", "shakespeare"],
+  },
+  {
+    label: "Elsewhere",
+    ids: ["canadian", "australian", "indian", "german"],
   },
 ];
 
