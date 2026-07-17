@@ -1658,7 +1658,7 @@ export default function RambleBabbleApp({
         {/* LEFT is the notes and the one primary action, RIGHT is the payoff.
             Side by side on tablet/desktop, stacked on phones. Neither column
             ever scrolls inside itself. */}
-        <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
+        <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start">
           {/* ============ LEFT PANEL — your notes ============ */}
           {/* It now does ONE job: the ramble, Record, and Babble it. Nothing in
               here moves when the Options drawer opens. */}
@@ -1843,9 +1843,14 @@ export default function RambleBabbleApp({
           </section>
 
           {/* ============ RIGHT PANEL — payoff ============ */}
+          {/* GROWS to fit its content. No internal scroll: a long babble makes
+              this panel taller and the PAGE scrolls (AGENTS.md rule 1). The
+              min-height is only a floor so the idle "b" mark has room to centre;
+              it never caps. md:items-start on the grid keeps the columns at
+              their own natural heights instead of stretching to match. */}
           <section
             ref={rightPanelRef}
-            className="flex min-h-0 flex-col overflow-hidden"
+            className="flex min-h-[320px] flex-col sm:min-h-[440px]"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
             {/* Panel header: what this side is, and a right-aligned meta line
@@ -1899,11 +1904,16 @@ export default function RambleBabbleApp({
               </div>
             </div>
 
-            {/* Body scrolls internally; the panel itself never pushes the page. */}
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {/* min-h-full + flex-col is what lets the empty state actually
-                  centre itself in the panel; with a result it just flows. */}
-              <div className="flex min-h-full flex-col px-5 py-4 sm:px-6">
+            {/* NO overflow: the body grows with the babble and the page scrolls.
+                flex-1 lets it fill the section's min-height so the idle state
+                can centre, and lets it grow past that when a result is long. */}
+            <div className="flex flex-1 flex-col">
+              {/* flex-1 (not min-h-full: a percentage min-height does not
+                  resolve against a flex-grown parent, which collapsed the idle
+                  state to the top) fills the panel so the empty and working
+                  states centre; a real result just flows from the top and grows
+                  the panel, scrolling the page. */}
+              <div className="flex flex-1 flex-col px-5 py-4 sm:px-6">
                 {cleaning && !hasResult ? (
                   /* Working: the engine has the ramble and has not answered
                      yet. There is nothing to decode until it does. */
