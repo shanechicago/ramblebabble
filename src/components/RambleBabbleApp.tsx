@@ -450,6 +450,31 @@ export default function RambleBabbleApp({
     return () => window.removeEventListener("pageshow", dismissKeyboard);
   }, []);
 
+  // The ramble box GROWS with its content instead of scrolling inside itself
+  // (layout contract rule 1). Re-fit whenever the value changes from anywhere,
+  // including a transcription landing or a reopened ramble, so the page scrolls
+  // and the textarea never shows its own scrollbar.
+  const fitInput = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    // box-sizing is border-box, so the height we set includes the border but
+    // scrollHeight does not. Add the border back (offsetHeight - clientHeight)
+    // or the box lands a border-width short and scrollHeight stays > clientHeight
+    // (a hairline of the last line clipped). This makes scrollHeight == clientHeight.
+    const borderY = el.offsetHeight - el.clientHeight;
+    el.style.height = `${el.scrollHeight + borderY}px`;
+  }, []);
+  useEffect(() => {
+    fitInput();
+  }, [inputText, fitInput]);
+  // A width change re-wraps the text, so the natural height changes too; re-fit
+  // on resize so a phone->desktop rotation never leaves a stale height.
+  useEffect(() => {
+    window.addEventListener("resize", fitInput);
+    return () => window.removeEventListener("resize", fitInput);
+  }, [fitInput]);
+
   const transcribeBlob = useCallback(
     async (blob: Blob | null) => {
       if (!blob || blob.size === 0) {
@@ -754,7 +779,7 @@ export default function RambleBabbleApp({
         <button
           onClick={() => setError(null)}
           role="alert"
-          className="rb-rise fixed bottom-6 left-1/2 z-[90] flex max-w-[92vw] -translate-x-1/2 items-center gap-2 px-5 py-3.5 text-left text-[14px] font-bold text-white"
+          className="rb-rise fixed bottom-6 left-1/2 z-[90] flex max-w-[92vw] -translate-x-1/2 items-center gap-2 px-5 py-3.5 text-left text-[16px] font-bold text-white"
           style={{
             background: "#ff3b30",
             boxShadow: "0 16px 40px -10px rgba(255,59,48,0.6)",
@@ -891,7 +916,7 @@ export default function RambleBabbleApp({
                           {accountName}
                         </span>
                         <span
-                          className="font-mono-label block text-[9px] uppercase tracking-[0.14em]"
+                          className="font-mono-label block text-[10px] uppercase tracking-[0.14em]"
                           style={{ color: t.inkFaint }}
                         >
                           signed in
@@ -969,7 +994,7 @@ export default function RambleBabbleApp({
                     Close
                   </button>
                 </div>
-                <ul className="space-y-2 text-[14px] leading-[1.5]" style={{ color: t.ink }}>
+                <ul className="space-y-2 text-[16px] leading-[1.5]" style={{ color: t.ink }}>
                   <li>
                     <b>Format</b> is what it becomes, an email, a text, a poem, a
                     rap. (This one is required.)
@@ -1011,7 +1036,8 @@ export default function RambleBabbleApp({
         {/* Oversized and tightly tracked, with the instruction riding the far
             end of the same line rather than costing a row. This is the
             editorial voice: the page says what it is at full volume. It can
-            afford the height because Babble it no longer lives below it. */}
+            afford the height because Babble it is sticky and can never be
+            scrolled out of reach. */}
         <div className="mb-3 flex flex-wrap items-end justify-between gap-x-5 gap-y-1">
           <h1
             className="font-bric font-bold"
@@ -1051,21 +1077,18 @@ export default function RambleBabbleApp({
             It is deliberately NOT full page width: Format's value is one or two
             words ("Email"), so stretching it across 1800px only manufactures a
             vast empty bar. To Format's right ride the ACTIVE OPTION chips (tone,
-            character, accent, language) so nothing is ever silently stacked, and
-            Babble it holds the far end. */}
+            character, accent, language) so nothing is ever silently stacked.
+            Babble it is NOT here: it lives at the end of the ramble flow, in the
+            notes panel, sticky so it can never be scrolled out of reach. */}
         <div className="mb-4">
           <div
             className="w-full p-2.5 sm:max-w-[840px]"
             style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
           >
-          {/* FORMAT and BABBLE IT share the console's top row. Babble it USED to
-              live at the bottom of the notes column, which is what kept burying
-              it: every control that grew above it pushed it further down, and
-              on a short screen it fell off the bottom exactly when you reached
-              for it. Up here it is above the fold BY CONSTRUCTION — nothing can
-              ever push it down, because nothing is above it but the title.
-              They stack only on a phone, where they genuinely do not fit on one
-              row (layout contract rule 5 is about controls that DO fit). */}
+          {/* FORMAT and the ACTIVE OPTION chips share the console's top row.
+              Format sits at a fixed width on the left; the chips wrap to its
+              right (and wrap onto their own lines on a phone, where the two
+              stack). Babble it is no longer here — see the notes panel. */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
           <div
             className="min-w-0 w-full sm:w-auto sm:max-w-[340px]"
@@ -1226,41 +1249,6 @@ export default function RambleBabbleApp({
             </button>
           </div>
 
-            {/* THE one hero action. It wears the brand gradient because it is
-                the only thing here that earns it. The label is dark, not white:
-                white fails AA on two of the gradient's three stops, and the
-                brand is not the thing that gives way. */}
-            <button
-              onClick={() => runCleanup()}
-              disabled={cleaning || !inputText.trim()}
-              className={
-                "font-bric flex shrink-0 items-center justify-center gap-2.5 whitespace-nowrap px-7 py-3 text-[16px] font-bold transition hover:brightness-[1.1] active:translate-y-px disabled:opacity-45 disabled:saturate-50 sm:py-0" +
-                (inputText.trim() && !cleaning ? " rb-glowpulse" : "")
-              }
-              style={{
-                backgroundImage: GRADIENT,
-                color: ON_GRADIENT,
-                letterSpacing: "0.01em",
-                boxShadow: "0 12px 30px -10px rgba(123,92,255,0.55)",
-              }}
-            >
-              {cleaning ? (
-                <>
-                  <span
-                    className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
-                    style={{
-                      borderColor: "rgba(7,8,9,0.35)",
-                      borderTopColor: ON_GRADIENT,
-                    }}
-                  />
-                  {loadingWord}&hellip;
-                </>
-              ) : (
-                <>
-                  Babble it <span aria-hidden>&rarr;</span>
-                </>
-              )}
-            </button>
           </div>
 
           {/* The custom instruction belongs right under the choice that asked
@@ -1522,7 +1510,7 @@ export default function RambleBabbleApp({
                   phone. */}
               <div>
                 <span
-                  className="font-mono-label mb-1.5 block text-[9px] font-medium uppercase tracking-[0.12em]"
+                  className="font-mono-label mb-1.5 block text-[10px] font-medium uppercase tracking-[0.12em]"
                   style={{ color: t.inkFaint }}
                 >
                   Your words{" "}
@@ -1545,7 +1533,7 @@ export default function RambleBabbleApp({
                       <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                         <label
                           htmlFor={`rb-word-${i}`}
-                          className="font-mono-label mb-1 block text-[9px] uppercase tracking-[0.12em]"
+                          className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.12em]"
                           style={{ color: t.inkFaint }}
                         >
                           Word
@@ -1575,7 +1563,7 @@ export default function RambleBabbleApp({
                       <div className="min-w-0 flex-1 sm:basis-0 sm:flex-[1.4]">
                         <label
                           htmlFor={`rb-meaning-${i}`}
-                          className="font-mono-label mb-1 block text-[9px] uppercase tracking-[0.12em]"
+                          className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.12em]"
                           style={{ color: t.inkFaint }}
                         >
                           What it is
@@ -1610,7 +1598,7 @@ export default function RambleBabbleApp({
                             : "Remove this word"
                         }
                         title="Remove"
-                        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center text-[15px] transition active:translate-y-px"
+                        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center text-[16px] transition active:translate-y-px"
                         style={{
                           background: t.panel2,
                           border: `1px solid ${t.lineStrong}`,
@@ -1644,7 +1632,7 @@ export default function RambleBabbleApp({
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <span
-                    className="font-mono-label mb-1.5 block text-[9px] font-medium uppercase tracking-[0.12em]"
+                    className="font-mono-label mb-1.5 block text-[10px] font-medium uppercase tracking-[0.12em]"
                     style={{ color: t.inkFaint }}
                   >
                     Profanity{" "}
@@ -1752,13 +1740,23 @@ export default function RambleBabbleApp({
               <textarea
                 ref={inputRef}
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={(e) => {
+                  setInputText(e.target.value);
+                  // Fit immediately on every keystroke; the effect above also
+                  // fits for value changes that don't originate here.
+                  fitInput();
+                }}
                 placeholder="Spill it here. The voice memos, the half-baked ideas, the texts you shouldn't send yet."
-                className="rb-hero-input h-[clamp(120px,calc(100dvh_-_35rem),210px)] w-full resize-none p-4 text-[16px] leading-[1.6] outline-none sm:h-[clamp(150px,calc(100dvh_-_27rem),300px)] sm:p-5 sm:text-[17px]"
+                className="rb-hero-input w-full resize-none p-4 text-[16px] leading-[1.6] outline-none sm:p-5 sm:text-[17px]"
                 style={
                   {
                     color: t.ink,
                     background: t.panel2,
+                    // GROWS with content: a comfortable floor, no ceiling, and
+                    // its own scrollbar suppressed so the PAGE scrolls, never the
+                    // box (layout contract rule 1). fitInput drives the height.
+                    minHeight: 160,
+                    overflowY: "hidden",
                     // lineStrong, not line: panel2 on panel is 1.4:1, so this
                     // border is the only thing that says "type here".
                     border: `1px solid ${t.lineStrong}`,
@@ -1826,6 +1824,36 @@ export default function RambleBabbleApp({
                   </div>
                 </div>
               )}
+              {/* TRANSCRIBING — an unmissable full-panel working state after
+                  Stop, same footprint as the recording overlay. The underlying
+                  value is untouched underneath, so when the words land the text
+                  appears and the box auto-grows (fix 3). */}
+              {transcribing && (
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center"
+                  style={{ background: t.panel2 }}
+                >
+                  <span
+                    className="rb-spin inline-block h-8 w-8 rounded-full border-[3px]"
+                    style={{
+                      borderColor: t.lineStrong,
+                      borderTopColor: t.accentOnPanel,
+                    }}
+                  />
+                  <p
+                    className="font-bric text-[17px] font-bold"
+                    style={{ color: t.ink }}
+                  >
+                    Turning that noise into words.
+                  </p>
+                  <p
+                    className="text-[16px] leading-[1.5]"
+                    style={{ color: t.inkDim }}
+                  >
+                    Give us a second, you talk faster than you think.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* The quiet chips, directly under the ramble and visible with zero
@@ -1887,7 +1915,7 @@ export default function RambleBabbleApp({
                 className="font-mono-label flex items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
                 style={{ background: "transparent", color: t.inkFaint }}
               >
-                <span aria-hidden style={{ color: "#ff6b68", fontSize: 14 }}>
+                <span aria-hidden style={{ color: "#ff6b68", fontSize: 16 }}>
                   &times;
                 </span>{" "}
                 Clear
@@ -1913,13 +1941,60 @@ export default function RambleBabbleApp({
               )}
             </div>
 
-            {/* Babble it used to live here, and this is exactly why it kept
-                getting buried. It is in the console now. */}
             {limitNotice && (
               <p className="font-mono-label text-[11px]" style={{ color: "#ff5a3c" }}>
                 {limitNotice}
               </p>
             )}
+
+            {/* THE one hero action, at the END of the ramble flow: pick a format,
+                ramble, THEN babble. Sticky so a long ramble can never scroll it
+                out of reach — it stays pinned to the bottom of the viewport while
+                the panel is on screen and settles into its natural place at the
+                panel's foot. It wears the brand gradient because it is the only
+                thing here that earns it; the label is dark because white fails AA
+                on two of the gradient's three stops. While cleaning it stays
+                FULLY vibrant (the user is watching it) with a dark, readable
+                spinner and word; only an empty ramble dims it. */}
+            <div className="sticky z-20 mt-1" style={{ bottom: 8 }}>
+              <button
+                onClick={() => runCleanup()}
+                disabled={cleaning || !inputText.trim()}
+                className={
+                  "font-bric flex w-full items-center justify-center gap-2.5 whitespace-nowrap px-7 py-3.5 text-[16px] font-bold transition hover:brightness-[1.1] active:translate-y-px" +
+                  (inputText.trim() && !cleaning ? " rb-glowpulse" : "")
+                }
+                style={{
+                  backgroundImage: GRADIENT,
+                  color: ON_GRADIENT,
+                  letterSpacing: "0.01em",
+                  boxShadow: "0 12px 30px -10px rgba(123,92,255,0.55)",
+                  // Empty ramble (and not cleaning) is the ONLY dim state. The
+                  // cleaning state must NOT dim: it is the very thing being
+                  // watched, so it holds full opacity and saturation.
+                  opacity: !cleaning && !inputText.trim() ? 0.45 : 1,
+                  filter:
+                    !cleaning && !inputText.trim() ? "saturate(0.5)" : "none",
+                }}
+              >
+                {cleaning ? (
+                  <>
+                    <span
+                      className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                      style={{
+                        borderColor: "rgba(7,8,9,0.35)",
+                        borderTopColor: ON_GRADIENT,
+                      }}
+                    />
+                    {loadingWord}&hellip;
+                  </>
+                ) : (
+                  <>
+                    Babble it <span aria-hidden>&rarr;</span>
+                  </>
+                )}
+              </button>
+            </div>
           </section>
 
           {/* ============ RIGHT PANEL — payoff ============ */}
@@ -2049,7 +2124,7 @@ export default function RambleBabbleApp({
                           {keyPoints.map((p, i) => (
                             <li
                               key={i}
-                              className="flex gap-2 text-[15px]"
+                              className="flex gap-2 text-[16px]"
                               style={{ color: t.inkDim }}
                             >
                               <span
@@ -2076,7 +2151,7 @@ export default function RambleBabbleApp({
                           {followUps.map((f, i) => (
                             <div
                               key={i}
-                              className="flex items-center gap-2 py-2 text-[15px]"
+                              className="flex items-center gap-2 py-2 text-[16px]"
                               style={{
                                 color: t.inkDim,
                                 borderTop: i ? `1px solid ${t.line}` : undefined,
@@ -2157,7 +2232,7 @@ export default function RambleBabbleApp({
 
       {overlay === "upgrade" && (
         <Overlay t={t} title="Upgrade" onClose={() => setOverlay(null)}>
-          <p className="mb-5 text-[14px]" style={{ color: t.inkDim }}>
+          <p className="mb-5 text-[16px]" style={{ color: t.inkDim }}>
             Pick how much you want to Babble. Final pricing is still being locked
             in, these are placeholders.
           </p>
@@ -2319,7 +2394,7 @@ function SettingRow({
       >
         {label}
       </span>
-      <div className="text-[14px]">{children}</div>
+      <div className="text-[16px]">{children}</div>
     </div>
   );
 }
@@ -2358,7 +2433,7 @@ function PlanCard({
         {name}
       </span>
       <span
-        className="font-bric mt-1 text-[28px] font-extrabold"
+        className="font-bric mt-1 text-[24px] font-extrabold"
         style={{ color: t.ink, letterSpacing: "-0.02em" }}
       >
         {price}
@@ -2434,7 +2509,7 @@ function Selector({
       >
         <span className="flex min-w-0 flex-col gap-0.5">
           <span
-            className="font-mono-label flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-[0.12em]"
+            className="font-mono-label flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.12em]"
             style={{ color: t.inkFaint }}
           >
             {index ? `${index} ${label}` : label}
@@ -2445,7 +2520,7 @@ function Selector({
             ) : null}
           </span>
           <span
-            className={`truncate ${compact ? "text-[14px]" : "text-[16px]"}`}
+            className="truncate text-[16px]"
             style={{
               color: set ? t.ink : t.inkDim,
               fontWeight: set ? 700 : 500,
@@ -2620,7 +2695,7 @@ function OptionRow({
   return (
     <button
       onClick={onClick}
-      className="rb-optrow flex w-full items-center gap-2 px-3 py-2 text-left text-[14px] transition hover:pl-5"
+      className="rb-optrow flex w-full items-center gap-2 px-3 py-2 text-left text-[16px] transition hover:pl-5"
       style={rest()}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = t.ink;

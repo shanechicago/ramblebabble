@@ -229,7 +229,7 @@ export default function MyRambles({
               and to nothing else. */}
           <button
             onClick={onBack}
-            className="group flex items-center gap-2 px-5 py-3 text-[14px] font-bold transition"
+            className="group flex items-center gap-2 px-5 py-3 text-[16px] font-bold transition"
             style={{ background: ACCENT, color: ON_ACCENT }}
           >
             New ramble{" "}
@@ -261,7 +261,7 @@ export default function MyRambles({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search your rambles by word or phrase..."
-                className="w-full bg-transparent py-3 pl-11 pr-20 text-[15px] outline-none transition placeholder:text-[#7b828c] focus:border-[#7b5cff]"
+                className="w-full bg-transparent py-3 pl-11 pr-20 text-[16px] outline-none transition placeholder:text-[#7b828c] focus:border-[#7b5cff]"
                 style={{ border: `1px solid ${C_LINE_STRONG}`, color: C_INK }}
               />
               {query && (
@@ -320,7 +320,7 @@ export default function MyRambles({
             </span>
             <button
               onClick={onBack}
-              className="mt-5 px-5 py-3 text-[14px] font-bold"
+              className="mt-5 px-5 py-3 text-[16px] font-bold"
               style={{ background: ACCENT, color: ON_ACCENT }}
             >
               Refine your first ramble
@@ -330,7 +330,7 @@ export default function MyRambles({
 
         {hasRambles && filtered.length === 0 && (
           <p
-            className="mt-10 text-center text-[15px]"
+            className="mt-10 text-center text-[16px]"
             style={{ color: C_DIM }}
           >
             No rambles match that. Try a different word or clear the filter.
@@ -414,7 +414,7 @@ function RambleRow({
       <div className="min-w-0">
         <button
           onClick={() => onReopen(r)}
-          className="block text-left text-[18px] font-medium transition"
+          className="block text-left text-[17px] font-medium transition"
           style={{ color: C_INK }}
           onMouseEnter={(e) => (e.currentTarget.style.color = ACCENT_TEXT)}
           onMouseLeave={(e) => (e.currentTarget.style.color = C_INK)}
@@ -427,7 +427,7 @@ function RambleRow({
         >
           {relDate(r.created_at)}
         </span>
-        <p className="mt-1.5 truncate text-[14px]" style={{ color: C_DIM }}>
+        <p className="mt-1.5 truncate text-[16px]" style={{ color: C_DIM }}>
           {r.cleaned.replace(/\n+/g, " ")}
         </p>
         <div className="mt-2.5 flex flex-wrap gap-2">
