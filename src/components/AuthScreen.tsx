@@ -3,15 +3,24 @@
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { usernameToEmail } from "@/lib/auth";
+import {
+  ACCENT_ON_LIGHT,
+  ACCENT_ON_CANVAS,
+  BUTTON_GRADIENT,
+  WORDMARK_GRADIENT,
+  CANVAS,
+  C_INK,
+  C_DIM,
+} from "@/lib/brand";
 
-const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
-const VIOLET = "#7b5cff";
-
-// Editorial palette (de-muted per Shane: void black, clean bright mist gray,
-// true white, no bone/cream).
-const CANVAS = "#0b0c0f";
-const CANVAS_INK = "#f3f5f7";
-const CANVAS_DIM = "#9097a2";
+// The wordmark keeps its three-stop brand gradient (violet to pink to coral);
+// nothing else on this screen wears pink. The primary CTA uses the same brand
+// gradient with a near-black label.
+const GRADIENT = WORDMARK_GRADIENT;
+// The left column paints on the shared black canvas.
+const CANVAS_INK = C_INK;
+const CANVAS_DIM = C_DIM;
+// The right column is a light mist panel: its own surface, not a theme token.
 const PANEL = "#e9ebf0";
 const INK = "#14161b";
 const INK_DIM = "#565d63";
@@ -158,7 +167,7 @@ export default function AuthScreen() {
         <div className="relative z-10 max-w-xl">
           <div
             className="font-mono-label text-[12px] uppercase tracking-[0.22em]"
-            style={{ color: VIOLET }}
+            style={{ color: ACCENT_ON_CANVAS }}
           >
             [ the thought refinery ]
           </div>
@@ -169,15 +178,7 @@ export default function AuthScreen() {
             Say it messy.
             <br />
             Get it{" "}
-            <span
-              className="font-serif-i"
-              style={{
-                backgroundImage: GRADIENT,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }}
-            >
+            <span className="font-serif-i" style={{ color: ACCENT_ON_CANVAS }}>
               {HERO_WORDS[hw]}
             </span>
             .
@@ -348,7 +349,7 @@ export default function AuthScreen() {
                   )
                 }
                 className="text-[13px] font-semibold"
-                style={{ color: VIOLET }}
+                style={{ color: ACCENT_ON_LIGHT }}
               >
                 Forgot password?
               </button>
@@ -366,8 +367,8 @@ export default function AuthScreen() {
             disabled={loading}
             className="mt-8 flex w-full items-center justify-center gap-2 px-4 py-3.5 text-[15px] font-semibold text-white transition hover:brightness-110 active:translate-y-px disabled:opacity-60"
             style={{
-              backgroundImage: GRADIENT,
-              boxShadow: "0 12px 30px -12px rgba(123,92,255,0.75)",
+              backgroundImage: BUTTON_GRADIENT,
+              boxShadow: "0 12px 30px -12px rgba(123,92,255,0.6)",
             }}
           >
             {loading ? (

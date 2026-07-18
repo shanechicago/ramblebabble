@@ -1,79 +1,139 @@
 @import "tailwindcss";
 
-/* Fonts are loaded via <link> in layout.tsx (Fontshare + Google). */
+/* Fonts are loaded via <link> in layout.tsx (Google only: Bricolage Grotesque,
+   Instrument Serif, Space Mono). */
 
-/* ----- Design tokens (from Claude Design handoff) ----- */
+/* ----- ONE theme system -----
+   Two themes toggled by data-theme on <html>: "night" (default) and "day".
+   Night is ALSO the :root default, so unthemed dark screens (loading, archive)
+   inherit it. There are two text scales: the c* tokens sit on the black CANVAS,
+   the rest sit inside a PANEL. Every pairing is solved for WCAG AA in its theme.
+   These are consumed as inline CSS variables by the components (t.token) and as
+   Tailwind utilities via the @theme block below. */
+:root {
+  /* Shared, not theme-dependent: the brand accent (a FILL / focus / selection
+     colour) and the primary-button gradient. The accent is VIOLET; the gradient
+     keeps all three brand stops (the only place pink/coral appear). */
+  --accent: #7b5cff;
+  --accent-grad: linear-gradient(95deg, #7b5cff, #ff4d9d 55%, #ff6f61);
+  --on-grad: #070809;
+}
 :root,
-[data-theme="dark"] {
-  --bg: #0a0b12;
-  --bg-soft: #0e1019;
-  --surface: #14161f;
-  --surface2: #1b1e29;
-  --surface3: #262a38;
-  --border: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.17);
-  --text: #f3f4f8;
-  --text-dim: #a7abbd;
-  --text-faint: #6c7186;
-  --primary: #7b5cff;
-  --primary-soft: rgba(123, 92, 255, 0.16);
-  --primary-ink: #fff;
-  --signal: #c8ff43;
-  --signal-ink: #0a0b12;
-  --danger: #ff5d73;
-  --danger-soft: rgba(255, 93, 115, 0.14);
-  --glow1: rgba(123, 92, 255, 0.4);
-  --glow2: rgba(200, 255, 67, 0.2);
-  --fun1: #ff4d9d;
-  --fun2: #ffa53d;
-  --fun-soft: rgba(255, 77, 157, 0.13);
-  --fun-glow: rgba(255, 77, 157, 0.32);
-  --shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.6);
+[data-theme="night"] {
+  --canvas: #070809;
+  --chrome: rgba(7, 8, 9, 0.78);
+  --cInk: #eef1f3;
+  --cDim: #8b929b;
+  --cLine: rgba(238, 241, 243, 0.13);
+  --cLineStrong: #5c5d62;
+  --panel: #16181d;
+  --panel2: #0e0f14;
+  --ink: #eef1f3;
+  --inkDim: #8a929c;
+  --inkFaint: #7a828c;
+  --line: rgba(238, 241, 243, 0.12);
+  --lineStrong: #62656b;
+  /* Accent on the dark night panel. Lifted to #8770ff so it clears 4.5 (4.90)
+     for SMALL accent text too (the format/option group headings are 11px bold),
+     not just the 3:1 graphics bar. Still the same violet, a hair brighter, on a
+     different surface from the on-canvas numbers (#7b5cff). */
+  --accentOnPanel: #8770ff;
+  --accentOnCanvas: #7b5cff;
+}
+[data-theme="day"] {
+  /* The canvas is always black in BOTH themes; there is no reason for two
+     different near-blacks. Unified to #070809 so small violet accent text on the
+     canvas (MyRambles labels, the auth eyebrow) clears 4.5 (4.60) instead of the
+     0.01-under 4.49 it got on the old #0b0c0f. */
+  --canvas: #070809;
+  --chrome: rgba(11, 12, 15, 0.78);
+  --cInk: #eef1f3;
+  --cDim: #8b929b;
+  --cLine: rgba(238, 241, 243, 0.13);
+  --cLineStrong: #5c5d62;
+  --panel: #d6dbde;
+  --panel2: #c6cccf;
+  --ink: #13161a;
+  --inkDim: #50575d;
+  --inkFaint: #51575d;
+  --line: rgba(19, 22, 26, 0.16);
+  --lineStrong: #6c7277;
+  /* On the LIGHT day panel a bright violet washes out, so accent-on-panel goes
+     to a deep violet (5.36:1 on #d6dbde) that stays unmistakably in the violet
+     family and clears AA for text too, not just graphics. On-canvas stays the
+     bright violet because the canvas is dark in Day as well. */
+  --accentOnPanel: #5a3cc4;
+  --accentOnCanvas: #7b5cff;
 }
 
-[data-theme="light"] {
-  --bg: #f4f4f1;
-  --bg-soft: #eeeeea;
-  --surface: #ffffff;
-  --surface2: #f3f3f7;
-  --surface3: #e9e9f0;
-  --border: rgba(20, 18, 40, 0.1);
-  --border-strong: rgba(20, 18, 40, 0.2);
-  --text: #161726;
-  --text-dim: #565a6e;
-  --text-faint: #888da0;
-  --primary: #6a45ff;
-  --primary-soft: rgba(106, 69, 255, 0.1);
-  --primary-ink: #fff;
-  --signal: #a6e600;
-  --signal-ink: #16240a;
-  --danger: #e23a52;
-  --danger-soft: rgba(226, 58, 82, 0.1);
-  --glow1: rgba(106, 69, 255, 0.18);
-  --glow2: rgba(166, 230, 0, 0.18);
-  --fun1: #ff2e8b;
-  --fun2: #ff8c1a;
-  --fun-soft: rgba(255, 46, 139, 0.09);
-  --fun-glow: rgba(255, 46, 139, 0.22);
-  --shadow: 0 18px 50px -16px rgba(40, 30, 90, 0.2);
-}
-
-/* Accent override — remaps the "signal" color. Using coral. */
-[data-accent="coral"] {
-  --signal: #ff6f61;
-  --signal-ink: #2a0e02;
-  --glow2: rgba(255, 111, 97, 0.22);
+/* Tailwind v4: expose the tokens as utilities (bg-canvas, text-ink,
+   border-line-strong, ...). `inline` so a utility reads the LIVE per-theme
+   variable at use time instead of freezing a copy of the default. */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-chrome: var(--chrome);
+  --color-c-ink: var(--cInk);
+  --color-c-dim: var(--cDim);
+  --color-c-line: var(--cLine);
+  --color-c-line-strong: var(--cLineStrong);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel2);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--inkDim);
+  --color-ink-faint: var(--inkFaint);
+  --color-line: var(--line);
+  --color-line-strong: var(--lineStrong);
+  --color-accent: var(--accent);
+  --color-accent-on-panel: var(--accentOnPanel);
+  --color-accent-on-canvas: var(--accentOnCanvas);
 }
 
 html,
 body {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--canvas);
+  color: var(--cInk);
 }
 body {
   font-family: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
   font-size: 17px;
   line-height: 1.5;
+}
+
+/* ----- Polish: scrollbars, selection, focus -----
+   Custom scrollbars so no default browser chrome shows: transparent track,
+   thumb rides the theme's strong line so it reads on any dark surface. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--lineStrong) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--lineStrong);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cLineStrong);
+}
+
+/* Selection: the violet accent with a near-black read (4.60:1). White fails on
+   violet (4.36), so the highlighted text goes dark instead. */
+::selection {
+  background: var(--accent);
+  color: #070809;
+}
+
+/* One visible focus ring on every interactive control, keyboard only. The
+   on-canvas accent clears 3:1 on the black canvas and on the dark night panels
+   alike; 2px with an offset so it never hugs the control. */
+:focus-visible {
+  outline: 2px solid var(--accentOnCanvas);
+  outline-offset: 2px;
 }
 
 /* Status-quo affordance: anything clickable shows the hand cursor and lifts
@@ -96,10 +156,17 @@ a:hover,
   filter: brightness(1.07);
 }
 
+/* The wordmark "BABBLE": bold all-caps block letters in the grotesque, carrying
+   the brand gradient and the travelling wave (both from BabbleText). Not a
+   script, not italic; uppercase is applied here so the "Babble" source word
+   still feeds the per-letter wave. */
 .font-babble {
-  font-family: "Caveat Brush", cursive;
-  font-weight: 400;
-  font-size: 1.2em;
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-weight: 800;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  font-size: 1.05em;
 }
 /* The record timer. Space Mono per the editorial spec: it is a technical
    readout, and it is the same face as every other mono label on the screen. */
@@ -340,12 +407,12 @@ a:hover,
 @keyframes rb-glowpulse {
   0%,
   100% {
-    filter: drop-shadow(0 0 1px rgba(123, 92, 255, 0.4))
-      drop-shadow(0 0 5px rgba(123, 92, 255, 0.22));
+    filter: drop-shadow(0 0 1px rgba(123, 92, 255, 0.45))
+      drop-shadow(0 0 5px rgba(123, 92, 255, 0.25));
   }
   50% {
-    filter: drop-shadow(0 0 7px rgba(255, 77, 157, 0.7))
-      drop-shadow(0 0 16px rgba(123, 92, 255, 0.55));
+    filter: drop-shadow(0 0 8px rgba(123, 92, 255, 0.7))
+      drop-shadow(0 0 18px rgba(123, 92, 255, 0.5));
   }
 }
 .rb-glowpulse {

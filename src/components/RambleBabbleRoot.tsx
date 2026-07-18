@@ -42,9 +42,8 @@ export default function RambleBabbleRoot() {
   if (!ready) {
     return (
       <div
-        data-theme="dark"
-        data-accent="coral"
-        className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--text-dim)]"
+        data-theme="night"
+        className="flex min-h-screen items-center justify-center bg-[var(--canvas)] text-[var(--cDim)]"
       >
         Loading...
       </div>
@@ -56,9 +55,8 @@ export default function RambleBabbleRoot() {
   if (screen === "history") {
     return (
       <div
-        data-theme="dark"
-        data-accent="coral"
-        className="min-h-screen bg-[var(--bg)] text-[var(--text)]"
+        data-theme="night"
+        className="min-h-screen bg-[var(--canvas)] text-[var(--cInk)]"
       >
         <MyRambles onBack={() => setScreen("main")} onReopen={handleReopen} />
       </div>

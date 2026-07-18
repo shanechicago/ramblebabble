@@ -3,22 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { BabbleWave } from "./BabbleText";
+import { ACCENT, ACCENT_ON_CANVAS, CANVAS, C_INK, C_DIM } from "@/lib/brand";
 
-const ACCENT = "#7b5cff";
-// The brand violet is 4.49:1 on this canvas: fine for large text and for icons
-// (3:1) but a hair under AA for small text (4.5:1). This lifted violet is the
-// same hue for SMALL TEXT only, and clears 4.5 on every dark ground we use.
-const ACCENT_TEXT = "#8b70ff";
-// White on the brand violet is 4.36:1 and fails AA. Flipping the label to
-// near-black gives 4.60:1. Same arithmetic as the Babble it button.
+// Label sitting ON the violet accent FILL. White fails on violet (4.36), so the
+// label is the same near-black the brand button uses: #070809 clears AA at 4.60.
 const ON_ACCENT = "#070809";
+// Accent as TEXT / ICONS on the black canvas (#070809). The violet accent clears
+// 4.5 here (4.60), so small accent labels pass, not just large text and graphics.
+const ACCENT_TEXT = ACCENT_ON_CANVAS;
 // C_LINE is a decorative hairline (1.36:1). Anything that OUTLINES an
 // interactive control needs 3:1, because the fill alone does not identify it.
 const C_LINE_STRONG = "#66676c";
+// Fixed secondary, used only for tone-tag outlines. Not the accent.
 const COBALT = "#ff5a2a";
-const CANVAS = "#0b0c0f";
-const C_INK = "#f3f5f7";
-const C_DIM = "#9097a2";
 const C_LINE = "rgba(243,245,247,0.13)";
 
 export interface SavedRamble {
@@ -179,14 +176,14 @@ export default function MyRambles({
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(440px circle at var(--mx,50%) var(--my,28%), rgba(123,92,255,0.22), transparent 64%)",
+            "radial-gradient(440px circle at var(--mx,50%) var(--my,28%), rgba(123,92,255,0.20), transparent 64%)",
         }}
       />
 
       {/* Header */}
       <header
         className="sticky top-0 z-30 flex items-center justify-between px-7 py-3.5 backdrop-blur"
-        style={{ borderBottom: `1px solid ${C_LINE}`, background: "rgba(11,12,15,0.72)" }}
+        style={{ borderBottom: `1px solid ${C_LINE}`, background: "rgba(7,8,9,0.72)" }}
       >
         <div className="flex items-center gap-2 text-[24px]">
           <span className="font-bric font-extrabold" style={{ letterSpacing: "-0.02em" }}>
@@ -220,7 +217,7 @@ export default function MyRambles({
             style={{ fontSize: "clamp(40px,6vw,80px)", letterSpacing: "-0.05em" }}
           >
             The{" "}
-            <span className="font-serif-i font-normal" style={{ color: ACCENT }}>
+            <span className="font-serif-i font-normal" style={{ color: ACCENT_TEXT }}>
               archive
             </span>
           </h1>
@@ -315,7 +312,7 @@ export default function MyRambles({
 
         {rambles !== null && rambles.length === 0 && (
           <div className="mt-16 flex flex-col items-center text-center">
-            <span className="font-serif-i text-[56px]" style={{ color: ACCENT }}>
+            <span className="font-serif-i text-[56px]" style={{ color: ACCENT_TEXT }}>
               All clear.
             </span>
             <button
@@ -352,7 +349,7 @@ export default function MyRambles({
                   height="14"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke={ACCENT}
+                  stroke={ACCENT_TEXT}
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"

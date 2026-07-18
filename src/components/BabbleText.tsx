@@ -1,8 +1,12 @@
 "use client";
 
 import React from "react";
+import { WORDMARK_GRADIENT } from "@/lib/brand";
 
-const GRADIENT = "linear-gradient(95deg,#7b5cff,#ff4d9d 55%,#ff6f61)";
+// The wordmark keeps its three-stop gradient (the ONLY pink in the product).
+// Imported from brand.ts so it is identical everywhere and the wave is
+// visually unchanged.
+const GRADIENT = WORDMARK_GRADIENT;
 const WORD = "Babble";
 
 /**
