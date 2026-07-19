@@ -160,12 +160,14 @@ export default function RambleBabbleApp({
   userEmail,
   onOpenHistory,
   onSignOut,
+  onShowWelcome,
   reopen,
 }: {
   userId: string;
   userEmail: string;
   onOpenHistory: () => void;
   onSignOut: () => void;
+  onShowWelcome: () => void;
   reopen: SavedRamble | null;
 }) {
   const [theme, setTheme] = useState<Theme>("night");
@@ -1899,6 +1901,22 @@ export default function RambleBabbleApp({
         <Overlay t={t} title="Settings" onClose={() => setOverlay(null)}>
           <SettingRow t={t} label="Account">
             <span style={{ color: t.ink }}>You&rsquo;re signed in.</span>
+          </SettingRow>
+          <SettingRow t={t} label="How it works">
+            <button
+              onClick={() => {
+                setOverlay(null);
+                onShowWelcome();
+              }}
+              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
+              style={{
+                background: "transparent",
+                border: `1px solid ${t.lineStrong}`,
+                color: t.inkDim,
+              }}
+            >
+              Show the welcome
+            </button>
           </SettingRow>
           <SettingRow t={t} label="Appearance">
             <button

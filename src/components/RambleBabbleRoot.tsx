@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase/client";
 import AuthScreen from "./AuthScreen";
 import RambleBabbleApp from "./RambleBabbleApp";
+import WelcomeScreen from "./WelcomeScreen";
 import MyRambles, { type SavedRamble } from "./MyRambles";
 
 export default function RambleBabbleRoot() {
@@ -13,6 +14,8 @@ export default function RambleBabbleRoot() {
   const [screen, setScreen] = useState<"main" | "history">("main");
   const [reopen, setReopen] = useState<SavedRamble | null>(null);
   const [reopenSeq, setReopenSeq] = useState(0);
+  // Re-opening the orientation from Settings (the user has already onboarded).
+  const [reviewWelcome, setReviewWelcome] = useState(false);
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -39,6 +42,11 @@ export default function RambleBabbleRoot() {
     setScreen("main");
   }, []);
 
+  const handleWelcomeDone = useCallback((updatedUser?: User) => {
+    if (updatedUser) setUser(updatedUser);
+    setReviewWelcome(false);
+  }, []);
+
   if (!ready) {
     return (
       <div
@@ -51,6 +59,21 @@ export default function RambleBabbleRoot() {
   }
 
   if (!user) return <AuthScreen />;
+
+  // First-run orientation, then it is skipped forever (returning users go
+  // straight to the workspace). Re-openable from Settings via reviewWelcome.
+  const onboarded =
+    (user.user_metadata as { onboarded?: boolean } | undefined)?.onboarded ===
+    true;
+  if (!onboarded || reviewWelcome) {
+    return (
+      <WelcomeScreen
+        user={user}
+        dismissible={onboarded}
+        onDone={handleWelcomeDone}
+      />
+    );
+  }
 
   if (screen === "history") {
     return (
@@ -70,6 +93,7 @@ export default function RambleBabbleRoot() {
       userEmail={user.email ?? ""}
       onOpenHistory={() => setScreen("history")}
       onSignOut={signOut}
+      onShowWelcome={() => setReviewWelcome(true)}
       reopen={reopen}
     />
   );

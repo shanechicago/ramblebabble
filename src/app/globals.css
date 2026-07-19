@@ -186,6 +186,16 @@ a:hover,
   opacity: 1;
 }
 
+/* Welcome-screen email field: sits on the black canvas in both themes. Legible
+   placeholder (cDim = 6.37:1) and an accent focus border. */
+.rb-welcome-input::placeholder {
+  color: var(--cDim);
+  opacity: 1;
+}
+.rb-welcome-input:focus {
+  border-color: var(--accentOnCanvas);
+}
+
 /* "sometimes wildly wacky" — words pop in one at a time, phrase jiggles,
    deliberately out of sync with the Babble wordmark. */
 @keyframes rb-popin {
