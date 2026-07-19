@@ -66,19 +66,26 @@ function prefersReducedMotion(): boolean {
 }
 
 // The rotating set shown while babbling (and while transcribing). Verbatim from
-// the brief.
+// the brief. Exactly seven, in this order.
 const FUN_LOADING = [
   "Untangling your bullshit",
   "Finding your actual point",
   "Making you sound employed",
+  "Giving your fumble fingers a break",
   "Translating from drunk",
-  "Cutting three of your five tangents",
   "Putting pants on it",
   "Doing the part your brain skipped",
 ];
-function pickLoading() {
-  return FUN_LOADING[Math.floor(Math.random() * FUN_LOADING.length)];
-}
+
+// The idle (empty) output copy. Exact wording and line breaks from the brief.
+const IDLE_COPY = `Nothing here yet.
+
+Feed the machine your mess
+so it can save you from embarrassing yourself.
+
+Or something unhinged enough to get you blocked.
+
+Depends on what you clicked.`;
 
 const LANGUAGES = [
   "English",
@@ -131,7 +138,7 @@ function formatTime(total: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-// "Your words" rows. The UI always holds both fields as strings (controlled
+// Personal Glossary rows. The UI always holds both fields as strings (controlled
 // inputs); the wire shape drops a blank meaning entirely.
 type GlossaryRow = { word: string; meaning: string };
 const EMPTY_GLOSSARY: GlossaryRow[] = [{ word: "", meaning: "" }];
@@ -184,8 +191,13 @@ export default function RambleBabbleApp({
   const [cleanProfanity, setCleanProfanity] = useState(false);
 
   // Which numbered accordion is open. Sections 1 (format) and 2 (stack) collapse;
-  // 3 (dump) and 4 (goods) are always open. Only one of 1/2 open at a time.
+  // 3 (input) and 4 (babble) are always open. Only one of 1/2 open at a time.
   const [openSection, setOpenSection] = useState<1 | 2 | null>(null);
+  // Nested collapsibles: which format group (section 1) and which stack category
+  // (section 2) is expanded. One at a time within each section, collapsed by
+  // default.
+  const [openFmtGroup, setOpenFmtGroup] = useState<string | null>(null);
+  const [openCat, setOpenCat] = useState<string | null>(null);
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
   // Bumped on every new result so the decode replays even when the engine hands
@@ -200,17 +212,48 @@ export default function RambleBabbleApp({
 
   const [transcribing, setTranscribing] = useState(false);
   const [cleaning, setCleaning] = useState(false);
-  const [loadingWord, setLoadingWord] = useState("Babbling");
+  // The rotating loading message, tracked as an index into FUN_LOADING. The
+  // shuffle queue + last-index ref below guarantee no message repeats back to
+  // back within a session.
+  const [loadingIndex, setLoadingIndex] = useState(0);
+  const loadingWord = FUN_LOADING[loadingIndex] ?? FUN_LOADING[0];
   const [error, setError] = useState<string | null>(null);
   const [limitNotice, setLimitNotice] = useState<string | null>(null);
   const [copyLabel, setCopyLabel] = useState("Copy");
-  const [saveLabel, setSaveLabel] = useState("Save to My Rambles");
+  // Quiet confirmation that the last babble was auto-saved to My Rambles.
+  const [savedNotice, setSavedNotice] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [overlay, setOverlay] = useState<"settings" | "upgrade" | null>(null);
 
   const revealRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const goodsRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  // Measured sticky-header height, used to offset the scroll-to-output target
+  // and to pin the section-2 Done row just below the nav.
+  const [headerH, setHeaderH] = useState(64);
+
+  // The shuffled bag for loading messages. nextLoading() draws from a shuffled
+  // order and never returns the same index twice in a row (even across reshuffle
+  // boundaries), satisfying "shuffle the pool, never repeat back to back".
+  const shuffleBag = useRef<number[]>([]);
+  const lastLoading = useRef<number>(-1);
+  const nextLoading = useCallback(() => {
+    if (shuffleBag.current.length === 0) {
+      const arr = FUN_LOADING.map((_, i) => i);
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      if (arr[0] === lastLoading.current && arr.length > 1) {
+        [arr[0], arr[1]] = [arr[1], arr[0]];
+      }
+      shuffleBag.current = arr;
+    }
+    const idx = shuffleBag.current.shift() as number;
+    lastLoading.current = idx;
+    return idx;
+  }, []);
 
   // THE SCRAMBLE-DECODE. The engine's real text arrives all at once; this turns
   // it into the signature reveal: a full-length block of noise resolves left to
@@ -272,6 +315,13 @@ export default function RambleBabbleApp({
     return () => clearTimeout(id);
   }, [error]);
 
+  // Auto-dismiss the quiet "Saved to My Rambles" confirmation.
+  useEffect(() => {
+    if (!savedNotice) return;
+    const id = setTimeout(() => setSavedNotice(false), 2800);
+    return () => clearTimeout(id);
+  }, [savedNotice]);
+
   // iOS Safari can restore focus to the ramble textarea from the back/forward
   // cache, popping the on-screen keyboard on load. Always land with the keyboard
   // dismissed so the controls are visible from the start.
@@ -292,11 +342,17 @@ export default function RambleBabbleApp({
   const fitInput = useCallback(() => {
     const el = inputRef.current;
     if (!el) return;
+    // Collapsing the box to "auto" to remeasure momentarily shrinks it, which
+    // lets the browser re-anchor the scroll position and jump the page toward
+    // the caret (the Enter-key jump). Capture the page scroll and restore it the
+    // instant the height is set again, so typing/Enter never scrolls anything.
+    const scrollY = window.scrollY;
     el.style.height = "auto";
     // box-sizing is border-box, so add the border back or the box lands a
     // border-width short and scrollHeight stays > clientHeight.
     const borderY = el.offsetHeight - el.clientHeight;
     el.style.height = `${el.scrollHeight + borderY}px`;
+    if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
   }, []);
   useEffect(() => {
     fitInput();
@@ -305,6 +361,29 @@ export default function RambleBabbleApp({
     window.addEventListener("resize", fitInput);
     return () => window.removeEventListener("resize", fitInput);
   }, [fitInput]);
+
+  // Land at the very top on mount so the user always starts at the nav +
+  // section 1, never mid-page (e.g. restored scroll or a reopened ramble).
+  useEffect(() => {
+    if (typeof window !== "undefined") window.scrollTo(0, 0);
+  }, []);
+
+  // Keep the measured sticky-header height current (it wraps to two rows on
+  // narrow screens, so it is not a constant).
+  useEffect(() => {
+    const measure = () => setHeaderH(headerRef.current?.offsetHeight ?? 64);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // Rotate the loading message every 2.5s while babbling or transcribing. Each
+  // tick draws the next non-repeating message from the shuffled bag.
+  useEffect(() => {
+    if (!cleaning && !transcribing) return;
+    const id = setInterval(() => setLoadingIndex(nextLoading()), 2500);
+    return () => clearInterval(id);
+  }, [cleaning, transcribing, nextLoading]);
 
   const transcribeBlob = useCallback(
     async (blob: Blob | null) => {
@@ -316,7 +395,7 @@ export default function RambleBabbleApp({
         setError(TOO_LARGE_MESSAGE);
         return;
       }
-      setLoadingWord(pickLoading());
+      setLoadingIndex(nextLoading());
       setTranscribing(true);
       try {
         const form = new FormData();
@@ -340,7 +419,7 @@ export default function RambleBabbleApp({
         setTranscribing(false);
       }
     },
-    [glossary],
+    [glossary, nextLoading],
   );
 
   const handleAutoStop = useCallback(
@@ -368,14 +447,15 @@ export default function RambleBabbleApp({
 
   const formatName =
     outputType === "custom" ? "Something else" : selectedStyle?.label ?? "";
-  const stackSummary = [
+  // Every active section-2 selection, in order, for the section-2 summary and the
+  // live sticky-bar readout (item 17).
+  const activeStack = [
     selectedTone?.label,
     selectedPersona?.label,
     selectedAccent?.label,
     targetLanguage,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  ].filter(Boolean) as string[];
+  const stackSummary = activeStack.join(", ");
 
   const handleStart = useCallback(() => {
     setError(null);
@@ -421,7 +501,8 @@ export default function RambleBabbleApp({
 
       setError(null);
       setCopyLabel("Copy");
-      setLoadingWord(pickLoading());
+      setSavedNotice(false);
+      setLoadingIndex(nextLoading());
       setCleaning(true);
       const glossaryEntries = toGlossaryEntries(glossary);
       try {
@@ -455,26 +536,29 @@ export default function RambleBabbleApp({
         setKeyOpen(true);
         setFollowOpen(true);
         setRevealKey((k) => k + 1);
-        if (!modifier) {
-          // The Supabase builder is lazy: .then here is what sends the insert.
-          getSupabase()
-            .from("rambles")
-            .insert({
-              user_id: userId,
-              transcript: inputText,
-              output_type: outputType,
-              output_label: label,
-              tone,
-              cleaned: out,
-              key_points: Array.isArray(data.keyPoints) ? data.keyPoints : [],
-              follow_ups: Array.isArray(data.followUps) ? data.followUps : [],
-              is_fun: kind === "fun",
-            })
-            .then(({ error: saveError }) => {
-              if (saveError)
-                console.error("[rambles] save failed:", saveError.message);
-            });
-        }
+        // Auto-save EVERY successful babble, regenerations included (no modifier
+        // guard). The Supabase builder is lazy: .then here is what sends the
+        // insert. On success, flash a quiet "Saved to My Rambles" confirmation.
+        getSupabase()
+          .from("rambles")
+          .insert({
+            user_id: userId,
+            transcript: inputText,
+            output_type: outputType,
+            output_label: label,
+            tone,
+            cleaned: out,
+            key_points: Array.isArray(data.keyPoints) ? data.keyPoints : [],
+            follow_ups: Array.isArray(data.followUps) ? data.followUps : [],
+            is_fun: kind === "fun",
+          })
+          .then(({ error: saveError }) => {
+            if (saveError) {
+              console.error("[rambles] save failed:", saveError.message);
+            } else {
+              setSavedNotice(true);
+            }
+          });
       } catch (err) {
         setError(
           err instanceof Error
@@ -496,6 +580,7 @@ export default function RambleBabbleApp({
       glossary,
       cleanProfanity,
       userId,
+      nextLoading,
     ],
   );
 
@@ -510,65 +595,45 @@ export default function RambleBabbleApp({
     }
   }, [cleaned]);
 
-  // Save to My Rambles: persist the CURRENT result (handy after a Regenerate,
-  // which re-runs with a modifier and deliberately does not auto-save). Uses the
-  // same insert shape as the auto-save in runCleanup.
-  const handleSave = useCallback(() => {
-    if (!cleaned) return;
-    const selected = OUTPUT_TYPES.find((o) => o.id === outputType);
-    const kind: "work" | "fun" =
-      selected?.group === "fun" || !!accent || !!persona ? "fun" : "work";
-    const label =
-      outputType === "custom" ? customInstruction.trim() : (selected?.label ?? "");
-    getSupabase()
-      .from("rambles")
-      .insert({
-        user_id: userId,
-        transcript: inputText,
-        output_type: outputType,
-        output_label: label,
-        tone,
-        cleaned,
-        key_points: keyPoints,
-        follow_ups: followUps,
-        is_fun: kind === "fun",
-      })
-      .then(({ error: saveError }) => {
-        if (saveError) {
-          console.error("[rambles] save failed:", saveError.message);
-          setError("Couldn't save that one. Give it another shot in a sec.");
-        } else {
-          setSaveLabel("Saved");
-          setTimeout(() => setSaveLabel("Save to My Rambles"), 1600);
-        }
-      });
-  }, [
-    cleaned,
-    outputType,
-    accent,
-    persona,
-    customInstruction,
-    userId,
-    inputText,
-    tone,
-    keyPoints,
-    followUps,
-  ]);
+  // Reset ONLY the section 1 + 2 selections (format, tone, character, accent,
+  // language, glossary, profanity, custom instruction). Leaves the ramble text
+  // and the babble output untouched. Shared by "Clear options" and "New Ramble".
+  const resetOptions = useCallback(() => {
+    setOutputType("");
+    setTone("");
+    setPersona("");
+    setAccent("");
+    setTargetLanguage("");
+    setGlossary(EMPTY_GLOSSARY);
+    setCleanProfanity(false);
+    setCustomInstruction("");
+    setOpenFmtGroup(null);
+    setOpenCat(null);
+  }, []);
 
-  // New ramble: wipe the workspace and start fresh.
-  const handleClear = useCallback(() => {
+  // Clear options: wipe every section 1 + 2 selection only. Ramble text and
+  // output stay exactly where they are.
+  const handleClearOptions = useCallback(() => {
+    resetOptions();
+  }, [resetOptions]);
+
+  // New Ramble: FULL reset. Clear the ramble text, reset the output to idle,
+  // clear every option, then glide back to the top of the page.
+  const handleNewRamble = useCallback(() => {
     if (recorder.status === "recording") recorder.cancel();
     setInputText("");
-    setGlossary(EMPTY_GLOSSARY);
-    setCustomInstruction("");
+    resetOptions();
     setCleaned("");
     setKeyPoints([]);
     setFollowUps([]);
+    setSavedNotice(false);
     setError(null);
     setLimitNotice(null);
-  }, [recorder]);
+    if (typeof window !== "undefined")
+      window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [recorder, resetOptions]);
 
-  // "Your words" rows.
+  // Personal Glossary rows.
   const setGlossaryField = (
     index: number,
     field: keyof GlossaryRow,
@@ -600,19 +665,25 @@ export default function RambleBabbleApp({
   const hasResult = !!cleaned;
   const canBabble = !!outputType && !!inputText.trim();
 
-  // On mobile the goods sit far below the fold, so once a Babble lands, glide
-  // them into view. On tablet/desktop it's already visible, so do nothing.
+  // Every babble (revealKey bumps once per run, regenerate included) glides the
+  // output section's TOP EDGE to the top of the viewport, at every width. Keyed
+  // on revealKey (starts at 0, only bumps on a real babble) so it never fires on
+  // mount. Offset by the live sticky-header height so the panel top lands just
+  // below the nav, never hidden under it.
   useEffect(() => {
-    if (!hasResult) return;
+    if (revealKey === 0) return;
     if (typeof window === "undefined") return;
-    if (window.matchMedia("(min-width: 768px)").matches) return;
-    goodsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [hasResult, cleaning]);
+    const el = goodsRef.current;
+    if (!el) return;
+    const hH = headerRef.current?.offsetHeight ?? 64;
+    const top = el.getBoundingClientRect().top + window.scrollY - hH - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }, [revealKey]);
 
   const navBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
       onClick={onClick}
-      className="font-mono-label text-[12px] font-bold uppercase tracking-[0.14em] transition"
+      className="font-mono-label whitespace-nowrap text-[13px] font-bold uppercase tracking-[0.02em] transition"
       style={{ color: active ? t.cInk : t.cDim }}
     >
       {label}
@@ -623,8 +694,40 @@ export default function RambleBabbleApp({
   // "note" under Just refine, the rest under their groups, plus a custom row.
   const pickFormat = (id: string) => {
     setOutputType(id);
+    setOpenFmtGroup(null);
     setOpenSection(null);
   };
+
+  // Render a grid of format rows for a set of ids (used inside each collapsible
+  // format group). "custom" is the "Something else" row.
+  const renderFormatRows = (ids: string[]) => (
+    <FormatGrid>
+      {ids.map((id) => {
+        if (id === "custom") {
+          return (
+            <FormatRow
+              key="custom"
+              t={t}
+              label="Something else"
+              active={outputType === "custom"}
+              onClick={() => pickFormat("custom")}
+            />
+          );
+        }
+        const o = OUTPUT_TYPES.find((x) => x.id === id);
+        if (!o) return null;
+        return (
+          <FormatRow
+            key={id}
+            t={t}
+            label={o.label}
+            active={outputType === id}
+            onClick={() => pickFormat(id)}
+          />
+        );
+      })}
+    </FormatGrid>
+  );
 
   return (
     <div style={{ background: t.canvas, color: t.cInk, minHeight: "100vh" }}>
@@ -665,13 +768,16 @@ export default function RambleBabbleApp({
         }}
       />
 
-      {/* STICKY TOP — the whole header stays put. */}
+      {/* STICKY TOP — the whole header stays put. Lifted chrome surface + a
+          strong hairline so the header reads as its own band, not black-on-black
+          (item 13). ref feeds the measured height to the scroll + sticky offsets. */}
       <div
+        ref={headerRef}
         className="sticky top-0 z-30"
         style={{
           background: t.chrome,
           backdropFilter: "blur(10px)",
-          borderBottom: `1px solid ${t.cLine}`,
+          borderBottom: `1px solid ${t.cLineStrong}`,
         }}
       >
         <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:px-8">
@@ -684,11 +790,11 @@ export default function RambleBabbleApp({
             {navBtn("My Rambles", false, onOpenHistory)}
             <button
               onClick={() => setOverlay("upgrade")}
-              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition hover:brightness-110 active:translate-y-px"
+              className="font-mono-label whitespace-nowrap px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.04em] transition hover:brightness-110 active:translate-y-px"
               style={{
                 background: "transparent",
                 border: `1px solid ${t.cLineStrong}`,
-                color: t.cDim,
+                color: t.cInk,
               }}
             >
               Upgrade
@@ -769,8 +875,8 @@ export default function RambleBabbleApp({
                           {accountName}
                         </span>
                         <span
-                          className="font-mono-label block text-[10px] uppercase tracking-[0.14em]"
-                          style={{ color: t.inkFaint }}
+                          className="font-mono-label block text-[12px] uppercase tracking-[0.12em]"
+                          style={{ color: t.inkDim }}
                         >
                           signed in
                         </span>
@@ -818,6 +924,9 @@ export default function RambleBabbleApp({
 
         <div className="mx-auto w-full max-w-[940px] px-4 sm:px-6">
           <div className="flex flex-col gap-5 pt-5">
+            {/* Sections 1 and 2 sit side by side on tablet/desktop, stacked (and
+                compact, collapsed heads) on mobile. */}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-start">
             {/* ============ SECTION 1 — PICK A FORMAT ============ */}
             <section>
               <SectionHead
@@ -831,7 +940,7 @@ export default function RambleBabbleApp({
                 }
                 right={
                   <span
-                    className="truncate text-[13px]"
+                    className="truncate text-[14px]"
                     style={{ color: t.cDim, maxWidth: 200 }}
                   >
                     {formatName || "Choose one"}
@@ -844,7 +953,7 @@ export default function RambleBabbleApp({
                   reachable whether the picker is open or shut. */}
               {outputType !== "custom" && formatHint && (
                 <p
-                  className="mt-2.5 text-[13px] leading-[1.5]"
+                  className="mt-2.5 text-[14px] leading-[1.5]"
                   style={{ color: t.cDim }}
                 >
                   {formatHint}
@@ -870,77 +979,72 @@ export default function RambleBabbleApp({
 
               {openSection === 1 && (
                 <div
-                  className="mt-3 flex flex-col gap-5 p-4 sm:p-5"
+                  className="mt-3 flex flex-col gap-4 p-4 sm:p-5"
                   style={{
                     background: t.panel,
                     border: `1px solid ${t.lineStrong}`,
                   }}
                 >
-                  <FormatGroup t={t} heading="Just refine">
-                    <FormatGrid>
-                      <FormatRow
-                        t={t}
-                        label="Clean & Concise"
-                        active={outputType === "note"}
-                        onClick={() => pickFormat("note")}
-                      />
-                    </FormatGrid>
-                  </FormatGroup>
+                  {/* Each format group is its own collapsible dropdown, collapsed
+                      by default. Picking a format selects it, collapses the group,
+                      and closes section 1 (via pickFormat). */}
+                  <PickerGroup
+                    t={t}
+                    label="Just refine"
+                    open={openFmtGroup === "just"}
+                    onToggle={() =>
+                      setOpenFmtGroup((g) => (g === "just" ? null : "just"))
+                    }
+                  >
+                    {renderFormatRows(["note", "conversational"])}
+                  </PickerGroup>
 
                   <FormatGroup t={t} heading="Practical">
                     {USEFUL_GROUPS.map((g) => (
-                      <SubGroup key={g.label} t={t} label={g.label}>
-                        <FormatGrid>
-                          {g.ids.map((id) => {
-                            const o = OUTPUT_TYPES.find((x) => x.id === id);
-                            if (!o) return null;
-                            return (
-                              <FormatRow
-                                key={id}
-                                t={t}
-                                label={o.label}
-                                active={outputType === id}
-                                onClick={() => pickFormat(id)}
-                              />
-                            );
-                          })}
-                        </FormatGrid>
-                      </SubGroup>
+                      <PickerGroup
+                        key={g.label}
+                        t={t}
+                        label={g.label}
+                        open={openFmtGroup === `u:${g.label}`}
+                        onToggle={() =>
+                          setOpenFmtGroup((cur) =>
+                            cur === `u:${g.label}` ? null : `u:${g.label}`,
+                          )
+                        }
+                      >
+                        {renderFormatRows(g.ids)}
+                      </PickerGroup>
                     ))}
                   </FormatGroup>
 
                   <FormatGroup t={t} heading="Fun">
                     {FUN_GROUPS.map((g) => (
-                      <SubGroup key={g.label} t={t} label={g.label}>
-                        <FormatGrid>
-                          {g.ids.map((id) => {
-                            const o = OUTPUT_TYPES.find((x) => x.id === id);
-                            if (!o) return null;
-                            return (
-                              <FormatRow
-                                key={id}
-                                t={t}
-                                label={o.label}
-                                active={outputType === id}
-                                onClick={() => pickFormat(id)}
-                              />
-                            );
-                          })}
-                        </FormatGrid>
-                      </SubGroup>
+                      <PickerGroup
+                        key={g.label}
+                        t={t}
+                        label={g.label}
+                        open={openFmtGroup === `f:${g.label}`}
+                        onToggle={() =>
+                          setOpenFmtGroup((cur) =>
+                            cur === `f:${g.label}` ? null : `f:${g.label}`,
+                          )
+                        }
+                      >
+                        {renderFormatRows(g.ids)}
+                      </PickerGroup>
                     ))}
                   </FormatGroup>
 
-                  <FormatGroup t={t} heading="Something else">
-                    <FormatGrid>
-                      <FormatRow
-                        t={t}
-                        label="Something else"
-                        active={outputType === "custom"}
-                        onClick={() => pickFormat("custom")}
-                      />
-                    </FormatGrid>
-                  </FormatGroup>
+                  <PickerGroup
+                    t={t}
+                    label="Something else"
+                    open={openFmtGroup === "custom"}
+                    onToggle={() =>
+                      setOpenFmtGroup((g) => (g === "custom" ? null : "custom"))
+                    }
+                  >
+                    {renderFormatRows(["custom"])}
+                  </PickerGroup>
                 </div>
               )}
             </section>
@@ -958,7 +1062,7 @@ export default function RambleBabbleApp({
                 }
                 right={
                   <span
-                    className="truncate text-[13px]"
+                    className="truncate text-[14px]"
                     style={{ color: t.cDim, maxWidth: 200 }}
                   >
                     {stackSummary || "none"}
@@ -968,204 +1072,333 @@ export default function RambleBabbleApp({
 
               {openSection === 2 && (
                 <div
-                  className="mt-3 flex flex-col gap-6 p-4 sm:p-5"
+                  className="mt-3 flex flex-col gap-3 p-4 sm:p-5"
                   style={{
                     background: t.panel,
                     border: `1px solid ${t.lineStrong}`,
                   }}
                 >
-                  <Axis t={t} label="Tone">
-                    <PillGroups
-                      t={t}
-                      groups={TONE_GROUPS}
-                      options={TONES}
-                      value={tone}
-                      onPick={setTone}
-                    />
-                  </Axis>
-
-                  <Axis t={t} label="Character">
-                    <PillGroups
-                      t={t}
-                      groups={PERSONA_GROUPS}
-                      options={PERSONAS}
-                      value={persona}
-                      onPick={setPersona}
-                    />
-                  </Axis>
-
-                  <Axis t={t} label="Accent">
-                    <PillGroups
-                      t={t}
-                      groups={ACCENT_GROUPS}
-                      options={ACCENTS}
-                      value={accent}
-                      onPick={setAccent}
-                    />
-                  </Axis>
-
-                  <Axis t={t} label="More">
-                    {/* Language */}
-                    <SubGroup t={t} label="Language">
-                      <div className="flex flex-wrap gap-1.5">
-                        <Pill
-                          t={t}
-                          label="Same as input"
-                          active={!targetLanguage}
-                          onClick={() => setTargetLanguage("")}
-                        />
-                        {LANGUAGES.map((l) => (
-                          <Pill
-                            t={t}
-                            key={l}
-                            label={l}
-                            active={targetLanguage === l}
-                            onClick={() =>
-                              setTargetLanguage(targetLanguage === l ? "" : l)
-                            }
-                          />
-                        ))}
-                      </div>
-                    </SubGroup>
-
-                    {/* Your words */}
-                    <SubGroup t={t} label="Your words">
-                      <p className="mb-2 text-[12px]" style={{ color: t.inkDim }}>
-                        Names, brands, or words you use that we should get right.
-                        Tell us what they mean so we know when you mean them.
-                      </p>
-                      <div className="flex flex-col gap-2">
-                        {glossary.map((row, i) => (
-                          <div key={i} className="flex flex-wrap items-end gap-2">
-                            <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
-                              <label
-                                htmlFor={`rb-word-${i}`}
-                                className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.12em]"
-                                style={{ color: t.inkFaint }}
-                              >
-                                Word
-                              </label>
-                              <input
-                                id={`rb-word-${i}`}
-                                value={row.word}
-                                onChange={(e) =>
-                                  setGlossaryField(i, "word", e.target.value)
-                                }
-                                placeholder="Niko"
-                                className="rb-hero-input w-full px-3 py-2.5 text-[16px] outline-none"
-                                style={
-                                  {
-                                    background: t.panel2,
-                                    border: `1px solid ${t.lineStrong}`,
-                                    color: t.ink,
-                                    "--rb-ph": t.inkFaint,
-                                  } as React.CSSProperties
-                                }
-                              />
-                            </div>
-                            <div className="min-w-0 flex-1 sm:basis-0 sm:flex-[1.4]">
-                              <label
-                                htmlFor={`rb-meaning-${i}`}
-                                className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.12em]"
-                                style={{ color: t.inkFaint }}
-                              >
-                                What it is
-                              </label>
-                              <input
-                                id={`rb-meaning-${i}`}
-                                value={row.meaning}
-                                onChange={(e) =>
-                                  setGlossaryField(i, "meaning", e.target.value)
-                                }
-                                placeholder="my dog"
-                                className="rb-hero-input w-full px-3 py-2.5 text-[16px] outline-none"
-                                style={
-                                  {
-                                    background: t.panel2,
-                                    border: `1px solid ${t.lineStrong}`,
-                                    color: t.ink,
-                                    "--rb-ph": t.inkFaint,
-                                  } as React.CSSProperties
-                                }
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeGlossaryRow(i)}
-                              disabled={glossaryIsEmpty}
-                              aria-label={
-                                row.word.trim()
-                                  ? `Remove ${row.word.trim()}`
-                                  : "Remove this word"
-                              }
-                              title="Remove"
-                              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center text-[16px] transition active:translate-y-px"
-                              style={{
-                                background: t.panel2,
-                                border: `1px solid ${t.lineStrong}`,
-                                color: t.inkDim,
-                                opacity: glossaryIsEmpty ? 0.35 : 1,
-                                cursor: glossaryIsEmpty ? "not-allowed" : "pointer",
-                              }}
-                            >
-                              <span aria-hidden>&#215;</span>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addGlossaryRow}
-                        className="font-mono-label mt-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
-                        style={{
-                          background: t.panel2,
-                          border: `1px solid ${t.lineStrong}`,
-                          color: t.ink,
-                        }}
-                      >
-                        + Add another
-                      </button>
-                    </SubGroup>
-
-                    {/* Profanity */}
-                    <SubGroup t={t} label="Profanity">
-                      <div className="flex flex-wrap gap-1.5">
-                        <Pill
-                          t={t}
-                          label="Keep it"
-                          active={!cleanProfanity}
-                          onClick={() => setCleanProfanity(false)}
-                        />
-                        <Pill
-                          t={t}
-                          label="Clean it up"
-                          active={cleanProfanity}
-                          onClick={() => setCleanProfanity(true)}
-                        />
-                      </div>
-                    </SubGroup>
-                  </Axis>
-
-                  <div className="flex justify-end pt-1">
+                  {/* Done + Clear options, pinned at the top of the open panel so
+                      both are always reachable without scrolling past the
+                      categories (item 10 + item 3B). */}
+                  <div
+                    className="flex items-center justify-between gap-2 pb-2"
+                    style={{
+                      position: "sticky",
+                      top: headerH + 6,
+                      zIndex: 5,
+                      background: t.panel,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={handleClearOptions}
+                      className="font-mono-label px-3 py-2 text-[12px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${t.lineStrong}`,
+                        color: t.ink,
+                      }}
+                    >
+                      Clear options
+                    </button>
                     <button
                       type="button"
                       onClick={() => setOpenSection(null)}
-                      className="font-mono-label px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px"
+                      className="font-mono-label px-5 py-2 text-[12px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px"
                       style={{ background: t.ink, color: t.panel }}
                     >
                       Done
                     </button>
                   </div>
+
+                  {/* Each category is its own collapsible dropdown, collapsed by
+                      default. Every category leads with a "None" that clears that
+                      axis. Picking collapses the category. */}
+                  <PickerGroup
+                    t={t}
+                    label="Tone"
+                    open={openCat === "tone"}
+                    onToggle={() =>
+                      setOpenCat((c) => (c === "tone" ? null : "tone"))
+                    }
+                  >
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      <Pill
+                        t={t}
+                        label="None"
+                        active={!tone}
+                        onClick={() => {
+                          setTone("");
+                          setOpenCat(null);
+                        }}
+                      />
+                    </div>
+                    <PillGroups
+                      t={t}
+                      groups={TONE_GROUPS}
+                      options={TONES}
+                      value={tone}
+                      onPick={(v) => {
+                        setTone(v);
+                        setOpenCat(null);
+                      }}
+                    />
+                  </PickerGroup>
+
+                  <PickerGroup
+                    t={t}
+                    label="Character"
+                    open={openCat === "character"}
+                    onToggle={() =>
+                      setOpenCat((c) => (c === "character" ? null : "character"))
+                    }
+                  >
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      <Pill
+                        t={t}
+                        label="None"
+                        active={!persona}
+                        onClick={() => {
+                          setPersona("");
+                          setOpenCat(null);
+                        }}
+                      />
+                    </div>
+                    <PillGroups
+                      t={t}
+                      groups={PERSONA_GROUPS}
+                      options={PERSONAS}
+                      value={persona}
+                      onPick={(v) => {
+                        setPersona(v);
+                        setOpenCat(null);
+                      }}
+                    />
+                  </PickerGroup>
+
+                  <PickerGroup
+                    t={t}
+                    label="Accent"
+                    open={openCat === "accent"}
+                    onToggle={() =>
+                      setOpenCat((c) => (c === "accent" ? null : "accent"))
+                    }
+                  >
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      <Pill
+                        t={t}
+                        label="None"
+                        active={!accent}
+                        onClick={() => {
+                          setAccent("");
+                          setOpenCat(null);
+                        }}
+                      />
+                    </div>
+                    <PillGroups
+                      t={t}
+                      groups={ACCENT_GROUPS}
+                      options={ACCENTS}
+                      value={accent}
+                      onPick={(v) => {
+                        setAccent(v);
+                        setOpenCat(null);
+                      }}
+                    />
+                  </PickerGroup>
+
+                  <PickerGroup
+                    t={t}
+                    label="Language"
+                    open={openCat === "language"}
+                    onToggle={() =>
+                      setOpenCat((c) => (c === "language" ? null : "language"))
+                    }
+                  >
+                    <div className="flex flex-wrap gap-1.5">
+                      <Pill
+                        t={t}
+                        label="None"
+                        active={!targetLanguage}
+                        onClick={() => {
+                          setTargetLanguage("");
+                          setOpenCat(null);
+                        }}
+                      />
+                      {LANGUAGES.map((l) => (
+                        <Pill
+                          t={t}
+                          key={l}
+                          label={l}
+                          active={targetLanguage === l}
+                          onClick={() => {
+                            setTargetLanguage(targetLanguage === l ? "" : l);
+                            setOpenCat(null);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </PickerGroup>
+
+                  <PickerGroup
+                    t={t}
+                    label="Personal Glossary"
+                    open={openCat === "glossary"}
+                    onToggle={() =>
+                      setOpenCat((c) => (c === "glossary" ? null : "glossary"))
+                    }
+                  >
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      <Pill
+                        t={t}
+                        label="None"
+                        active={glossaryIsEmpty}
+                        onClick={() => setGlossary(EMPTY_GLOSSARY)}
+                      />
+                    </div>
+                    <p className="mb-2 text-[13px]" style={{ color: t.inkDim }}>
+                      Names, brands, or words you use that we should get right.
+                      Tell us what they mean so we know when you mean them.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {glossary.map((row, i) => (
+                        <div key={i} className="flex flex-wrap items-end gap-2">
+                          <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+                            <label
+                              htmlFor={`rb-word-${i}`}
+                              className="font-mono-label mb-1 block text-[12px] uppercase tracking-[0.1em]"
+                              style={{ color: t.accentOnPanel }}
+                            >
+                              Word
+                            </label>
+                            <input
+                              id={`rb-word-${i}`}
+                              value={row.word}
+                              onChange={(e) =>
+                                setGlossaryField(i, "word", e.target.value)
+                              }
+                              placeholder="Niko"
+                              className="rb-hero-input w-full px-3 py-2.5 text-[16px] outline-none"
+                              style={
+                                {
+                                  background: t.panel2,
+                                  border: `1px solid ${t.lineStrong}`,
+                                  color: t.ink,
+                                  "--rb-ph": t.inkFaint,
+                                } as React.CSSProperties
+                              }
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1 sm:basis-0 sm:flex-[1.4]">
+                            <label
+                              htmlFor={`rb-meaning-${i}`}
+                              className="font-mono-label mb-1 block text-[12px] uppercase tracking-[0.1em]"
+                              style={{ color: t.accentOnPanel }}
+                            >
+                              What it is
+                            </label>
+                            <input
+                              id={`rb-meaning-${i}`}
+                              value={row.meaning}
+                              onChange={(e) =>
+                                setGlossaryField(i, "meaning", e.target.value)
+                              }
+                              placeholder="my dog"
+                              className="rb-hero-input w-full px-3 py-2.5 text-[16px] outline-none"
+                              style={
+                                {
+                                  background: t.panel2,
+                                  border: `1px solid ${t.lineStrong}`,
+                                  color: t.ink,
+                                  "--rb-ph": t.inkFaint,
+                                } as React.CSSProperties
+                              }
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeGlossaryRow(i)}
+                            disabled={glossaryIsEmpty}
+                            aria-label={
+                              row.word.trim()
+                                ? `Remove ${row.word.trim()}`
+                                : "Remove this word"
+                            }
+                            title="Remove"
+                            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center text-[16px] transition active:translate-y-px"
+                            style={{
+                              background: t.panel2,
+                              border: `1px solid ${t.lineStrong}`,
+                              color: t.inkDim,
+                              opacity: glossaryIsEmpty ? 0.35 : 1,
+                              cursor: glossaryIsEmpty ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            <span aria-hidden>&#215;</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addGlossaryRow}
+                      className="font-mono-label mt-2 px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                      style={{
+                        background: t.panel2,
+                        border: `1px solid ${t.lineStrong}`,
+                        color: t.ink,
+                      }}
+                    >
+                      + Add another
+                    </button>
+                  </PickerGroup>
+
+                  <PickerGroup
+                    t={t}
+                    label="Profanity"
+                    open={openCat === "profanity"}
+                    onToggle={() =>
+                      setOpenCat((c) => (c === "profanity" ? null : "profanity"))
+                    }
+                  >
+                    <div className="flex flex-wrap gap-1.5">
+                      <Pill
+                        t={t}
+                        label="None"
+                        active={!cleanProfanity}
+                        onClick={() => {
+                          setCleanProfanity(false);
+                          setOpenCat(null);
+                        }}
+                      />
+                      <Pill
+                        t={t}
+                        label="Clean it up"
+                        active={cleanProfanity}
+                        onClick={() => {
+                          setCleanProfanity(true);
+                          setOpenCat(null);
+                        }}
+                      />
+                    </div>
+                  </PickerGroup>
                 </div>
               )}
             </section>
+            </div>
 
-            {/* ============ SECTION 3 — DUMP IT ============ */}
+            {/* ============ SECTION 3 — THE INPUT (label-less) ============ */}
             <section>
-              <SectionHead t={t} num="3" label="Dump it" />
-
-              <div className="mt-3 flex flex-col gap-3">
-                <div className="relative flex flex-col">
+              <div className="flex flex-col gap-3">
+                {/* The ramble box wears the racing conic-gradient border (rb-racing);
+                    it speeds up while babbling (rb-racing-fast). The textarea's own
+                    border is transparent so only the animated ring shows. */}
+                <div
+                  className={`relative flex flex-col rb-racing${
+                    cleaning ? " rb-racing-fast" : ""
+                  }`}
+                >
                   <textarea
                     ref={inputRef}
                     value={inputText}
@@ -1181,7 +1414,7 @@ export default function RambleBabbleApp({
                         background: t.panel2,
                         minHeight: 180,
                         overflowY: "hidden",
-                        border: `1px solid ${t.lineStrong}`,
+                        border: "1px solid transparent",
                         "--rb-ph": t.inkFaint,
                       } as React.CSSProperties
                     }
@@ -1211,26 +1444,21 @@ export default function RambleBabbleApp({
                       </div>
                       {showWarning ? (
                         <p
-                          className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
+                          className="font-mono-label text-[12px] uppercase tracking-[0.12em]"
                           style={{ color: "#ff5a3c" }}
                         >
                           {WARNING_MESSAGE}
                         </p>
                       ) : (
                         <p
-                          className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
+                          className="font-mono-label text-[12px] uppercase tracking-[0.14em]"
                           style={{ color: t.inkDim }}
                         >
-                          Listening. Tap stop when done.
+                          Listening. Stop or Cancel below.
                         </p>
                       )}
-                      <button
-                        onClick={recorder.cancel}
-                        className="font-mono-label px-4 py-2 text-[11px] uppercase tracking-[0.12em]"
-                        style={{ border: `1px solid ${t.lineStrong}`, color: t.ink }}
-                      >
-                        Cancel
-                      </button>
+                      {/* Stop and Cancel are pinned to the bottom of the viewport
+                          (item 8), so no control lives inside this growing box. */}
                     </div>
                   )}
                   {transcribing && (
@@ -1261,121 +1489,88 @@ export default function RambleBabbleApp({
                   )}
                 </div>
 
-                {/* Record (dominant) + word count + clear, on one row. */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  {recording ? (
-                    <button
-                      onClick={handleStop}
-                      className="font-bric flex items-center gap-2.5 px-6 py-3.5 text-[15px] font-bold transition active:translate-y-px"
-                      style={{ background: ACCENT, color: ON_GRADIENT }}
-                    >
-                      <span
-                        aria-hidden
+                {/* Record (dominant) + word count + clear, on one row. Hidden while
+                    recording: Stop and Cancel live in the pinned bottom bar so they
+                    never scroll away no matter how tall the box grows (item 8). */}
+                {!recording && (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    {transcribing ? (
+                      <button
+                        disabled
+                        className="font-bric flex items-center gap-2.5 px-6 py-3.5 text-[15px] font-bold"
                         style={{
-                          display: "inline-block",
-                          height: 12,
-                          width: 12,
-                          background: ON_GRADIENT,
+                          background: t.panel,
+                          border: `1.5px solid ${t.lineStrong}`,
+                          color: t.ink,
+                          opacity: 0.8,
                         }}
-                      />
-                      Stop
-                    </button>
-                  ) : transcribing ? (
-                    <button
-                      disabled
-                      className="font-bric flex items-center gap-2.5 px-6 py-3.5 text-[15px] font-bold"
-                      style={{
-                        background: t.panel,
-                        border: `1.5px solid ${t.lineStrong}`,
-                        color: t.ink,
-                        opacity: 0.8,
-                      }}
-                    >
-                      <span
-                        className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                      >
+                        <span
+                          className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                          style={{
+                            borderColor: t.lineStrong,
+                            borderTopColor: t.accentOnPanel,
+                          }}
+                        />
+                        {loadingWord}&hellip;
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleStart}
+                        className="font-bric flex items-center gap-2.5 px-6 py-3.5 text-[15px] font-bold transition active:translate-y-px"
                         style={{
-                          borderColor: t.lineStrong,
-                          borderTopColor: t.accentOnPanel,
+                          background: t.panel,
+                          border: `1.5px solid ${t.lineStrong}`,
+                          color: t.ink,
                         }}
-                      />
-                      {loadingWord}&hellip;
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleStart}
-                      className="font-bric flex items-center gap-2.5 px-6 py-3.5 text-[15px] font-bold transition active:translate-y-px"
-                      style={{
-                        background: t.panel,
-                        border: `1.5px solid ${t.lineStrong}`,
-                        color: t.ink,
-                      }}
-                    >
-                      <span
-                        aria-hidden
-                        style={{
-                          display: "inline-block",
-                          height: 11,
-                          width: 11,
-                          borderRadius: 999,
-                          background: t.accentOnPanel,
-                        }}
-                      />
-                      Record
-                    </button>
-                  )}
+                      >
+                        <span
+                          aria-hidden
+                          style={{
+                            display: "inline-block",
+                            height: 11,
+                            width: 11,
+                            borderRadius: 999,
+                            background: t.accentOnPanel,
+                          }}
+                        />
+                        Record
+                      </button>
+                    )}
 
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="font-mono-label text-[11px] uppercase tracking-[0.08em]"
-                      style={{ color: t.cDim }}
-                    >
-                      {words} words
-                    </span>
-                    <button
-                      onClick={clearRamble}
-                      disabled={!inputText}
-                      className="font-mono-label flex items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
-                      style={{ background: "transparent", color: t.cDim }}
-                    >
-                      <span aria-hidden style={{ color: "#ff6b68", fontSize: 16 }}>
-                        &times;
-                      </span>{" "}
-                      clear
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="font-mono-label text-[12px] uppercase tracking-[0.08em]"
+                        style={{ color: t.cDim }}
+                      >
+                        {words} words
+                      </span>
+                      <button
+                        onClick={clearRamble}
+                        disabled={!inputText}
+                        className="font-mono-label flex items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[12px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
+                        style={{ background: "transparent", color: t.cDim }}
+                      >
+                        <span aria-hidden style={{ color: "#ff6b68", fontSize: 16 }}>
+                          &times;
+                        </span>{" "}
+                        clear
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {limitNotice && (
-                  <p className="font-mono-label text-[11px]" style={{ color: "#ff5a3c" }}>
+                  <p className="font-mono-label text-[12px]" style={{ color: "#ff5a3c" }}>
                     {limitNotice}
                   </p>
                 )}
               </div>
             </section>
 
-            {/* ============ SECTION 4 — THE GOODS ============ */}
+            {/* ============ SECTION 4 — YOUR BABBLE ============ */}
             <section ref={goodsRef}>
-              <SectionHead
-                t={t}
-                num="4"
-                label="The goods"
-                right={
-                  hasResult && !cleaning ? (
-                    <button
-                      onClick={handleCopy}
-                      disabled={!cleaned}
-                      className="font-mono-label flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
-                      style={{
-                        background: "transparent",
-                        border: `1px solid ${t.cLineStrong}`,
-                        color: t.cInk,
-                      }}
-                    >
-                      {copyLabel}
-                    </button>
-                  ) : undefined
-                }
-              />
+              <SectionHead t={t} num="4" label="Your babble" />
 
               <div
                 className="mt-3 flex min-h-[280px] flex-col p-5 sm:min-h-[340px] sm:p-6"
@@ -1383,18 +1578,28 @@ export default function RambleBabbleApp({
               >
                 {cleaning && !hasResult ? (
                   <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
-                    <span
-                      className="font-serif-i rb-breathe text-[64px] leading-none"
-                      style={{ color: t.accentOnPanel }}
-                    >
-                      b
-                    </span>
-                    <p
-                      className="font-mono-label mt-4 text-[11px] uppercase tracking-[0.14em]"
-                      style={{ color: t.inkDim }}
-                    >
-                      {loadingWord}&hellip;
-                    </p>
+                    {/* One large, high-contrast rotating loading line with a small
+                        spinner beside it (item 5). Message rotates every 2.5s and
+                        never repeats back to back (item 6). */}
+                    <div className="flex max-w-[36ch] items-center justify-center gap-3">
+                      <span
+                        className="rb-spin inline-block h-6 w-6 shrink-0 rounded-full border-[3px]"
+                        style={{
+                          borderColor: t.lineStrong,
+                          borderTopColor: t.accentOnPanel,
+                        }}
+                      />
+                      <span
+                        className="font-bric font-bold"
+                        style={{
+                          color: t.ink,
+                          fontSize: "clamp(20px, 5vw, 26px)",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {loadingWord}
+                      </span>
+                    </div>
                   </div>
                 ) : !hasResult ? (
                   <div className="flex flex-1 flex-col items-center justify-center py-6 text-center">
@@ -1405,12 +1610,10 @@ export default function RambleBabbleApp({
                       b
                     </span>
                     <p
-                      className="mt-4 max-w-[320px] text-[16px] leading-[1.5]"
+                      className="mt-4 max-w-[360px] whitespace-pre-line text-[16px] leading-[1.55]"
                       style={{ color: t.inkDim }}
                     >
-                      Nothing here yet. Feed the machine your mess and it hands
-                      back something less embarrassing to send. Or something
-                      unhinged enough to get you blocked. Depends what you clicked.
+                      {IDLE_COPY}
                     </p>
                   </div>
                 ) : (
@@ -1485,12 +1688,16 @@ export default function RambleBabbleApp({
                       </Collapsible>
                     )}
 
-                    {/* Action row: Copy lives top-right in the header; these
-                        three sit under the output, wired to their handlers. */}
+                    {/* Action row (item 11): Copy, Regenerate, New Ramble grouped
+                        at the bottom of the section. No manual Save (every babble
+                        auto-saves, item 18); a quiet confirmation shows instead. */}
                     <div
-                      className="mt-5 flex flex-wrap gap-2 pt-4"
+                      className="mt-5 flex flex-wrap items-center gap-2 pt-4"
                       style={{ borderTop: `1px solid ${t.line}` }}
                     >
+                      <ActionBtn t={t} onClick={handleCopy} disabled={!cleaned}>
+                        {copyLabel}
+                      </ActionBtn>
                       <ActionBtn
                         t={t}
                         onClick={() => runCleanup("again")}
@@ -1498,22 +1705,40 @@ export default function RambleBabbleApp({
                       >
                         Regenerate
                       </ActionBtn>
-                      <ActionBtn t={t} onClick={handleSave}>
-                        {saveLabel}
+                      <ActionBtn t={t} onClick={handleNewRamble}>
+                        New Ramble
                       </ActionBtn>
-                      <ActionBtn t={t} onClick={handleClear}>
-                        New ramble
-                      </ActionBtn>
+                      {savedNotice && (
+                        <span
+                          className="font-mono-label ml-auto flex items-center gap-1.5 text-[12px] uppercase tracking-[0.1em]"
+                          style={{ color: t.inkDim }}
+                        >
+                          <span
+                            aria-hidden
+                            style={{
+                              width: 7,
+                              height: 7,
+                              background: t.accentOnPanel,
+                              display: "inline-block",
+                            }}
+                          />
+                          Saved to My Rambles
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
             </section>
 
-            {/* Footer line, just under section 4. */}
+            {/* Footer line, just under section 4. Centered and deliberately quiet
+                fine print. Shane asked for 60% opacity; measured, 0.6 on the dim
+                gray is 2.9:1 (unreadable), so instead of an opacity that fails AA
+                this uses the quietest solid gray that stays legible: #747a81 =
+                4.62:1 on the #070809 canvas (both themes). Quiet, not invisible. */}
             <p
-              className="font-mono-label pt-1 text-[11px] uppercase tracking-[0.1em]"
-              style={{ color: t.cDim }}
+              className="font-mono-label pt-1 text-center text-[12px] uppercase tracking-[0.1em]"
+              style={{ color: "#747a81" }}
             >
               RambleBabble. Not affiliated with productivity. Probably cursed.
               Definitely cursed.
@@ -1522,65 +1747,150 @@ export default function RambleBabbleApp({
         </div>
       </main>
 
-      {/* ============ STICKY BOTTOM BAR ============ */}
+      {/* ============ PINNED BOTTOM REGION ============ */}
       <div
-        className="fixed inset-x-0 bottom-0 z-30"
-        style={{
-          background: t.chrome,
-          backdropFilter: "blur(10px)",
-          borderTop: `1px solid ${t.cLine}`,
-          paddingBottom: "env(safe-area-inset-bottom)",
-        }}
+        className="fixed inset-x-0 bottom-0 z-40"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto flex w-full max-w-[940px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <span
-            className="font-mono-label min-w-0 flex-1 truncate text-[11px] uppercase tracking-[0.1em]"
-            style={{ color: t.cDim }}
+        {/* While recording, Stop + Cancel sit pinned ABOVE the babble bar so they
+            never scroll away no matter how tall the recording box grows (item 8).
+            The babble bar stays below with Babble it disabled (item 22). */}
+        {recording && (
+          <div
+            style={{
+              background: t.chrome,
+              backdropFilter: "blur(10px)",
+              borderTop: `1px solid ${t.cLineStrong}`,
+            }}
           >
-            {formatName || "pick a format first"}
-          </span>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              onClick={surprise}
-              className="font-mono-label whitespace-nowrap px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
-              style={{
-                background: "transparent",
-                border: `1px solid ${t.cLineStrong}`,
-                color: t.cInk,
-              }}
-            >
-              Surprise me
-            </button>
-            <button
-              onClick={() => runCleanup()}
-              disabled={cleaning || !canBabble}
-              className="font-bric flex items-center justify-center gap-2 whitespace-nowrap px-6 py-2.5 text-[15px] font-bold transition hover:brightness-[1.08] active:translate-y-px"
-              style={{
-                backgroundImage: BUTTON_GRADIENT,
-                color: ON_GRADIENT,
-                letterSpacing: "0.01em",
-                boxShadow: "0 10px 26px -12px rgba(123,92,255,0.6)",
-                opacity: !cleaning && !canBabble ? 0.5 : 1,
-                filter: !cleaning && !canBabble ? "saturate(0.6)" : "none",
-              }}
-            >
-              {cleaning ? (
-                <>
+            <div className="mx-auto flex w-full max-w-[940px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
+              <span
+                className="font-mono-timer flex items-center gap-2 text-[16px] font-bold"
+                style={{ color: t.cInk }}
+              >
+                <span
+                  aria-hidden
+                  className="rb-blink inline-block h-2.5 w-2.5 rounded-full"
+                  style={{ background: "#ff5a3c" }}
+                />
+                {formatTime(recorder.seconds)}
+              </span>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={recorder.cancel}
+                  className="font-mono-label whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px"
+                  style={{
+                    background: "transparent",
+                    border: `1px solid ${t.cLineStrong}`,
+                    color: t.cInk,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleStop}
+                  className="font-bric flex items-center gap-2.5 whitespace-nowrap px-6 py-2.5 text-[15px] font-bold transition active:translate-y-px"
+                  style={{ background: ACCENT, color: ON_GRADIENT }}
+                >
                   <span
-                    className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                    aria-hidden
                     style={{
-                      borderColor: "rgba(7,8,9,0.35)",
-                      borderTopColor: ON_GRADIENT,
+                      display: "inline-block",
+                      height: 12,
+                      width: 12,
+                      background: ON_GRADIENT,
                     }}
                   />
-                  {loadingWord}&hellip;
-                </>
+                  Stop
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* The babble bar: live selection summary (format + every active stack
+            option, item 17) + Surprise me + Babble it. */}
+        <div
+          style={{
+            background: t.chrome,
+            backdropFilter: "blur(10px)",
+            borderTop: `1px solid ${t.cLineStrong}`,
+          }}
+        >
+          <div className="mx-auto flex w-full max-w-[940px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <div className="min-w-0 flex-1 truncate">
+              {formatName ? (
+                <span className="truncate">
+                  <span
+                    className="font-mono-label text-[13px] font-bold uppercase tracking-[0.06em]"
+                    style={{ color: t.cInk }}
+                  >
+                    {formatName}
+                  </span>
+                  {activeStack.length > 0 && (
+                    <span
+                      className="font-mono-label text-[12px] uppercase tracking-[0.04em]"
+                      style={{ color: t.cDim }}
+                    >
+                      {"  ·  " + activeStack.join("  ·  ")}
+                    </span>
+                  )}
+                </span>
               ) : (
-                <>
-                  Babble it <span aria-hidden>&rarr;</span>
-                </>
+                <span
+                  className="font-mono-label text-[13px] uppercase tracking-[0.06em]"
+                  style={{ color: t.cDim }}
+                >
+                  pick a format first
+                </span>
               )}
-            </button>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={surprise}
+                className="font-mono-label whitespace-nowrap px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px"
+                style={{
+                  background: "transparent",
+                  border: `1px solid ${t.cLineStrong}`,
+                  color: t.cInk,
+                }}
+              >
+                Surprise me
+              </button>
+              <button
+                onClick={() => runCleanup()}
+                disabled={cleaning || !canBabble || recording}
+                className="font-bric flex items-center justify-center gap-2 whitespace-nowrap px-6 py-2.5 text-[15px] font-bold transition hover:brightness-[1.08] active:translate-y-px"
+                style={{
+                  backgroundImage: BUTTON_GRADIENT,
+                  color: ON_GRADIENT,
+                  letterSpacing: "0.01em",
+                  boxShadow: "0 10px 26px -12px rgba(123,92,255,0.6)",
+                  opacity: !cleaning && (!canBabble || recording) ? 0.5 : 1,
+                  filter:
+                    !cleaning && (!canBabble || recording)
+                      ? "saturate(0.6)"
+                      : "none",
+                }}
+              >
+                {cleaning ? (
+                  <>
+                    <span
+                      className="rb-spin inline-block h-3.5 w-3.5 rounded-full border-2"
+                      style={{
+                        borderColor: "rgba(7,8,9,0.35)",
+                        borderTopColor: ON_GRADIENT,
+                      }}
+                    />
+                    {loadingWord}&hellip;
+                  </>
+                ) : (
+                  <>
+                    Babble it <span aria-hidden>&rarr;</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1675,7 +1985,7 @@ function FormatMarquee() {
     items.map((o) => (
       <span key={`${copy}-${o.id}`} className="inline-flex items-center">
         <span
-          className="font-mono-label text-[12px] uppercase tracking-[0.18em]"
+          className="font-mono-label text-[13px] uppercase tracking-[0.16em]"
           style={{ color: t.cDim }}
         >
           {o.label}
@@ -1744,7 +2054,7 @@ function SectionHead({
           {num}
         </span>
         <span
-          className="font-mono-label text-[13px] font-bold uppercase tracking-[0.14em]"
+          className="font-mono-label text-[14px] font-bold uppercase tracking-[0.12em]"
           style={{ color: t.cInk }}
         >
           {label}
@@ -1789,8 +2099,8 @@ function SectionHead({
   );
 }
 
-/** A top-level accent heading in the format picker (Just refine / Practical /
- *  Fun / Something else). */
+/** A top-level accent heading in the format picker (Practical / Fun), sitting
+ *  above the collapsible groups it contains. */
 function FormatGroup({
   t,
   heading,
@@ -1801,9 +2111,9 @@ function FormatGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <div
-        className="font-mono-label text-[11px] font-bold uppercase tracking-[0.18em]"
+        className="font-mono-label text-[12px] font-bold uppercase tracking-[0.16em]"
         style={{ color: t.accentOnPanel }}
       >
         {heading}
@@ -1813,7 +2123,63 @@ function FormatGroup({
   );
 }
 
-/** A quiet sub-heading (group label) with its content below. */
+/** A collapsible dropdown used inside sections 1 and 2: an accent label header
+ *  with a caret, revealing its children when open. Collapsed by default. The
+ *  header label is the accent violet (AA-solved on the panel in both themes) so
+ *  section 1 and section 2 read as one system (item 21). */
+function PickerGroup({
+  t,
+  label,
+  open,
+  onToggle,
+  children,
+}: {
+  t: T;
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ border: `1px solid ${open ? t.lineStrong : t.line}` }}>
+      <button
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition"
+        style={{ background: open ? t.panel2 : "transparent" }}
+      >
+        <span
+          className="font-mono-label text-[13px] font-bold uppercase tracking-[0.12em]"
+          style={{ color: t.accentOnPanel }}
+        >
+          {label}
+        </span>
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={t.accentOnPanel}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+          style={{
+            flexShrink: 0,
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 0.15s",
+          }}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && <div className="px-3 pb-3 pt-1">{children}</div>}
+    </div>
+  );
+}
+
+/** A sub-heading (family label) with its content below. Rendered in the accent
+ *  violet so sections 1 and 2 read as one system (item 21). */
 function SubGroup({
   t,
   label,
@@ -1826,8 +2192,8 @@ function SubGroup({
   return (
     <div>
       <div
-        className="font-mono-label mb-1.5 text-[10px] uppercase tracking-[0.14em]"
-        style={{ color: t.inkFaint }}
+        className="font-mono-label mb-1.5 text-[12px] font-bold uppercase tracking-[0.12em]"
+        style={{ color: t.accentOnPanel }}
       >
         {label}
       </div>
@@ -1858,7 +2224,7 @@ function FormatRow({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[14px] transition active:translate-y-px"
+      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[15px] transition active:translate-y-px"
       style={{
         // Active is marked by the violet border, wash, weight, and dot, never by
         // an accent-coloured LABEL: violet-on-panel is 4.07:1 (below the 4.5 bar
@@ -1877,29 +2243,6 @@ function FormatRow({
       )}
       {label}
     </button>
-  );
-}
-
-/** A stack axis in Section 2: a Space Mono label with its options below. */
-function Axis({
-  t,
-  label,
-  children,
-}: {
-  t: T;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div
-        className="font-mono-label text-[12px] font-bold uppercase tracking-[0.16em]"
-        style={{ color: t.ink }}
-      >
-        {label}
-      </div>
-      {children}
-    </div>
   );
 }
 
@@ -1957,10 +2300,10 @@ function Pill({
   return (
     <button
       onClick={onClick}
-      className="px-3 py-1.5 text-[13px] font-medium transition active:translate-y-px"
+      className="px-3 py-1.5 text-[15px] font-medium transition active:translate-y-px"
       style={{
         // Selection = violet ring + wash + weight, label stays ink for AA (violet
-        // on the night panel is 4.07:1, below the 4.5 bar for this 13px label).
+        // on the night panel is 4.07:1, below the 4.5 bar for this label).
         background: active ? "rgba(123,92,255,0.14)" : "transparent",
         border: `1.5px solid ${active ? t.accentOnPanel : t.lineStrong}`,
         color: t.ink,
@@ -2177,7 +2520,7 @@ function Collapsible({
         style={{ background: open ? t.panel2 : "transparent" }}
       >
         <span
-          className="font-mono-label flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-[0.14em]"
+          className="font-mono-label flex items-center gap-2.5 text-[13px] font-bold uppercase tracking-[0.12em]"
           style={{ color: t.ink }}
         >
           <span
@@ -2231,7 +2574,7 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="font-mono-label px-4 py-2 text-[11px] font-bold uppercase tracking-[0.12em] transition active:translate-y-px disabled:opacity-40"
+      className="font-mono-label px-4 py-2 text-[12px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
       style={{
         background: "transparent",
         border: `1px solid ${t.lineStrong}`,

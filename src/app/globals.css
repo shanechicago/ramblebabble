@@ -21,7 +21,11 @@
 :root,
 [data-theme="night"] {
   --canvas: #070809;
-  --chrome: rgba(7, 8, 9, 0.78);
+  /* The chrome bar (top nav + bottom bar) sits on the near-black canvas in BOTH
+     themes. Lifted well clear of the #070809 canvas so the header/footer read as
+     their own band instead of black-on-black. Nav text still uses the c* tokens
+     (cInk 17:1, cDim ~5.8:1 on this surface), so AA holds. */
+  --chrome: rgba(20, 22, 28, 0.92);
   --cInk: #eef1f3;
   --cDim: #8b929b;
   --cLine: rgba(238, 241, 243, 0.13);
@@ -46,7 +50,8 @@
      canvas (MyRambles labels, the auth eyebrow) clears 4.5 (4.60) instead of the
      0.01-under 4.49 it got on the old #0b0c0f. */
   --canvas: #070809;
-  --chrome: rgba(11, 12, 15, 0.78);
+  /* Same lifted chrome as night: the bar is on the dark canvas in Day too. */
+  --chrome: rgba(20, 22, 28, 0.92);
   --cInk: #eef1f3;
   --cDim: #8b929b;
   --cLine: rgba(238, 241, 243, 0.13);
@@ -477,6 +482,55 @@ a:hover,
      right. The base offset shifts a whole instance's starting phase. */
   animation-delay: calc(var(--rb-wave-offset, 0s) + var(--i) * 0.14s);
   will-change: transform;
+}
+
+/* ----- Racing gradient border on the ramble box -----
+   A conic gradient rotates around the border of the ramble textarea. Built with
+   a registered @property so the angle can actually animate (plain custom props
+   don't interpolate). The border is drawn by an inset ::before whose fill is
+   masked to just the 2px ring (content-box XOR border-box), so the centre stays
+   clickable. Idle laps every 3.5s; while babbling (.rb-racing-fast) it speeds to
+   1.5s. prefers-reduced-motion is handled by the universal rule below, which
+   freezes the angle at 0deg and leaves a static gradient ring. */
+@property --rb-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes rb-angle-spin {
+  to {
+    --rb-angle: 360deg;
+  }
+}
+.rb-racing {
+  position: relative;
+}
+.rb-racing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--rb-angle),
+    #7b5cff,
+    #ff4d9d,
+    #ff6f61,
+    #7b5cff
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+  animation: rb-angle-spin 3.5s linear infinite;
+}
+.rb-racing-fast::before {
+  animation-duration: 1.5s;
 }
 
 @media (prefers-reduced-motion: reduce) {
