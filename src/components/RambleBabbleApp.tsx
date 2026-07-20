@@ -160,14 +160,12 @@ export default function RambleBabbleApp({
   userEmail,
   onOpenHistory,
   onSignOut,
-  onShowWelcome,
   reopen,
 }: {
   userId: string;
   userEmail: string;
   onOpenHistory: () => void;
   onSignOut: () => void;
-  onShowWelcome: () => void;
   reopen: SavedRamble | null;
 }) {
   const [theme, setTheme] = useState<Theme>("night");
@@ -685,7 +683,7 @@ export default function RambleBabbleApp({
   const navBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
       onClick={onClick}
-      className="font-mono-label whitespace-nowrap text-[13px] font-bold uppercase tracking-[0.02em] transition"
+      className="font-mono-label whitespace-nowrap text-[12px] font-bold uppercase tracking-[0.02em] transition"
       style={{ color: active ? t.cInk : t.cDim }}
     >
       {label}
@@ -792,7 +790,7 @@ export default function RambleBabbleApp({
             {navBtn("My Rambles", false, onOpenHistory)}
             <button
               onClick={() => setOverlay("upgrade")}
-              className="font-mono-label whitespace-nowrap px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.04em] transition hover:brightness-110 active:translate-y-px"
+              className="font-mono-label whitespace-nowrap px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.04em] transition hover:brightness-110 active:translate-y-px"
               style={{
                 background: "transparent",
                 border: `1px solid ${t.cLineStrong}`,
@@ -1269,7 +1267,7 @@ export default function RambleBabbleApp({
                           <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                             <label
                               htmlFor={`rb-word-${i}`}
-                              className="font-mono-label mb-1 block text-[12px] uppercase tracking-[0.1em]"
+                              className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.1em]"
                               style={{ color: t.accentOnPanel }}
                             >
                               Word
@@ -1295,7 +1293,7 @@ export default function RambleBabbleApp({
                           <div className="min-w-0 flex-1 sm:basis-0 sm:flex-[1.4]">
                             <label
                               htmlFor={`rb-meaning-${i}`}
-                              className="font-mono-label mb-1 block text-[12px] uppercase tracking-[0.1em]"
+                              className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.1em]"
                               style={{ color: t.accentOnPanel }}
                             >
                               What it is
@@ -1345,7 +1343,7 @@ export default function RambleBabbleApp({
                     <button
                       type="button"
                       onClick={addGlossaryRow}
-                      className="font-mono-label mt-2 px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                      className="font-mono-label mt-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
                       style={{
                         background: t.panel2,
                         border: `1px solid ${t.lineStrong}`,
@@ -1446,21 +1444,36 @@ export default function RambleBabbleApp({
                       </div>
                       {showWarning ? (
                         <p
-                          className="font-mono-label text-[12px] uppercase tracking-[0.12em]"
+                          className="font-mono-label text-[11px] uppercase tracking-[0.12em]"
                           style={{ color: "#ff5a3c" }}
                         >
                           {WARNING_MESSAGE}
                         </p>
                       ) : (
                         <p
-                          className="font-mono-label text-[12px] uppercase tracking-[0.14em]"
+                          className="font-mono-label text-[11px] uppercase tracking-[0.14em]"
                           style={{ color: t.inkDim }}
                         >
-                          Listening. Stop or Cancel below.
+                          Listening. Tap stop when done.
                         </p>
                       )}
-                      {/* Stop and Cancel are pinned to the bottom of the viewport
-                          (item 8), so no control lives inside this growing box. */}
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          onClick={recorder.cancel}
+                          className="font-mono-label px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px"
+                          style={{ background: "transparent", border: `1px solid ${t.lineStrong}`, color: t.ink }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleStop}
+                          className="font-bric flex items-center gap-2.5 px-6 py-2.5 text-[14px] font-bold transition active:translate-y-px"
+                          style={{ background: ACCENT, color: ON_GRADIENT }}
+                        >
+                          <span aria-hidden style={{ display: "inline-block", height: 12, width: 12, background: ON_GRADIENT }} />
+                          Stop
+                        </button>
+                      </div>
                     </div>
                   )}
                   {transcribing && (
@@ -1542,7 +1555,7 @@ export default function RambleBabbleApp({
 
                     <div className="flex items-center gap-3">
                       <span
-                        className="font-mono-label text-[12px] uppercase tracking-[0.08em]"
+                        className="font-mono-label text-[11px] uppercase tracking-[0.08em]"
                         style={{ color: t.cDim }}
                       >
                         {words} words
@@ -1550,7 +1563,7 @@ export default function RambleBabbleApp({
                       <button
                         onClick={clearRamble}
                         disabled={!inputText}
-                        className="font-mono-label flex items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[12px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
+                        className="font-mono-label flex items-center gap-1 whitespace-nowrap px-2 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px disabled:opacity-40"
                         style={{ background: "transparent", color: t.cDim }}
                       >
                         <span aria-hidden style={{ color: "#ff6b68", fontSize: 16 }}>
@@ -1739,7 +1752,7 @@ export default function RambleBabbleApp({
                 this uses the quietest solid gray that stays legible: #747a81 =
                 4.62:1 on the #070809 canvas (both themes). Quiet, not invisible. */}
             <p
-              className="font-mono-label pt-1 text-center text-[12px] uppercase tracking-[0.1em]"
+              className="font-mono-label pt-1 text-center text-[11px] uppercase tracking-[0.1em]"
               style={{ color: "#747a81" }}
             >
               RambleBabble. Not affiliated with productivity. Probably cursed.
@@ -1754,62 +1767,6 @@ export default function RambleBabbleApp({
         className="fixed inset-x-0 bottom-0 z-40"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {/* While recording, Stop + Cancel sit pinned ABOVE the babble bar so they
-            never scroll away no matter how tall the recording box grows (item 8).
-            The babble bar stays below with Babble it disabled (item 22). */}
-        {recording && (
-          <div
-            style={{
-              background: t.chrome,
-              backdropFilter: "blur(10px)",
-              borderTop: `1px solid ${t.cLineStrong}`,
-            }}
-          >
-            <div className="mx-auto flex w-full max-w-[940px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
-              <span
-                className="font-mono-timer flex items-center gap-2 text-[16px] font-bold"
-                style={{ color: t.cInk }}
-              >
-                <span
-                  aria-hidden
-                  className="rb-blink inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ background: "#ff5a3c" }}
-                />
-                {formatTime(recorder.seconds)}
-              </span>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  onClick={recorder.cancel}
-                  className="font-mono-label whitespace-nowrap px-4 py-2.5 text-[13px] font-bold uppercase tracking-[0.08em] transition active:translate-y-px"
-                  style={{
-                    background: "transparent",
-                    border: `1px solid ${t.cLineStrong}`,
-                    color: t.cInk,
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleStop}
-                  className="font-bric flex items-center gap-2.5 whitespace-nowrap px-6 py-2.5 text-[15px] font-bold transition active:translate-y-px"
-                  style={{ background: ACCENT, color: ON_GRADIENT }}
-                >
-                  <span
-                    aria-hidden
-                    style={{
-                      display: "inline-block",
-                      height: 12,
-                      width: 12,
-                      background: ON_GRADIENT,
-                    }}
-                  />
-                  Stop
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* The babble bar: live selection summary (format + every active stack
             option, item 17) + Surprise me + Babble it. */}
         <div
@@ -1824,14 +1781,14 @@ export default function RambleBabbleApp({
               {formatName ? (
                 <span className="truncate">
                   <span
-                    className="font-mono-label text-[13px] font-bold uppercase tracking-[0.06em]"
+                    className="font-mono-label text-[12px] font-bold uppercase tracking-[0.06em]"
                     style={{ color: t.cInk }}
                   >
                     {formatName}
                   </span>
                   {activeStack.length > 0 && (
                     <span
-                      className="font-mono-label text-[12px] uppercase tracking-[0.04em]"
+                      className="font-mono-label text-[11px] uppercase tracking-[0.04em]"
                       style={{ color: t.cDim }}
                     >
                       {"  ·  " + activeStack.join("  ·  ")}
@@ -1840,7 +1797,7 @@ export default function RambleBabbleApp({
                 </span>
               ) : (
                 <span
-                  className="font-mono-label text-[13px] uppercase tracking-[0.06em]"
+                  className="font-mono-label text-[12px] uppercase tracking-[0.06em]"
                   style={{ color: t.cDim }}
                 >
                   pick a format first
@@ -1901,22 +1858,6 @@ export default function RambleBabbleApp({
         <Overlay t={t} title="Settings" onClose={() => setOverlay(null)}>
           <SettingRow t={t} label="Account">
             <span style={{ color: t.ink }}>You&rsquo;re signed in.</span>
-          </SettingRow>
-          <SettingRow t={t} label="How it works">
-            <button
-              onClick={() => {
-                setOverlay(null);
-                onShowWelcome();
-              }}
-              className="font-mono-label px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em]"
-              style={{
-                background: "transparent",
-                border: `1px solid ${t.lineStrong}`,
-                color: t.inkDim,
-              }}
-            >
-              Show the welcome
-            </button>
           </SettingRow>
           <SettingRow t={t} label="Appearance">
             <button
@@ -2003,7 +1944,7 @@ function FormatMarquee() {
     items.map((o) => (
       <span key={`${copy}-${o.id}`} className="inline-flex items-center">
         <span
-          className="font-mono-label text-[13px] uppercase tracking-[0.16em]"
+          className="font-mono-label text-[12px] uppercase tracking-[0.16em]"
           style={{ color: t.cDim }}
         >
           {o.label}
@@ -2072,7 +2013,7 @@ function SectionHead({
           {num}
         </span>
         <span
-          className="font-mono-label text-[14px] font-bold uppercase tracking-[0.12em]"
+          className="font-mono-label text-[13px] font-bold uppercase tracking-[0.12em]"
           style={{ color: t.cInk }}
         >
           {label}
@@ -2167,7 +2108,7 @@ function PickerGroup({
         style={{ background: open ? t.panel2 : "transparent" }}
       >
         <span
-          className="font-mono-label text-[13px] font-bold uppercase tracking-[0.12em]"
+          className="font-mono-label text-[12px] font-bold uppercase tracking-[0.12em]"
           style={{ color: t.accentOnPanel }}
         >
           {label}
@@ -2210,7 +2151,7 @@ function SubGroup({
   return (
     <div>
       <div
-        className="font-mono-label mb-1.5 text-[12px] font-bold uppercase tracking-[0.12em]"
+        className="font-mono-label mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em]"
         style={{ color: t.accentOnPanel }}
       >
         {label}
@@ -2242,7 +2183,7 @@ function FormatRow({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[15px] transition active:translate-y-px"
+      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[14px] transition active:translate-y-px"
       style={{
         // Active is marked by the violet border, wash, weight, and dot, never by
         // an accent-coloured LABEL: violet-on-panel is 4.07:1 (below the 4.5 bar
@@ -2318,7 +2259,7 @@ function Pill({
   return (
     <button
       onClick={onClick}
-      className="px-3 py-1.5 text-[15px] font-medium transition active:translate-y-px"
+      className="px-3 py-1.5 text-[13px] font-medium transition active:translate-y-px"
       style={{
         // Selection = violet ring + wash + weight, label stays ink for AA (violet
         // on the night panel is 4.07:1, below the 4.5 bar for this label).
@@ -2592,7 +2533,7 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="font-mono-label px-4 py-2 text-[12px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
+      className="font-mono-label px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px disabled:opacity-40"
       style={{
         background: "transparent",
         border: `1px solid ${t.lineStrong}`,
