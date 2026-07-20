@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RambleBabble layout B — left nav + controls on the ramble</title>
+<style>
+  @property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
+  :root{
+    --canvas:#0b0c10;--nav:#111219;--rail:#16181f;--card:#1b1f28;--field:#232734;
+    --line:rgba(255,255,255,.12);--line-strong:rgba(255,255,255,.20);
+    --text:#F3F4F7;--text-2:#CBD0DA;--violet:#8b7bff;--violet-lt:#cabfff;--violet-soft:rgba(139,123,255,.16);
+    --grad:linear-gradient(100deg,#7b5cff,#ff4d9d,#ff6f61);
+    --radius:14px;--mono:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--canvas);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .banner{background:var(--nav);border-bottom:1px solid var(--line-strong);text-align:center;padding:9px;font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--text)}
+  .banner b{color:var(--violet-lt)}
+  .viewport{overflow:hidden;width:100%}
+  .frame{width:1300px;transform-origin:top left}
+
+  .topnav{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--nav);border-bottom:1px solid var(--line)}
+  .brand{font-weight:800;font-size:24px;letter-spacing:.5px;display:flex;gap:9px;align-items:baseline}
+  .brand .babble{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;transform:rotate(-3deg);display:inline-block}
+  .nav-right{display:flex;align-items:center;gap:22px}
+  .nav-right a{color:var(--text-2);text-decoration:none;font-family:var(--mono);font-size:13px;letter-spacing:1px;font-weight:600}
+  .theme-toggle{display:flex;gap:2px;border:1px solid var(--line-strong);border-radius:9px;padding:4px}
+  .theme-toggle span{width:28px;height:24px;display:grid;place-items:center;border-radius:6px;color:var(--text-2);font-size:14px}
+  .theme-toggle span.on{background:var(--field);color:var(--text)}
+  .avatar{width:34px;height:34px;border-radius:8px;background:var(--violet);display:grid;place-items:center;font-weight:800;color:#0b0c10}
+
+  .shell{display:grid;grid-template-columns:238px 1fr}
+  /* LEFT NAV — like an app menu */
+  .rail{background:var(--rail);border-right:1px solid var(--line);min-height:730px;padding:18px 14px}
+  .rail .lab{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--text-2);padding:0 10px 10px}
+  .navitem{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;color:var(--text);font-size:15px;font-weight:600;cursor:pointer;margin-bottom:3px}
+  .navitem .ic{width:18px;text-align:center;color:var(--violet-lt)}
+  .navitem:hover{background:#1e222c}
+  .navitem.active{background:var(--violet-soft);color:#fff}
+  .navitem.active .ic{color:#fff}
+  .rail .spacer{height:16px}
+
+  .work{padding:20px 30px 44px}
+  .steplabel{font-family:var(--mono);font-size:15px;letter-spacing:2px;color:var(--text);font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .steplabel .num{color:var(--violet);font-size:18px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);position:relative}
+  .race{position:absolute;inset:0;border-radius:var(--radius);padding:2px;z-index:3;pointer-events:none;
+    background:conic-gradient(from var(--a),transparent 0 74%,#b9adff 85%,#ffffff 91%,#b9adff 96%,transparent 100%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+    mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;animation:spin 4.5s linear infinite}
+  @keyframes spin{to{--a:360deg}}
+
+  /* the controls toolbar, up on the ramble box next to Record */
+  .toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:14px 16px 0}
+  .record{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--violet);color:var(--violet-lt);border-radius:9px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+  .record .dot{width:9px;height:9px;border-radius:50%;background:var(--violet)}
+  .fld{display:inline-flex;align-items:center;gap:7px;background:var(--field);border:1px solid rgba(139,123,255,.45);color:var(--text);border-radius:9px;padding:8px 11px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .fld .chev{color:var(--violet-lt)}
+  .fld b{color:var(--violet-lt);font-weight:700}
+  .tb-right{margin-left:auto;display:flex;align-items:center;gap:14px;color:var(--text-2);font-family:var(--mono);font-size:12.5px;letter-spacing:1px}
+  .act{background:none;border:none;color:var(--violet-lt);font-family:var(--mono);font-size:12.5px;letter-spacing:1.2px;font-weight:700;text-transform:uppercase;cursor:pointer;padding:4px 1px;border-bottom:1px dotted rgba(139,123,255,.55)}
+  .act:hover{color:#fff;border-bottom-color:#fff}
+
+  .ram-body{padding:14px 16px 6px;min-height:150px;font-size:16px;color:var(--text-2)}
+  .ram-foot{display:flex;align-items:center;gap:18px;padding:10px 16px 15px}
+  .btn-babble{background:var(--grad);border:none;color:#0b0c10;border-radius:10px;padding:9px 20px;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 4px 16px rgba(255,77,157,.22)}
+
+  .output{margin-top:28px}
+  .out-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .out-head .steplabel{margin-bottom:0}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{background:var(--violet-soft);border:1px solid rgba(139,123,255,.4);color:#d3ccff;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}
+  .out-actions{margin-left:auto;display:flex;gap:16px}
+  .outbox{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px 20px}
+  .outbox p{font-size:16px;color:var(--text);line-height:1.65}
+</style>
+</head>
+<body>
+<div class="banner">LAYOUT <b>B</b> — left nav like an app, setup controls on the ramble, babble shows what it is</div>
+<div class="viewport">
+ <div class="frame">
+  <nav class="topnav">
+    <div class="brand">Ramble <span class="babble">BABBLE</span></div>
+    <div class="nav-right"><a href="#">UPGRADE</a>
+      <div class="theme-toggle"><span>☀</span><span class="on">☾</span></div>
+      <div class="avatar">G</div>
+    </div>
+  </nav>
+  <div class="shell">
+    <aside class="rail">
+      <div class="lab">RAMBLEBABBLE</div>
+      <div class="navitem active"><span class="ic">✎</span> New ramble</div>
+      <div class="navitem"><span class="ic">↺</span> Clear ramble</div>
+      <div class="navitem"><span class="ic">▤</span> My rambles</div>
+      <div class="spacer"></div>
+      <div class="navitem"><span class="ic">⚙</span> Settings</div>
+      <div class="navitem"><span class="ic">?</span> How-tos</div>
+    </aside>
+    <main class="work">
+      <div class="steplabel"><span class="num">◆</span>YOUR RAMBLE</div>
+      <div class="card">
+        <div class="race"></div>
+        <div class="toolbar">
+          <button class="record"><span class="dot"></span> Record</button>
+          <span class="fld">Format: <b>Text message</b> <span class="chev">▾</span></span>
+          <span class="fld">Tone <span class="chev">▾</span></span>
+          <span class="fld">Character <span class="chev">▾</span></span>
+          <span class="fld">Accent <span class="chev">▾</span></span>
+          <span class="fld">Language <span class="chev">▾</span></span>
+          <div class="tb-right"><span>0 WORDS</span><button class="act">✕ Clear</button></div>
+        </div>
+        <div class="ram-body">Ramble it here. The voice memos, the half-baked ideas, the texts you shouldn't send yet.</div>
+        <div class="ram-foot">
+          <button class="btn-babble">Babble it →</button>
+          <button class="act">Surprise me</button>
+        </div>
+      </div>
+      <div class="output">
+        <div class="out-head">
+          <div class="steplabel"><span class="num">◆</span>YOUR BABBLE</div>
+          <div class="chips"><span class="chip">Text message</span><span class="chip">Confident</span><span class="chip">Used-car salesman</span><span class="chip">Southern</span></div>
+          <div class="out-actions"><button class="act">Copy</button><button class="act">Regenerate</button><button class="act">New ramble</button></div>
+        </div>
+        <div class="outbox">
+          <p>Well howdy, friend. Your menu's on the left like a real app, all your setup sits right on top of the ramble where your hands already are, and up top of your babble you can see exactly what it was built from. One screen, no hunting.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+ </div>
+</div>
+<script>
+  function fit(){const f=document.querySelector('.frame');const s=Math.min(1,(window.innerWidth)/1300);f.style.transform='scale('+s+')';document.querySelector('.viewport').style.height=(f.scrollHeight*s)+'px';}
+  window.addEventListener('load',fit);window.addEventListener('resize',fit);setTimeout(fit,60);
+</script>
+</body>
+</html>
