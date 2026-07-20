@@ -11,71 +11,86 @@
    These are consumed as inline CSS variables by the components (t.token) and as
    Tailwind utilities via the @theme block below. */
 :root {
-  /* Shared, not theme-dependent: the Option C violet FILL, the violet-soft wash,
-     the solid-violet button system, and the ONE brand gradient (blueprint
-     --grad, the only place pink/coral appear). */
+  /* Shared, not theme-dependent: the violet FILL, the violet-soft wash, the
+     solid-violet button system, and the ONE brand gradient. The gradient is
+     the only place pink/coral appear, and it is reserved for exactly two
+     things: the "BABBLE" wordmark and the "Babble it" button. */
   --accent: #8b7bff;
   --violet: #8b7bff;
   --violetSoft: rgba(139, 123, 255, 0.14);
   --grad: linear-gradient(100deg, #7b5cff, #ff4d9d, #ff6f61);
   --accent-grad: linear-gradient(100deg, #7b5cff, #ff4d9d, #ff6f61);
   --on-grad: #0b0c10;
-  /* Solid-violet button system (Option C): violet fill, near-black label,
-     lighter violet on hover. */
+  /* Solid-violet fill (step badges, Stop, overlay controls): violet fill,
+     near-black label, lighter violet on hover. */
   --btnBg: #8b7bff;
   --btnColor: #0b0c10;
   --btnHover: #9d8fff;
 }
 :root,
 [data-theme="night"] {
-  /* NIGHT = the blueprint Option C palette verbatim. */
-  --canvas: #0b0c10;
-  /* The sticky top nav sits on the near-black canvas (blueprint nav bg). */
-  --chrome: rgba(13, 14, 18, 0.96);
-  --cInk: #f3f4f7; /* nav/canvas ink — 17.8:1 on canvas */
-  --cDim: #cbd0da; /* nav/canvas dim — 12.6:1 on canvas */
-  --cLine: rgba(255, 255, 255, 0.1);
+  /* NIGHT elevation ladder - every surface is a visibly distinct layer, from
+     the darkest canvas up to the lightest dropdown field. No black-on-black. */
+  --canvas: #0b0c10; /* work-area canvas, behind the cards */
+  --chrome: #111219; /* sticky top nav (1px --edge bottom border) */
+  --rail: #16181f; /* left sidebar column - clearly lighter than the canvas */
+  --panel: #1b1f28; /* cards: ramble box + output box, lifted off the canvas */
+  --panel2: #262b37; /* inner raised surfaces: inputs, mouth, plan cards */
+  --panel3: #232734; /* pressed segment (theme toggle) */
+  --field: #232734; /* dropdown fields (violet border + violet chevron) */
+  --edge: rgba(255, 255, 255, 0.14); /* ladder hairline: nav / rail / card */
+  --fieldBorder: rgba(139, 123, 255, 0.72); /* violet dropdown outline - 3.0:1 on the field */
+  /* Canvas scale - light text on the dark canvas, unchanged in both themes
+     (canvas stays dark), shared with the single-theme Welcome/Auth screens. */
+  --cInk: #f3f4f7; /* 17.8:1 on canvas */
+  --cDim: #cbd0da; /* 12.6:1 on canvas */
+  --cLine: rgba(255, 255, 255, 0.14);
   --cLineStrong: rgba(255, 255, 255, 0.18);
-  --panel: #15171e;
-  --panel2: #1c1f28;
-  --panel3: #232734;
-  --ink: #f3f4f7; /* 16.3:1 on panel */
-  --inkDim: #cbd0da; /* 11.6:1 on panel, 8.2:1 on panel2 */
-  --inkFaint: #a7adb6; /* placeholders — 7.9:1 on panel, 7.3:1 on panel2 */
+  /* Panel scale - text on the raised surfaces (nav, rail, cards, fields). Light
+     in Night, near-ink in Day, so it flips with the theme. */
+  --ink: #f3f4f7; /* >=12.8:1 on every night surface */
+  --inkDim: #cbd0da; /* >=9.1:1 on every night surface */
+  --inkFaint: #b4bac3; /* placeholders - 7.25:1 on the lightest inner surface */
   --line: rgba(255, 255, 255, 0.1);
   --lineStrong: rgba(255, 255, 255, 0.18);
-  /* Accent as TEXT on panels: a lighter violet that clears 7:1 (8.9:1 on panel,
-     8.2:1 on panel2). The solid violet #8b7bff is reserved for fills/borders. */
-  --accentOnPanel: #b9adff;
-  --accentOnCanvas: #8b7bff; /* ◆ marks + numbers (large) — 5.9:1 on canvas */
+  /* Violet as TEXT: accentOnPanel = group labels + dropdown chevrons;
+     linkViolet = the dotted-underline word links + the Record outline label. */
+  --accentOnPanel: #b9adff; /* >=7.1:1 on panel/panel2/field */
+  --accentOnCanvas: #8b7bff; /* ◆ marks + numbers (large) - 5.9:1 on canvas */
+  --linkViolet: #cabfff; /* clickable words - >=9.7:1 on the cards/rail */
+  --recordBorder: #8b7bff; /* Record outline - 5.0:1 on the card */
   /* Active-selection chips: violet-soft fill, light-violet label (9.5:1). */
   --chipBg: rgba(139, 123, 255, 0.16);
   --chipText: #d3ccff;
   --chipBorder: rgba(139, 123, 255, 0.45);
 }
 [data-theme="day"] {
-  /* DAY keeps the dark canvas + dark nav (so the wordmark, ◆ section marks and
-     nav text stay legible and in place) and flips the PANELS to light with
-     near-ink text. This is the app's established Day/Night model. */
-  --canvas: #0b0c10;
-  --chrome: rgba(13, 14, 18, 0.96);
-  --cInk: #f3f4f7;
+  /* DAY mirrors the ladder with LIGHT surfaces on the SAME near-black canvas and
+     near-ink text. Nav, rail, cards and dropdowns are each a distinct light
+     shade (visibly separated, never one shade off); the canvas stays dark. */
+  --canvas: #0b0c10; /* canvas stays dark in both themes */
+  --chrome: #e6e9ef; /* nav - light */
+  --rail: #d7dbe4; /* sidebar - a step darker than the nav */
+  --panel: #eef1f5; /* cards - brightest, float on the dark canvas */
+  --panel2: #dfe3ea; /* inner wells: inputs, mouth, plan cards */
+  --panel3: #cdd3dd; /* pressed segment (theme toggle) */
+  --field: #f6f8fb; /* dropdown fields - brightest, with a violet border */
+  --edge: rgba(19, 22, 26, 0.16); /* ladder hairline on light surfaces */
+  --fieldBorder: rgba(93, 63, 196, 0.7); /* violet dropdown outline - 3.5:1 */
+  --cInk: #f3f4f7; /* canvas text stays light (canvas is dark) */
   --cDim: #cbd0da;
-  --cLine: rgba(255, 255, 255, 0.1);
+  --cLine: rgba(255, 255, 255, 0.14);
   --cLineStrong: rgba(255, 255, 255, 0.18);
-  --panel: #e7eaef;
-  --panel2: #dce0e7;
-  --panel3: #cfd4dd;
-  --ink: #14171d; /* 14.9:1 on panel */
-  --inkDim: #3e434b; /* 8.3:1 on panel, 7.5:1 on panel2 */
-  --inkFaint: #40454e; /* placeholders — 8.0:1 on panel, 7.3:1 on panel2 */
+  --ink: #14171d; /* near-ink - >=12.9:1 on every day surface */
+  --inkDim: #3e434b; /* >=7.1:1 on every day surface */
+  --inkFaint: #40454e; /* placeholders - >=7.4:1 */
   --line: rgba(19, 22, 26, 0.14);
   --lineStrong: rgba(19, 22, 26, 0.3);
-  /* Deep violet accent-as-text on the light day panel: clears 7:1 for the small
-     picker/group labels (8.6:1 on panel, 7.8:1 on panel2), and the 3:1 UI bar
-     for active borders/dots. */
-  --accentOnPanel: #47279a;
+  /* Deep violet accent-as-text on the light day surfaces. */
+  --accentOnPanel: #47279a; /* >=8.0:1 on day surfaces */
   --accentOnCanvas: #8b7bff;
+  --linkViolet: #3d2a8f; /* clickable words - >=7.8:1 on the light cards/rail */
+  --recordBorder: #6b4fd6; /* Record outline - 5.0:1 on the card */
   --chipBg: #e4e0fb;
   --chipText: #3d2a8f; /* 8.5:1 on the day chip fill */
   --chipBorder: #b9adf0;
@@ -94,6 +109,9 @@
   --color-panel: var(--panel);
   --color-panel-2: var(--panel2);
   --color-panel-3: var(--panel3);
+  --color-rail: var(--rail);
+  --color-field: var(--field);
+  --color-edge: var(--edge);
   --color-violet: var(--violet);
   --color-ink: var(--ink);
   --color-ink-dim: var(--inkDim);
@@ -145,11 +163,17 @@ body {
   color: #0b0c10;
 }
 
-/* ----- Solid-violet button system (Option C) -----
-   Every secondary control (Record, Surprise Me, Copy, Regenerate, New Ramble,
-   Clear, Clear Options, Stop, picker triggers) wears a solid violet fill with a
-   near-black label, hover to a lighter violet. The ONE gradient (rb-grad-btn)
-   is reserved for the "Babble it" primary and the wordmark. */
+/* ----- Button system -----
+   Three tiers, so nothing is dark-on-dark and only ONE control shouts:
+   1. rb-grad-btn - the brand gradient, reserved for "Babble it" (and the
+      "BABBLE" wordmark). The single loudest control.
+   2. rb-violet-btn - a solid violet fill (near-black label) for Stop and the
+      overlay/settings controls.
+   3. The word-links (Surprise Me, Copy, Regenerate, New Ramble, Clear, Clear
+      Options) are bright-violet mono words with a dotted underline, and Record
+      is a thin violet-outlined control. Both are styled inline in the
+      component from --linkViolet / --recordBorder. Dropdown fields use --field
+      with a --fieldBorder violet outline and a violet chevron. */
 .rb-violet-btn {
   background: var(--btnBg);
   color: var(--btnColor);
@@ -169,15 +193,16 @@ body {
 
 /* ----- App-shell sticky sidebar (blueprint .rail) -----
    Below 768px the rail stacks on top of the work frame (static). From 768px up
-   it sticks under the top nav and fills the viewport height so the ACTIVE block
-   (margin-top:auto) sits at the bottom. --rb-nav carries the measured nav
-   height from the component. */
+   it is its OWN sticky column: it sticks under the top nav and keeps its own
+   scroll context, so it stays put while the work frame scrolls independently.
+   It sizes to its content (no forced viewport-fill), so the ACTIVE block sits
+   right below the options with no large dead gap. --rb-nav carries the measured
+   nav height from the component. */
 @media (min-width: 768px) {
   .rb-rail {
     position: sticky;
     top: var(--rb-nav, 64px);
     align-self: start;
-    min-height: calc(100dvh - var(--rb-nav, 64px));
   }
 }
 

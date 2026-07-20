@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRecorder } from "./useRecorder";
+import { BabbleWave } from "./BabbleText";
 import { getSupabase } from "@/lib/supabase/client";
 import type { SavedRamble } from "./MyRambles";
 import {
@@ -29,11 +30,14 @@ import {
 import type { GlossaryEntry } from "@/lib/glossary";
 
 // The whole workspace runs on the ONE theme system in globals.css (data-theme on
-// <html>). The palette is the blueprint's Option C: NIGHT is the blueprint
-// verbatim, DAY is a light-panel derivation, both solved for contrast. Every
-// `t.token` below is a CSS variable, so switching the theme flips data-theme,
-// not this map. Solid violet is the fill for buttons/pickers; the ONE gradient
-// (t.grad) is reserved for the "Babble it" primary and the "BABBLE" wordmark.
+// <html>). The palette is an elevation ladder: every surface (canvas, nav, rail,
+// card, dropdown field) is a visibly distinct layer. NIGHT is the dark ladder;
+// DAY mirrors it with light surfaces on the same dark canvas, both solved for
+// >=7:1 text. Every `t.token` below is a CSS variable, so switching the theme
+// flips data-theme, not this map. Dropdown fields are recessed --field surfaces
+// with a violet outline; the quiet verbs are --linkViolet word-links and Record
+// is a violet outline; the ONE gradient (t.grad) is reserved for the "Babble it"
+// primary and the "BABBLE" wordmark.
 
 // The signature reveal: a full-length block of noise that resolves left to
 // right into the real text. Straight from the design prototype.
@@ -111,6 +115,10 @@ type Theme = "night" | "day";
 const t = {
   canvas: "var(--canvas)",
   chrome: "var(--chrome)",
+  rail: "var(--rail)",
+  field: "var(--field)",
+  edge: "var(--edge)",
+  fieldBorder: "var(--fieldBorder)",
   cInk: "var(--cInk)",
   cDim: "var(--cDim)",
   cLine: "var(--cLine)",
@@ -127,6 +135,8 @@ const t = {
   accentOnCanvas: "var(--accentOnCanvas)",
   violet: "var(--violet)",
   violetSoft: "var(--violetSoft)",
+  linkViolet: "var(--linkViolet)",
+  recordBorder: "var(--recordBorder)",
   grad: "var(--grad)",
   btnBg: "var(--btnBg)",
   btnColor: "var(--btnColor)",
@@ -360,8 +370,19 @@ export default function RambleBabbleApp({
     fitInput();
   }, [inputText, fitInput]);
   useEffect(() => {
-    window.addEventListener("resize", fitInput);
-    return () => window.removeEventListener("resize", fitInput);
+    // Drag-resizing fires a burst of resize events; running fitInput on each one
+    // can catch the box mid-reflow and inflate it. Debounce to one measurement
+    // per animation frame, after the browser has settled the new layout.
+    let raf = 0;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fitInput);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, [fitInput]);
 
   // Land at the very top on mount so the user always starts at the nav +
@@ -857,7 +878,7 @@ export default function RambleBabbleApp({
         style={{
           background: t.chrome,
           backdropFilter: "blur(10px)",
-          borderBottom: `1px solid ${t.cLine}`,
+          borderBottom: `1px solid ${t.edge}`,
         }}
       >
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3.5 sm:px-7">
@@ -876,7 +897,7 @@ export default function RambleBabbleApp({
             {/* Day / Night switch. */}
             <div
               className="flex items-center overflow-hidden rounded-[9px]"
-              style={{ border: `1px solid ${t.cLineStrong}` }}
+              style={{ border: `1px solid ${t.lineStrong}` }}
             >
               <button
                 onClick={() => setTheme("day")}
@@ -885,7 +906,7 @@ export default function RambleBabbleApp({
                 className="flex h-7 w-9 items-center justify-center transition"
                 style={{
                   background: theme === "day" ? t.panel3 : "transparent",
-                  color: theme === "day" ? t.cInk : t.cDim,
+                  color: theme === "day" ? t.ink : t.inkDim,
                 }}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -899,8 +920,8 @@ export default function RambleBabbleApp({
                 className="flex h-7 w-9 items-center justify-center transition"
                 style={{
                   background: theme === "night" ? t.panel3 : "transparent",
-                  color: theme === "night" ? t.cInk : t.cDim,
-                  borderLeft: `1px solid ${t.cLineStrong}`,
+                  color: theme === "night" ? t.ink : t.inkDim,
+                  borderLeft: `1px solid ${t.lineStrong}`,
                 }}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -992,15 +1013,25 @@ export default function RambleBabbleApp({
       >
         {/* ---------- SIDEBAR (blueprint .rail) ---------- */}
         <aside
-          className="rb-rail flex flex-col gap-5 border-b border-c-line px-5 py-6 sm:px-6 md:border-b-0 md:border-r"
-          style={{ "--rb-nav": `${headerH}px` } as React.CSSProperties}
+          className="rb-rail flex flex-col gap-5 border-b border-edge px-5 py-6 sm:px-6 md:border-b-0 md:border-r"
+          style={
+            { "--rb-nav": `${headerH}px`, background: t.rail } as React.CSSProperties
+          }
         >
-          <h2
-            className="font-mono-label text-[13px] font-bold uppercase tracking-[0.2em]"
-            style={{ color: t.cDim }}
-          >
-            Set it up
-          </h2>
+          <div className="flex flex-col gap-2">
+            <h2
+              className="font-mono-label text-[13px] font-bold uppercase tracking-[0.2em]"
+              style={{ color: t.inkDim }}
+            >
+              Set it up
+            </h2>
+            <LinkWord
+              onClick={handleClearOptions}
+              className="self-start text-[12px] tracking-[0.06em]"
+            >
+              <span aria-hidden>&#10005;</span> Clear options (keeps your ramble)
+            </LinkWord>
+          </div>
 
           {/* STEP 1 — FORMAT */}
           <div className="flex flex-col gap-2.5">
@@ -1091,7 +1122,7 @@ export default function RambleBabbleApp({
               />
             ) : (
               formatHint && (
-                <p className="text-[13px] leading-[1.5]" style={{ color: t.cDim }}>
+                <p className="text-[13px] leading-[1.5]" style={{ color: t.inkDim }}>
                   {formatHint}
                 </p>
               )
@@ -1201,7 +1232,6 @@ export default function RambleBabbleApp({
             <div className="mt-0.5 flex flex-col gap-2">
               <div className="relative">
                 <PickerTrigger
-                  variant="quiet"
                   display={
                     targetLanguage ? `Language: ${targetLanguage}` : "Language"
                   }
@@ -1238,7 +1268,6 @@ export default function RambleBabbleApp({
 
               <div className="relative">
                 <PickerTrigger
-                  variant="quiet"
                   display={
                     glossaryIsEmpty ? "Personal Glossary" : "Glossary: on"
                   }
@@ -1356,7 +1385,6 @@ export default function RambleBabbleApp({
 
               <div className="relative">
                 <PickerTrigger
-                  variant="quiet"
                   display={cleanProfanity ? "Profanity: cleaned" : "Profanity"}
                   muted={!cleanProfanity}
                   open={openPicker === "profanity"}
@@ -1386,23 +1414,18 @@ export default function RambleBabbleApp({
                 )}
               </div>
             </div>
-
-            <SolidBtn
-              onClick={handleClearOptions}
-              className="font-mono-label mt-1 w-full px-3 py-2.5 text-[12px] uppercase tracking-[0.08em]"
-            >
-              <span aria-hidden>&#10005;</span> Clear options (keeps your ramble)
-            </SolidBtn>
           </div>
 
-          {/* ACTIVE selections + New Ramble, pinned to the bottom on desktop. */}
+          {/* ACTIVE selections. Sits just below the options (no big dead gap),
+              toward the bottom of the rail. New Ramble lives only in the output
+              box now, so it is not repeated here. */}
           <div
-            className="mt-2 flex flex-col gap-3 pt-4 md:mt-auto"
-            style={{ borderTop: `1px solid ${t.cLine}` }}
+            className="mt-4 flex flex-col gap-3 pt-4"
+            style={{ borderTop: `1px solid ${t.line}` }}
           >
             <span
               className="font-mono-label text-[12px] uppercase tracking-[0.18em]"
-              style={{ color: t.cDim }}
+              style={{ color: t.inkDim }}
             >
               Active
             </span>
@@ -1413,16 +1436,10 @@ export default function RambleBabbleApp({
                 ))}
               </div>
             ) : (
-              <span className="text-[13px]" style={{ color: t.cDim }}>
+              <span className="text-[13px]" style={{ color: t.inkDim }}>
                 Nothing stacked yet.
               </span>
             )}
-            <SolidBtn
-              onClick={handleNewRamble}
-              className="font-mono-label mt-1 w-full px-3 py-2.5 text-[13px] uppercase tracking-[0.08em]"
-            >
-              <span aria-hidden>&#8635;</span> New ramble
-            </SolidBtn>
           </div>
         </aside>
 
@@ -1437,7 +1454,7 @@ export default function RambleBabbleApp({
             className={`relative rb-racing${cleaning ? " rb-racing-fast" : ""}`}
             style={{
               background: t.panel,
-              border: `1px solid ${t.lineStrong}`,
+              border: `1px solid ${t.edge}`,
               borderRadius: 14,
             }}
           >
@@ -1561,7 +1578,16 @@ export default function RambleBabbleApp({
               /* --- IDLE: record / textarea / babble --- */
               <div className="relative" style={{ zIndex: 1 }}>
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-5">
-                  <SolidBtn onClick={handleStart} className="px-5 py-2.5 text-[15px]">
+                  <button
+                    type="button"
+                    onClick={handleStart}
+                    className="inline-flex items-center justify-center gap-2 rounded-[10px] px-5 py-2.5 text-[15px] font-bold transition active:translate-y-px"
+                    style={{
+                      background: "transparent",
+                      border: `1px solid ${t.recordBorder}`,
+                      color: t.linkViolet,
+                    }}
+                  >
                     <span
                       aria-hidden
                       style={{
@@ -1569,11 +1595,11 @@ export default function RambleBabbleApp({
                         height: 11,
                         width: 11,
                         borderRadius: 999,
-                        background: t.btnColor,
+                        background: t.linkViolet,
                       }}
                     />
                     Record
-                  </SolidBtn>
+                  </button>
                   <div className="flex items-center gap-2.5">
                     <span
                       className="font-mono-label text-[12px] uppercase tracking-[0.08em]"
@@ -1581,13 +1607,13 @@ export default function RambleBabbleApp({
                     >
                       {words} words
                     </span>
-                    <SolidBtn
+                    <LinkWord
                       onClick={clearRamble}
                       disabled={!inputText}
-                      className="font-mono-label px-3 py-2 text-[12px] uppercase tracking-[0.06em]"
+                      className="text-[12px] tracking-[0.06em]"
                     >
                       <span aria-hidden>&#10005;</span> Clear
-                    </SolidBtn>
+                    </LinkWord>
                   </div>
                 </div>
 
@@ -1642,12 +1668,12 @@ export default function RambleBabbleApp({
                       </>
                     )}
                   </button>
-                  <SolidBtn
+                  <LinkWord
                     onClick={surprise}
-                    className="font-mono-label px-5 py-3 text-[13px] uppercase tracking-[0.08em]"
+                    className="text-[13px] tracking-[0.08em]"
                   >
                     Surprise me
-                  </SolidBtn>
+                  </LinkWord>
                 </div>
               </div>
             )}
@@ -1663,34 +1689,34 @@ export default function RambleBabbleApp({
           <section ref={goodsRef} className="mt-8">
             <div
               className="flex min-h-[300px] flex-col rounded-[14px] p-5 sm:p-6"
-              style={{ background: t.panel, border: `1px solid ${t.lineStrong}` }}
+              style={{ background: t.panel, border: `1px solid ${t.edge}` }}
             >
               <div
                 className="mb-4 flex flex-wrap items-center justify-between gap-3 pb-4"
                 style={{ borderBottom: `1px solid ${t.line}` }}
               >
-                <StepMark>Your babble</StepMark>
-                <div className="flex flex-wrap items-center gap-2">
-                  <SolidBtn
+                <StepMark onPanel>Your babble</StepMark>
+                <div className="flex flex-wrap items-center gap-4">
+                  <LinkWord
                     onClick={handleCopy}
                     disabled={!cleaned}
-                    className="font-mono-label px-4 py-2 text-[12px] uppercase tracking-[0.08em]"
+                    className="text-[12px] tracking-[0.08em]"
                   >
                     {copyLabel}
-                  </SolidBtn>
-                  <SolidBtn
+                  </LinkWord>
+                  <LinkWord
                     onClick={() => runCleanup("again")}
                     disabled={cleaning || !hasResult}
-                    className="font-mono-label px-4 py-2 text-[12px] uppercase tracking-[0.08em]"
+                    className="text-[12px] tracking-[0.08em]"
                   >
                     Regenerate
-                  </SolidBtn>
-                  <SolidBtn
+                  </LinkWord>
+                  <LinkWord
                     onClick={handleNewRamble}
-                    className="font-mono-label px-4 py-2 text-[12px] uppercase tracking-[0.08em]"
+                    className="text-[12px] tracking-[0.08em]"
                   >
                     New ramble
-                  </SolidBtn>
+                  </LinkWord>
                 </div>
               </div>
 
@@ -1917,32 +1943,20 @@ export default function RambleBabbleApp({
   );
 }
 
-/** The wordmark: "Ramble" in ink, "BABBLE" in the brand gradient, tilted -3deg,
- *  static (matching the blueprint). The gradient is one of only two places it
- *  appears in the whole workspace (the other is "Babble it"). */
+/** The wordmark: "Ramble" in ink, then the "BABBLE" travelling wave (the locked
+ *  per-letter "snapping bedsheet" animation, straight from BabbleWave). The
+ *  brand gradient rides the wave here and appears in only one other place in the
+ *  whole workspace: the "Babble it" button. */
 function Wordmark() {
   return (
     <div className="flex items-baseline gap-2">
       <span
         className="font-bric text-[20px] font-extrabold sm:text-[26px]"
-        style={{ color: t.cInk, letterSpacing: "-0.01em" }}
+        style={{ color: t.ink, letterSpacing: "-0.01em" }}
       >
         Ramble
       </span>
-      <span
-        className="font-bric text-[20px] font-extrabold sm:text-[26px]"
-        style={{
-          backgroundImage: t.grad,
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
-          transform: "rotate(-3deg)",
-          display: "inline-block",
-          letterSpacing: "0.01em",
-        }}
-      >
-        BABBLE
-      </span>
+      <BabbleWave className="text-[20px] font-extrabold sm:text-[26px]" />
     </div>
   );
 }
@@ -1965,7 +1979,7 @@ function NavLink({
       className={`font-mono-label text-[12px] font-bold uppercase tracking-[0.06em] transition ${
         nowrap ? "whitespace-nowrap tracking-[0.02em]" : ""
       }`}
-      style={{ color: active ? t.cInk : t.cDim }}
+      style={{ color: active ? t.ink : t.inkDim }}
     >
       {label}
     </button>
@@ -2000,32 +2014,57 @@ function StepLabel({
       </span>
       <span
         className="font-mono-label text-[15px] font-bold uppercase tracking-[0.1em]"
-        style={{ color: t.cInk }}
+        style={{ color: t.ink }}
       >
         {label}
       </span>
       {optional && (
         <span
-          className="font-mono-label text-[12px] normal-case"
-          style={{ color: t.cDim }}
+          tabIndex={0}
+          role="note"
+          aria-label="Optional. Stack a tone, character, or accent on top."
+          title="Optional. Stack a tone, character, or accent on top."
+          className="font-mono-label inline-grid place-items-center rounded-full text-[11px] font-bold"
+          style={{
+            width: 18,
+            height: 18,
+            color: t.accentOnPanel,
+            border: `1px solid ${t.fieldBorder}`,
+            cursor: "help",
+          }}
         >
-          (optional)
+          ?
         </span>
       )}
     </div>
   );
 }
 
-/** A step marker in the work frame: a violet ◆ + a bright mono label. */
-function StepMark({ children }: { children: React.ReactNode }) {
+/** A step marker: a violet ◆ + a bright mono label. Defaults to the canvas scale
+ *  (for "Your ramble", which sits on the dark canvas in both themes). Pass
+ *  onPanel for labels that sit inside a card (e.g. "Your babble"), so the ◆ and
+ *  the label use the panel scale and stay legible on the light Day card. */
+function StepMark({
+  children,
+  onPanel,
+}: {
+  children: React.ReactNode;
+  onPanel?: boolean;
+}) {
   return (
     <div className="flex items-center gap-2.5">
-      <span aria-hidden style={{ color: t.accentOnCanvas, fontSize: 18 }}>
+      <span
+        aria-hidden
+        style={{
+          color: onPanel ? t.accentOnPanel : t.accentOnCanvas,
+          fontSize: 18,
+        }}
+      >
         &#9670;
       </span>
       <span
         className="font-mono-label text-[13px] font-bold uppercase tracking-[0.16em]"
-        style={{ color: t.cInk }}
+        style={{ color: onPanel ? t.ink : t.cInk }}
       >
         {children}
       </span>
@@ -2033,9 +2072,44 @@ function StepMark({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** A solid-violet secondary button (Option C). Near-black label, lighter violet
- *  on hover (handled by the rb-violet-btn class). Sizing/case comes from the
- *  caller's className. */
+/** A bright-violet word-link (mono, dotted underline). Not a filled button: the
+ *  quiet action verbs (Surprise Me, Copy, Regenerate, New Ramble, Clear, Clear
+ *  Options) render as clickable words in --linkViolet, which clears 7:1 on both
+ *  the cards and the rail in either theme. */
+function LinkWord({
+  children,
+  onClick,
+  disabled,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`font-mono-label inline-flex items-center gap-1.5 bg-transparent font-bold uppercase transition active:translate-y-px ${className}`}
+      style={{
+        color: t.linkViolet,
+        textDecoration: "underline dotted",
+        textDecorationThickness: "1px",
+        textUnderlineOffset: "3px",
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** A solid-violet secondary button. Near-black label, lighter violet on hover
+ *  (handled by the rb-violet-btn class). Sizing/case comes from the caller's
+ *  className. Used for Stop and the overlay/settings controls. */
 function SolidBtn({
   children,
   onClick,
@@ -2066,47 +2140,39 @@ function SolidBtn({
   );
 }
 
-/** A sidebar picker trigger. "violet" = a solid violet control (the primary
- *  axes); "quiet" = a bordered panel control (the secondary axes). Shows the
- *  current selection and a chevron that flips when open. */
+/** A sidebar dropdown field: the recessed violet-tinted field (--field) with a
+ *  violet outline and a violet chevron that flips when open. Shows the current
+ *  selection; muted (no selection) drops the label to inkDim, which still clears
+ *  7:1 on the field in both themes. */
 function PickerTrigger({
   display,
   muted,
   open,
   onToggle,
-  variant = "violet",
 }: {
   display: string;
   muted?: boolean;
   open: boolean;
   onToggle: () => void;
-  variant?: "violet" | "quiet";
 }) {
-  const violet = variant === "violet";
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      className={`flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-2.5 text-left text-[14px] font-semibold transition active:translate-y-px ${
-        violet ? "rb-violet-btn" : ""
-      }`}
-      style={
-        violet
-          ? undefined
-          : {
-              background: t.panel2,
-              border: `1px solid ${t.lineStrong}`,
-              color: muted ? t.inkDim : t.ink,
-            }
-      }
+      className="flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-2.5 text-left text-[14px] font-semibold transition active:translate-y-px"
+      style={{
+        background: t.field,
+        border: `1px solid ${t.fieldBorder}`,
+        color: muted ? t.inkDim : t.ink,
+      }}
     >
       <span className="truncate">{display}</span>
       <span
         aria-hidden
         className="shrink-0 text-[12px] transition-transform"
         style={{
-          color: violet ? t.btnColor : t.inkDim,
+          color: t.accentOnPanel,
           transform: open ? "rotate(180deg)" : "none",
         }}
       >

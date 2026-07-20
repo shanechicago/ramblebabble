@@ -3,17 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RambleBabble — Option C, solid violet buttons</title>
+<title>RambleBabble - elevation ladder, violet controls</title>
 <style>
   @property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
   :root{
-    --canvas:#0b0c10;--panel:#15171e;--panel-2:#1c1f28;--panel-3:#232734;
+    /* NIGHT elevation ladder - every surface a visibly distinct layer. */
+    --canvas:#0b0c10;--chrome:#111219;--rail:#16181f;--panel:#1b1f28;--panel-2:#262b37;--panel-3:#232734;--field:#232734;
     --line:rgba(255,255,255,.10);--line-strong:rgba(255,255,255,.18);
-    --text:#F3F4F7;--text-2:#CBD0DA;--violet:#8b7bff;--violet-soft:rgba(139,123,255,.14);
+    --edge:rgba(255,255,255,.14);--field-border:rgba(139,123,255,.72);
+    --text:#F3F4F7;--text-2:#CBD0DA;--ink-faint:#B4BAC3;--violet:#8b7bff;--violet-soft:rgba(139,123,255,.14);
+    --violet-on-panel:#b9adff;--link-violet:#cabfff;--record-border:#8b7bff;
     --grad:linear-gradient(100deg,#7b5cff,#ff4d9d,#ff6f61);
     --radius:14px;--mono:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;
     --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-    /* OPTION C — solid violet buttons */
+    /* Babble it (gradient) + step badges stay solid violet; word-links + Record outline are violet. */
     --btn-bg:#8b7bff;--btn-border:#8b7bff;--btn-color:#0b0c10;--btn-hover:#9d8fff;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -23,9 +26,20 @@
   .viewport{overflow:hidden;width:100%}
   .frame{width:1240px;transform-origin:top left}
   .zonepill{display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:1.5px;color:#0b0c10;background:var(--violet);border-radius:999px;padding:3px 10px;font-weight:700}
-  .topnav{position:relative;display:flex;align-items:center;justify-content:space-between;padding:16px 26px;background:rgba(13,14,18,.96);border-bottom:1px solid var(--line)}
+  .topnav{position:relative;display:flex;align-items:center;justify-content:space-between;padding:16px 26px;background:var(--chrome);border-bottom:1px solid var(--edge)}
   .brand{font-weight:800;font-size:26px;letter-spacing:.5px;display:flex;gap:10px;align-items:baseline}
-  .brand .babble{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;transform:rotate(-3deg);display:inline-block}
+  /* The "BABBLE" wordmark: the locked per-letter travelling wave (snapping bedsheet),
+     each letter carrying a slice of the shared gradient. No rotate. */
+  @keyframes rb-wordwave{0%,100%{transform:translateY(0)}25%{transform:translateY(-8px)}50%{transform:translateY(0)}75%{transform:translateY(8px)}}
+  .brand .babble{display:inline-flex}
+  .brand .babble .l{display:inline-block;background:var(--grad);background-size:600% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb-wordwave 1.6s ease-in-out infinite;will-change:transform}
+  .brand .babble .l:nth-child(1){background-position:0% 0;animation-delay:0s}
+  .brand .babble .l:nth-child(2){background-position:20% 0;animation-delay:.14s}
+  .brand .babble .l:nth-child(3){background-position:40% 0;animation-delay:.28s}
+  .brand .babble .l:nth-child(4){background-position:60% 0;animation-delay:.42s}
+  .brand .babble .l:nth-child(5){background-position:80% 0;animation-delay:.56s}
+  .brand .babble .l:nth-child(6){background-position:100% 0;animation-delay:.70s}
+  @media (prefers-reduced-motion:reduce){.brand .babble .l{animation:none}}
   .nav-right{display:flex;align-items:center;gap:30px}
   .nav-right a{color:var(--text);text-decoration:none;font-family:var(--mono);font-size:14px;letter-spacing:1px;font-weight:600;white-space:nowrap}
   .nav-right a.dim{color:var(--text-2)}
@@ -34,23 +48,25 @@
   .theme-toggle span.on{background:var(--panel-3);color:var(--text)}
   .avatar{width:36px;height:36px;border-radius:8px;background:var(--violet);display:grid;place-items:center;font-weight:800;color:#0b0c10}
   .shell{display:grid;grid-template-columns:300px 1fr}
-  .rail{position:relative;padding:20px 22px 26px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:20px;min-height:780px}
+  .rail{position:relative;padding:20px 22px 26px;background:var(--rail);border-right:1px solid var(--edge);display:flex;flex-direction:column;gap:20px;min-height:780px}
   .rail h2{font-family:var(--mono);font-size:14px;letter-spacing:2px;color:var(--text-2);font-weight:700}
+  .setup-head{display:flex;flex-direction:column;gap:8px}
+  /* Word-link: bright-violet mono word with a dotted underline. The quiet verbs
+     (Clear Options, Surprise Me, Copy, Regenerate, New Ramble, Clear). */
+  .wordlink{align-self:flex-start;background:none;border:none;padding:0;font-family:var(--mono);font-size:12px;letter-spacing:1px;font-weight:700;color:var(--link-violet);text-transform:uppercase;text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:3px;cursor:pointer}
+  .wordlink:hover{filter:brightness(1.08)}
   .field label{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:16px;letter-spacing:1.5px;color:#fff;font-weight:700;margin-bottom:10px}
   .field .num{display:inline-grid;place-items:center;width:26px;height:26px;background:var(--violet);color:#0b0c10;border-radius:7px;font-weight:800;font-size:15px}
-  .field label em{font-style:normal;color:var(--text-2);font-weight:600;font-size:13px;margin-left:6px}
-  .dropdown{width:100%;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:15px;color:var(--text)}
-  .dropdown:hover{background:var(--panel-3)}
-  .dropdown .chev{color:var(--text-2)}
+  /* The "?" help affordance replaces "(optional)". */
+  .field label .help{display:inline-grid;place-items:center;width:18px;height:18px;border:1px solid var(--field-border);border-radius:50%;color:var(--violet-on-panel);font-size:11px;font-weight:700;cursor:help}
+  .dropdown{width:100%;background:var(--field);border:1px solid var(--field-border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:15px;color:var(--text)}
+  .dropdown:hover{filter:brightness(1.08)}
+  .dropdown .chev{color:var(--violet-on-panel)}
   .field .hint{font-size:14px;color:var(--text-2);margin-top:7px}
-  .clear-opts{background:var(--btn-bg);border:1px solid var(--btn-border);color:var(--btn-color);border-radius:9px;padding:10px;font-family:var(--mono);font-size:13px;letter-spacing:1px;cursor:pointer;width:100%;margin-top:12px;font-weight:700}
-  .clear-opts:hover{background:var(--btn-hover)}
-  .selections{margin-top:auto;border-top:1px solid var(--line);padding-top:18px}
+  .selections{margin-top:16px;border-top:1px solid var(--line);padding-top:18px}
   .selections .lab{font-family:var(--mono);font-size:13px;letter-spacing:1.5px;color:var(--text-2);margin-bottom:10px}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{background:var(--violet-soft);border:1px solid rgba(139,123,255,.4);color:#d3ccff;border-radius:999px;padding:5px 12px;font-size:14px;font-weight:600}
-  .newramble{margin-top:16px;background:var(--btn-bg);border:1px solid var(--btn-border);color:var(--btn-color);border-radius:10px;padding:11px;font-family:var(--mono);font-size:14px;letter-spacing:1px;cursor:pointer;width:100%;font-weight:700}
-  .newramble:hover{background:var(--btn-hover)}
   .work{padding:22px 34px 50px}
   .work-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .steplabel{font-family:var(--mono);font-size:16px;letter-spacing:2px;color:var(--text);font-weight:700;display:flex;align-items:center;gap:12px}
@@ -58,23 +74,20 @@
   .preview-toggle{display:flex;border:1px solid var(--line-strong);border-radius:9px;overflow:hidden}
   .preview-toggle button{background:none;border:none;color:var(--text-2);font-family:var(--mono);font-size:13px;letter-spacing:1px;padding:7px 14px;cursor:pointer}
   .preview-toggle button.on{background:var(--panel-3);color:var(--text)}
-  .rambox{background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);position:relative}
+  .rambox{background:var(--panel);border:1px solid var(--edge);border-radius:var(--radius);position:relative}
   .race{position:absolute;inset:0;border-radius:var(--radius);padding:2px;z-index:3;pointer-events:none;
     background:conic-gradient(from var(--a),transparent 0 74%,#b9adff 85%,#ffffff 91%,#b9adff 96%,transparent 100%);
     -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
     mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;animation:spin 4.5s linear infinite}
   @keyframes spin{to{--a:360deg}}
   .ram-top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 18px 0}
-  .record-btn{display:inline-flex;align-items:center;gap:10px;background:var(--btn-bg);border:1px solid var(--btn-border);color:var(--btn-color);border-radius:11px;padding:12px 20px;font-weight:700;font-size:15px;cursor:pointer}
-  .record-btn:hover{background:var(--btn-hover)}
-  .record-btn .dot{width:12px;height:12px;border-radius:50%;background:#0b0c10}
+  /* Record: a THIN violet-outlined control, not a filled block. */
+  .record-btn{display:inline-flex;align-items:center;gap:10px;background:transparent;border:1px solid var(--record-border);color:var(--link-violet);border-radius:11px;padding:12px 20px;font-weight:700;font-size:15px;cursor:pointer}
+  .record-btn:hover{filter:brightness(1.08)}
+  .record-btn .dot{width:12px;height:12px;border-radius:50%;background:var(--link-violet)}
   .ram-meta{display:flex;align-items:center;gap:16px;color:var(--text-2);font-family:var(--mono);font-size:14px;letter-spacing:1px}
-  .clear{background:var(--btn-bg);border:1px solid var(--btn-border);color:var(--btn-color);cursor:pointer;font-family:var(--mono);font-size:14px;letter-spacing:1px;border-radius:9px;padding:8px 14px;font-weight:700}
-  .clear:hover{background:var(--btn-hover)}
   .ram-body{padding:16px 18px 8px;min-height:140px;font-size:17px;color:var(--text-2)}
   .ram-foot{display:flex;align-items:center;gap:12px;padding:12px 18px 18px}
-  .btn-ghost{background:var(--btn-bg);border:1px solid var(--btn-border);color:var(--btn-color);border-radius:11px;padding:12px 20px;font-family:var(--mono);font-size:14px;letter-spacing:1px;cursor:pointer;font-weight:700}
-  .btn-ghost:hover{background:var(--btn-hover)}
   .btn-babble{background:var(--grad);border:none;color:#0b0c10;border-radius:11px;padding:12px 26px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 6px 22px rgba(255,77,157,.28)}
   .rec-state{display:none;padding:24px 18px 18px;text-align:center;position:relative;z-index:1}
   .rambox.recording .ram-top,.rambox.recording .ram-body,.rambox.recording .ram-foot{display:none}
@@ -88,18 +101,18 @@
   .teeth span{width:32px;height:16px;border-radius:0 0 7px 7px;background:#eef0f6}
   .teeth-lab{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--text-2);margin-top:8px}
   .output{margin-top:34px}
-  .outbox{background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);padding:20px 24px 22px}
+  .outbox{background:var(--panel);border:1px solid var(--edge);border-radius:var(--radius);padding:20px 24px 22px}
   .out-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
-  .out-actions{display:flex;gap:10px}
+  .out-actions{display:flex;gap:18px}
   .outbox p{font-size:17px;color:var(--text);line-height:1.7}
 </style>
 </head>
 <body>
-<div class="banner">LOCKED BLUEPRINT — <b>Option C</b>, solid violet buttons</div>
+<div class="banner">LOCKED BLUEPRINT - <b>elevation ladder</b>, violet controls</div>
 <div class="viewport">
  <div class="frame">
   <nav class="topnav">
-    <div class="brand">Ramble <span class="babble">BABBLE</span></div>
+    <div class="brand">Ramble <span class="babble"><span class="l">B</span><span class="l">A</span><span class="l">B</span><span class="l">B</span><span class="l">L</span><span class="l">E</span></span></div>
     <div class="nav-right">
       <a href="#">HOME</a><a href="#" class="dim">MY&nbsp;RAMBLES</a><a href="#" class="dim">UPGRADE</a>
       <div class="theme-toggle"><span>☀</span><span class="on">☾</span></div>
@@ -108,23 +121,24 @@
   </nav>
   <div class="shell">
     <aside class="rail">
-      <h2>SET IT UP</h2>
+      <div class="setup-head">
+        <h2>SET IT UP</h2>
+        <button class="wordlink">✕ CLEAR OPTIONS (keeps your ramble)</button>
+      </div>
       <div class="field">
         <label><span class="num">1</span><span>FORMAT</span></label>
         <div class="dropdown">Text message <span class="chev">▾</span></div>
         <div class="hint">A short, casual message you can fire off.</div>
       </div>
       <div class="field">
-        <label><span class="num">2</span><span>STACK OPTIONS <em>(optional)</em></span></label>
+        <label><span class="num">2</span><span>STACK OPTIONS</span><span class="help" tabindex="0" role="note" aria-label="Optional. Stack a tone, character, or accent on top." title="Optional. Stack a tone, character, or accent on top.">?</span></label>
         <div class="dropdown" style="margin-bottom:10px">Tone: Confident <span class="chev">▾</span></div>
         <div class="dropdown" style="margin-bottom:10px">Character: Used-car salesman <span class="chev">▾</span></div>
         <div class="dropdown">Accent: Southern <span class="chev">▾</span></div>
-        <button class="clear-opts">✕ CLEAR OPTIONS (keeps your ramble)</button>
       </div>
       <div class="selections">
         <div class="lab">ACTIVE</div>
         <div class="chips"><span class="chip">Text message</span><span class="chip">Confident</span><span class="chip">Used-car salesman</span><span class="chip">Southern</span></div>
-        <button class="newramble">↺ NEW RAMBLE</button>
       </div>
     </aside>
     <main class="work">
@@ -139,12 +153,12 @@
         <div class="race"></div>
         <div class="ram-top">
           <button class="record-btn" onclick="setState('recording')"><span class="dot"></span> Record</button>
-          <div class="ram-meta"><span>0 WORDS</span><button class="clear">✕ CLEAR</button></div>
+          <div class="ram-meta"><span>0 WORDS</span><button class="wordlink">✕ CLEAR</button></div>
         </div>
         <div class="ram-body">Ramble it here. The voice memos, the half-baked ideas, the texts you shouldn't send yet.</div>
         <div class="ram-foot">
           <button class="btn-babble">Babble it →</button>
-          <button class="btn-ghost">SURPRISE ME</button>
+          <button class="wordlink">SURPRISE ME</button>
         </div>
         <div class="rec-state">
           <div class="rec-timer">0:12</div>
@@ -161,7 +175,7 @@
         <div class="outbox">
           <div class="out-head">
             <div class="steplabel"><span class="num">◆</span>YOUR BABBLE</div>
-            <div class="out-actions"><button class="btn-ghost">COPY</button><button class="btn-ghost">REGENERATE</button><button class="btn-ghost">NEW RAMBLE</button></div>
+            <div class="out-actions"><button class="wordlink">COPY</button><button class="wordlink">REGENERATE</button><button class="wordlink">NEW RAMBLE</button></div>
           </div>
           <p>Well howdy, friend. Every button's got a real surface you can actually see now, Babble it leads on the left with the gradient, Surprise Me rides second, and your copy and regenerate are parked top right. No more black on black. That's a clean rig.</p>
         </div>
