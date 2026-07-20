@@ -11,64 +11,74 @@
    These are consumed as inline CSS variables by the components (t.token) and as
    Tailwind utilities via the @theme block below. */
 :root {
-  /* Shared, not theme-dependent: the brand accent (a FILL / focus / selection
-     colour) and the primary-button gradient. The accent is VIOLET; the gradient
-     keeps all three brand stops (the only place pink/coral appear). */
-  --accent: #7b5cff;
-  --accent-grad: linear-gradient(95deg, #7b5cff, #ff4d9d 55%, #ff6f61);
-  --on-grad: #070809;
+  /* Shared, not theme-dependent: the Option C violet FILL, the violet-soft wash,
+     the solid-violet button system, and the ONE brand gradient (blueprint
+     --grad, the only place pink/coral appear). */
+  --accent: #8b7bff;
+  --violet: #8b7bff;
+  --violetSoft: rgba(139, 123, 255, 0.14);
+  --grad: linear-gradient(100deg, #7b5cff, #ff4d9d, #ff6f61);
+  --accent-grad: linear-gradient(100deg, #7b5cff, #ff4d9d, #ff6f61);
+  --on-grad: #0b0c10;
+  /* Solid-violet button system (Option C): violet fill, near-black label,
+     lighter violet on hover. */
+  --btnBg: #8b7bff;
+  --btnColor: #0b0c10;
+  --btnHover: #9d8fff;
 }
 :root,
 [data-theme="night"] {
-  --canvas: #070809;
-  /* The chrome bar (top nav + bottom bar) sits on the near-black canvas in BOTH
-     themes. Lifted well clear of the #070809 canvas so the header/footer read as
-     their own band instead of black-on-black. Nav text still uses the c* tokens
-     (cInk 17:1, cDim ~5.8:1 on this surface), so AA holds. */
-  --chrome: rgba(20, 22, 28, 0.92);
-  --cInk: #eef1f3;
-  --cDim: #8b929b;
-  --cLine: rgba(238, 241, 243, 0.13);
-  --cLineStrong: #5c5d62;
-  --panel: #16181d;
-  --panel2: #0e0f14;
-  --ink: #eef1f3;
-  --inkDim: #8a929c;
-  --inkFaint: #7a828c;
-  --line: rgba(238, 241, 243, 0.12);
-  --lineStrong: #62656b;
-  /* Accent on the dark night panel. Lifted to #8770ff so it clears 4.5 (4.90)
-     for SMALL accent text too (the format/option group headings are 11px bold),
-     not just the 3:1 graphics bar. Still the same violet, a hair brighter, on a
-     different surface from the on-canvas numbers (#7b5cff). */
-  --accentOnPanel: #8770ff;
-  --accentOnCanvas: #7b5cff;
+  /* NIGHT = the blueprint Option C palette verbatim. */
+  --canvas: #0b0c10;
+  /* The sticky top nav sits on the near-black canvas (blueprint nav bg). */
+  --chrome: rgba(13, 14, 18, 0.96);
+  --cInk: #f3f4f7; /* nav/canvas ink — 17.8:1 on canvas */
+  --cDim: #cbd0da; /* nav/canvas dim — 12.6:1 on canvas */
+  --cLine: rgba(255, 255, 255, 0.1);
+  --cLineStrong: rgba(255, 255, 255, 0.18);
+  --panel: #15171e;
+  --panel2: #1c1f28;
+  --panel3: #232734;
+  --ink: #f3f4f7; /* 16.3:1 on panel */
+  --inkDim: #cbd0da; /* 11.6:1 on panel, 8.2:1 on panel2 */
+  --inkFaint: #a7adb6; /* placeholders — 7.9:1 on panel, 7.3:1 on panel2 */
+  --line: rgba(255, 255, 255, 0.1);
+  --lineStrong: rgba(255, 255, 255, 0.18);
+  /* Accent as TEXT on panels: a lighter violet that clears 7:1 (8.9:1 on panel,
+     8.2:1 on panel2). The solid violet #8b7bff is reserved for fills/borders. */
+  --accentOnPanel: #b9adff;
+  --accentOnCanvas: #8b7bff; /* ◆ marks + numbers (large) — 5.9:1 on canvas */
+  /* Active-selection chips: violet-soft fill, light-violet label (9.5:1). */
+  --chipBg: rgba(139, 123, 255, 0.16);
+  --chipText: #d3ccff;
+  --chipBorder: rgba(139, 123, 255, 0.45);
 }
 [data-theme="day"] {
-  /* The canvas is always black in BOTH themes; there is no reason for two
-     different near-blacks. Unified to #070809 so small violet accent text on the
-     canvas (MyRambles labels, the auth eyebrow) clears 4.5 (4.60) instead of the
-     0.01-under 4.49 it got on the old #0b0c0f. */
-  --canvas: #070809;
-  /* Same lifted chrome as night: the bar is on the dark canvas in Day too. */
-  --chrome: rgba(20, 22, 28, 0.92);
-  --cInk: #eef1f3;
-  --cDim: #8b929b;
-  --cLine: rgba(238, 241, 243, 0.13);
-  --cLineStrong: #5c5d62;
-  --panel: #d6dbde;
-  --panel2: #c6cccf;
-  --ink: #13161a;
-  --inkDim: #50575d;
-  --inkFaint: #51575d;
-  --line: rgba(19, 22, 26, 0.16);
-  --lineStrong: #6c7277;
-  /* On the LIGHT day panel a bright violet washes out, so accent-on-panel goes
-     to a deep violet (5.36:1 on #d6dbde) that stays unmistakably in the violet
-     family and clears AA for text too, not just graphics. On-canvas stays the
-     bright violet because the canvas is dark in Day as well. */
-  --accentOnPanel: #5a3cc4;
-  --accentOnCanvas: #7b5cff;
+  /* DAY keeps the dark canvas + dark nav (so the wordmark, ◆ section marks and
+     nav text stay legible and in place) and flips the PANELS to light with
+     near-ink text. This is the app's established Day/Night model. */
+  --canvas: #0b0c10;
+  --chrome: rgba(13, 14, 18, 0.96);
+  --cInk: #f3f4f7;
+  --cDim: #cbd0da;
+  --cLine: rgba(255, 255, 255, 0.1);
+  --cLineStrong: rgba(255, 255, 255, 0.18);
+  --panel: #e7eaef;
+  --panel2: #dce0e7;
+  --panel3: #cfd4dd;
+  --ink: #14171d; /* 14.9:1 on panel */
+  --inkDim: #3e434b; /* 8.3:1 on panel, 7.5:1 on panel2 */
+  --inkFaint: #40454e; /* placeholders — 8.0:1 on panel, 7.3:1 on panel2 */
+  --line: rgba(19, 22, 26, 0.14);
+  --lineStrong: rgba(19, 22, 26, 0.3);
+  /* Deep violet accent-as-text on the light day panel: clears 7:1 for the small
+     picker/group labels (8.6:1 on panel, 7.8:1 on panel2), and the 3:1 UI bar
+     for active borders/dots. */
+  --accentOnPanel: #47279a;
+  --accentOnCanvas: #8b7bff;
+  --chipBg: #e4e0fb;
+  --chipText: #3d2a8f; /* 8.5:1 on the day chip fill */
+  --chipBorder: #b9adf0;
 }
 
 /* Tailwind v4: expose the tokens as utilities (bg-canvas, text-ink,
@@ -83,6 +93,8 @@
   --color-c-line-strong: var(--cLineStrong);
   --color-panel: var(--panel);
   --color-panel-2: var(--panel2);
+  --color-panel-3: var(--panel3);
+  --color-violet: var(--violet);
   --color-ink: var(--ink);
   --color-ink-dim: var(--inkDim);
   --color-ink-faint: var(--inkFaint);
@@ -126,11 +138,47 @@ body {
   background: var(--cLineStrong);
 }
 
-/* Selection: the violet accent with a near-black read (4.60:1). White fails on
-   violet (4.36), so the highlighted text goes dark instead. */
+/* Selection: the violet accent with a near-black read. White fails on violet,
+   so the highlighted text goes dark instead. */
 ::selection {
   background: var(--accent);
-  color: #070809;
+  color: #0b0c10;
+}
+
+/* ----- Solid-violet button system (Option C) -----
+   Every secondary control (Record, Surprise Me, Copy, Regenerate, New Ramble,
+   Clear, Clear Options, Stop, picker triggers) wears a solid violet fill with a
+   near-black label, hover to a lighter violet. The ONE gradient (rb-grad-btn)
+   is reserved for the "Babble it" primary and the wordmark. */
+.rb-violet-btn {
+  background: var(--btnBg);
+  color: var(--btnColor);
+  border: 1px solid var(--btnBg);
+  border-radius: 10px;
+}
+.rb-violet-btn:hover:not(:disabled) {
+  background: var(--btnHover);
+  border-color: var(--btnHover);
+}
+.rb-grad-btn {
+  background-image: var(--grad);
+  color: var(--btnColor);
+  border: none;
+  border-radius: 11px;
+}
+
+/* ----- App-shell sticky sidebar (blueprint .rail) -----
+   Below 768px the rail stacks on top of the work frame (static). From 768px up
+   it sticks under the top nav and fills the viewport height so the ACTIVE block
+   (margin-top:auto) sits at the bottom. --rb-nav carries the measured nav
+   height from the component. */
+@media (min-width: 768px) {
+  .rb-rail {
+    position: sticky;
+    top: var(--rb-nav, 64px);
+    align-self: start;
+    min-height: calc(100dvh - var(--rb-nav, 64px));
+  }
 }
 
 /* One visible focus ring on every interactive control, keyboard only. The
@@ -494,14 +542,16 @@ a:hover,
   will-change: transform;
 }
 
-/* ----- Racing gradient border on the ramble box -----
-   A conic gradient rotates around the border of the ramble textarea. Built with
-   a registered @property so the angle can actually animate (plain custom props
-   don't interpolate). The border is drawn by an inset ::before whose fill is
-   masked to just the 2px ring (content-box XOR border-box), so the centre stays
-   clickable. Idle laps every 3.5s; while babbling (.rb-racing-fast) it speeds to
-   1.5s. prefers-reduced-motion is handled by the universal rule below, which
-   freezes the angle at 0deg and leaves a static gradient ring. */
+/* ----- Racetrack border on the ramble box (blueprint .race) -----
+   A single bright light rides the FULL perimeter of the ramble box: a conic
+   gradient that is transparent for most of its sweep with one violet-to-white
+   flare, rotated by a registered @property angle so it actually animates (plain
+   custom props don't interpolate). The fill is masked to just the 2px ring
+   (content-box XOR border-box), so the light traces all four sides and the
+   centre stays clickable. Idle laps every 4.5s; while babbling
+   (.rb-racing-fast) it speeds to 1.5s. Uses the accent violet family, never the
+   brand gradient. prefers-reduced-motion (universal rule below) freezes the
+   angle at 0deg, leaving a static flare on the border. */
 @property --rb-angle {
   syntax: "<angle>";
   inherits: false;
@@ -520,12 +570,14 @@ a:hover,
   position: absolute;
   inset: 0;
   padding: 2px;
+  border-radius: inherit;
   background: conic-gradient(
     from var(--rb-angle),
-    #7b5cff,
-    #ff4d9d,
-    #ff6f61,
-    #7b5cff
+    transparent 0 74%,
+    #b9adff 85%,
+    #ffffff 91%,
+    #b9adff 96%,
+    transparent 100%
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -536,8 +588,8 @@ a:hover,
     linear-gradient(#000 0 0);
   mask-composite: exclude;
   pointer-events: none;
-  z-index: 2;
-  animation: rb-angle-spin 3.5s linear infinite;
+  z-index: 3;
+  animation: rb-angle-spin 4.5s linear infinite;
 }
 .rb-racing-fast::before {
   animation-duration: 1.5s;

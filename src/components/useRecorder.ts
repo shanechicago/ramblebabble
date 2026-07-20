@@ -18,6 +18,12 @@ interface UseRecorder {
   status: RecorderStatus;
   seconds: number;
   error: string | null;
+  /**
+   * The live microphone MediaStream while recording, or null otherwise. Exposed
+   * so the UI can build an AnalyserNode and drive a real-time waveform from the
+   * mic. Set the instant recording starts, cleared on stop / cancel / unmount.
+   */
+  stream: MediaStream | null;
   start: () => Promise<void>;
   /** Resolves with the recorded audio, or null if nothing was captured. */
   stop: () => Promise<Blob | null>;
@@ -34,6 +40,9 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorder {
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // Mirror the live stream into state so consumers re-render when it becomes
+  // available (the ref alone would not trigger the analyser wiring).
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -54,6 +63,7 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorder {
     }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    setStream(null);
     recorderRef.current = null;
     chunksRef.current = [];
   }, []);
@@ -89,6 +99,8 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorder {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      // Surface the live stream so the caller can drive a real-time waveform.
+      setStream(stream);
 
       const mimeType = pickMimeType();
       const recorder = new MediaRecorder(
@@ -139,5 +151,5 @@ export function useRecorder(options: UseRecorderOptions = {}): UseRecorder {
   // Safety net: release the mic if the component unmounts mid-recording.
   useEffect(() => cleanup, [cleanup]);
 
-  return { status, seconds, error, start, stop, cancel };
+  return { status, seconds, error, stream, start, stop, cancel };
 }
