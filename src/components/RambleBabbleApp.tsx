@@ -116,6 +116,7 @@ const t = {
   canvas: "var(--canvas)",
   chrome: "var(--chrome)",
   rail: "var(--rail)",
+  navHover: "var(--navHover)",
   field: "var(--field)",
   edge: "var(--edge)",
   fieldBorder: "var(--fieldBorder)",
@@ -233,6 +234,9 @@ export default function RambleBabbleApp({
   const [savedNotice, setSavedNotice] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [overlay, setOverlay] = useState<"settings" | "upgrade" | null>(null);
+  // Quiet "coming soon" note for the rail nav items that are built in a later
+  // phase (Settings, How-tos). Holds the label that was clicked, auto-dismissed.
+  const [railStub, setRailStub] = useState<string | null>(null);
 
   const revealRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -333,6 +337,13 @@ export default function RambleBabbleApp({
     const id = setTimeout(() => setSavedNotice(false), 2800);
     return () => clearTimeout(id);
   }, [savedNotice]);
+
+  // Auto-dismiss the quiet rail "coming soon" note.
+  useEffect(() => {
+    if (!railStub) return;
+    const id = setTimeout(() => setRailStub(null), 3200);
+    return () => clearTimeout(id);
+  }, [railStub]);
 
   // iOS Safari can restore focus to the ramble textarea from the back/forward
   // cache, popping the on-screen keyboard on load. Always land with the keyboard
@@ -552,21 +563,20 @@ export default function RambleBabbleApp({
     outputType === "custom"
       ? { label: "Something else" }
       : OUTPUT_TYPES.find((o) => o.id === outputType);
-  const selectedFormat = OUTPUT_TYPES.find((o) => o.id === outputType);
-  const formatHint = selectedFormat?.example ?? selectedFormat?.hint;
   const selectedTone = TONES.find((x) => x.id === tone);
   const selectedAccent = getAccent(accent);
   const selectedPersona = getPersona(persona);
 
   const formatName =
     outputType === "custom" ? "Something else" : selectedStyle?.label ?? "";
-  // Every active selection, in order, for the ACTIVE chips in the sidebar.
-  const activeChips = [
+  // What the babble was built from, shown as chips next to "Your babble":
+  // format, tone, character, accent (language is set on the toolbar but not
+  // chipped here, per the blueprint).
+  const outputChips = [
     formatName,
     selectedTone?.label,
     selectedPersona?.label,
     selectedAccent?.label,
-    targetLanguage,
   ].filter(Boolean) as string[];
 
   const handleStart = useCallback(() => {
@@ -723,12 +733,6 @@ export default function RambleBabbleApp({
     setOpenPicker(null);
   }, []);
 
-  // Clear options: wipe every format + stack selection only. Ramble text and
-  // output stay exactly where they are.
-  const handleClearOptions = useCallback(() => {
-    resetOptions();
-  }, [resetOptions]);
-
   // New Ramble: FULL reset. Clear the ramble text, reset the output to idle,
   // clear every option, then glide back to the top of the page.
   const handleNewRamble = useCallback(() => {
@@ -884,15 +888,6 @@ export default function RambleBabbleApp({
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3.5 sm:px-7">
           <Wordmark />
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <NavLink
-              label="Home"
-              active
-              onClick={() => {
-                if (typeof window !== "undefined")
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            />
-            <NavLink label={"My Rambles"} onClick={onOpenHistory} nowrap />
             <NavLink label="Upgrade" onClick={() => setOverlay("upgrade")} />
             {/* Day / Night switch. */}
             <div
@@ -1009,442 +1004,73 @@ export default function RambleBabbleApp({
 
       {/* ============ APP SHELL: sidebar + work frame ============ */}
       <main
-        className="relative z-10 grid grid-cols-1 md:grid-cols-[300px_1fr] md:items-start"
+        className="relative z-10 grid grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)] md:items-start"
       >
         {/* ---------- SIDEBAR (blueprint .rail) ---------- */}
         <aside
-          className="rb-rail flex flex-col gap-5 border-b border-edge px-5 py-6 sm:px-6 md:border-b-0 md:border-r"
+          className="rb-rail flex flex-col gap-1 border-b border-edge px-3 py-4 sm:px-3.5 md:border-b-0 md:border-r"
           style={
             { "--rb-nav": `${headerH}px`, background: t.rail } as React.CSSProperties
           }
         >
-          <div className="flex flex-col gap-2">
-            <h2
-              className="font-mono-label text-[13px] font-bold uppercase tracking-[0.2em]"
-              style={{ color: t.inkDim }}
-            >
-              Set it up
-            </h2>
-            <LinkWord
-              onClick={handleClearOptions}
-              className="self-start text-[12px] tracking-[0.06em]"
-            >
-              <span aria-hidden>&#10005;</span> Clear options (keeps your ramble)
-            </LinkWord>
-          </div>
-
-          {/* STEP 1 — FORMAT */}
-          <div className="flex flex-col gap-2.5">
-            <StepLabel num="1" label="Format" />
-            <div className="relative">
-              <PickerTrigger
-                display={formatName || "Choose a format"}
-                open={openPicker === "format"}
-                onToggle={() => toggle("format")}
-              />
-              {openPicker === "format" && (
-                <PickerMenu onClose={closeMenu}>
-                  <div className="flex flex-col gap-3">
-                    <PickerGroup
-                      label="Just refine"
-                      open={openFmtGroup === "just"}
-                      onToggle={() =>
-                        setOpenFmtGroup((g) => (g === "just" ? null : "just"))
-                      }
-                    >
-                      {renderFormatRows(["note", "conversational"])}
-                    </PickerGroup>
-
-                    <FormatGroup heading="Practical">
-                      {USEFUL_GROUPS.map((g) => (
-                        <PickerGroup
-                          key={g.label}
-                          label={g.label}
-                          open={openFmtGroup === `u:${g.label}`}
-                          onToggle={() =>
-                            setOpenFmtGroup((cur) =>
-                              cur === `u:${g.label}` ? null : `u:${g.label}`,
-                            )
-                          }
-                        >
-                          {renderFormatRows(g.ids)}
-                        </PickerGroup>
-                      ))}
-                    </FormatGroup>
-
-                    <FormatGroup heading="Fun">
-                      {FUN_GROUPS.map((g) => (
-                        <PickerGroup
-                          key={g.label}
-                          label={g.label}
-                          open={openFmtGroup === `f:${g.label}`}
-                          onToggle={() =>
-                            setOpenFmtGroup((cur) =>
-                              cur === `f:${g.label}` ? null : `f:${g.label}`,
-                            )
-                          }
-                        >
-                          {renderFormatRows(g.ids)}
-                        </PickerGroup>
-                      ))}
-                    </FormatGroup>
-
-                    <PickerGroup
-                      label="Something else"
-                      open={openFmtGroup === "custom"}
-                      onToggle={() =>
-                        setOpenFmtGroup((g) => (g === "custom" ? null : "custom"))
-                      }
-                    >
-                      {renderFormatRows(["custom"])}
-                    </PickerGroup>
-                  </div>
-                </PickerMenu>
-              )}
-            </div>
-
-            {/* The chosen format's one-line hint, or the custom instruction. */}
-            {outputType === "custom" ? (
-              <input
-                value={customInstruction}
-                onChange={(e) => setCustomInstruction(e.target.value)}
-                placeholder="Turn it into... e.g. a wedding toast, a recipe"
-                aria-label="Turn it into"
-                className="rb-hero-input mt-0.5 w-full rounded-[8px] px-3 py-2.5 text-[15px] outline-none"
-                style={
-                  {
-                    background: t.panel2,
-                    border: `1px solid ${t.lineStrong}`,
-                    color: t.ink,
-                    "--rb-ph": t.inkFaint,
-                  } as React.CSSProperties
-                }
-              />
-            ) : (
-              formatHint && (
-                <p className="text-[13px] leading-[1.5]" style={{ color: t.inkDim }}>
-                  {formatHint}
-                </p>
-              )
-            )}
-          </div>
-
-          {/* STEP 2 — STACK OPTIONS */}
-          <div className="flex flex-col gap-2.5">
-            <StepLabel num="2" label="Stack options" optional />
-
-            <div className="relative">
-              <PickerTrigger
-                display={
-                  selectedTone ? `Tone: ${selectedTone.label}` : "Tone"
-                }
-                muted={!selectedTone}
-                open={openPicker === "tone"}
-                onToggle={() => toggle("tone")}
-              />
-              {openPicker === "tone" && (
-                <PickerMenu onClose={closeMenu}>
-                  <NoneRow
-                    active={!tone}
-                    onClick={() => {
-                      setTone("");
-                      closeMenu();
-                    }}
-                  />
-                  <PillGroups
-                    groups={TONE_GROUPS}
-                    options={TONES}
-                    value={tone}
-                    onPick={(v) => {
-                      setTone(v);
-                      closeMenu();
-                    }}
-                  />
-                </PickerMenu>
-              )}
-            </div>
-
-            <div className="relative">
-              <PickerTrigger
-                display={
-                  selectedPersona
-                    ? `Character: ${selectedPersona.label}`
-                    : "Character"
-                }
-                muted={!selectedPersona}
-                open={openPicker === "character"}
-                onToggle={() => toggle("character")}
-              />
-              {openPicker === "character" && (
-                <PickerMenu onClose={closeMenu}>
-                  <NoneRow
-                    active={!persona}
-                    onClick={() => {
-                      setPersona("");
-                      closeMenu();
-                    }}
-                  />
-                  <PillGroups
-                    groups={PERSONA_GROUPS}
-                    options={PERSONAS}
-                    value={persona}
-                    onPick={(v) => {
-                      setPersona(v);
-                      closeMenu();
-                    }}
-                  />
-                </PickerMenu>
-              )}
-            </div>
-
-            <div className="relative">
-              <PickerTrigger
-                display={
-                  selectedAccent ? `Accent: ${selectedAccent.label}` : "Accent"
-                }
-                muted={!selectedAccent}
-                open={openPicker === "accent"}
-                onToggle={() => toggle("accent")}
-              />
-              {openPicker === "accent" && (
-                <PickerMenu onClose={closeMenu}>
-                  <NoneRow
-                    active={!accent}
-                    onClick={() => {
-                      setAccent("");
-                      closeMenu();
-                    }}
-                  />
-                  <PillGroups
-                    groups={ACCENT_GROUPS}
-                    options={ACCENTS}
-                    value={accent}
-                    onPick={(v) => {
-                      setAccent(v);
-                      closeMenu();
-                    }}
-                  />
-                </PickerMenu>
-              )}
-            </div>
-
-            {/* Secondary, quieter controls: Language, Glossary, Profanity. */}
-            <div className="mt-0.5 flex flex-col gap-2">
-              <div className="relative">
-                <PickerTrigger
-                  display={
-                    targetLanguage ? `Language: ${targetLanguage}` : "Language"
-                  }
-                  muted={!targetLanguage}
-                  open={openPicker === "language"}
-                  onToggle={() => toggle("language")}
-                />
-                {openPicker === "language" && (
-                  <PickerMenu onClose={closeMenu}>
-                    <div className="flex flex-wrap gap-1.5">
-                      <Pill
-                        label="None"
-                        active={!targetLanguage}
-                        onClick={() => {
-                          setTargetLanguage("");
-                          closeMenu();
-                        }}
-                      />
-                      {LANGUAGES.map((l) => (
-                        <Pill
-                          key={l}
-                          label={l}
-                          active={targetLanguage === l}
-                          onClick={() => {
-                            setTargetLanguage(targetLanguage === l ? "" : l);
-                            closeMenu();
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </PickerMenu>
-                )}
-              </div>
-
-              <div className="relative">
-                <PickerTrigger
-                  display={
-                    glossaryIsEmpty ? "Personal Glossary" : "Glossary: on"
-                  }
-                  muted={glossaryIsEmpty}
-                  open={openPicker === "glossary"}
-                  onToggle={() => toggle("glossary")}
-                />
-                {openPicker === "glossary" && (
-                  <PickerMenu onClose={closeMenu}>
-                    <div className="mb-2 flex flex-wrap gap-1.5">
-                      <Pill
-                        label="None"
-                        active={glossaryIsEmpty}
-                        onClick={() => setGlossary(EMPTY_GLOSSARY)}
-                      />
-                    </div>
-                    <p className="mb-2 text-[13px]" style={{ color: t.inkDim }}>
-                      Names, brands, or words you use that we should get right.
-                      Tell us what they mean so we know when you mean them.
-                    </p>
-                    <div className="flex flex-col gap-2">
-                      {glossary.map((row, i) => (
-                        <div key={i} className="flex flex-wrap items-end gap-2">
-                          <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
-                            <label
-                              htmlFor={`rb-word-${i}`}
-                              className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.1em]"
-                              style={{ color: t.accentOnPanel }}
-                            >
-                              Word
-                            </label>
-                            <input
-                              id={`rb-word-${i}`}
-                              value={row.word}
-                              onChange={(e) =>
-                                setGlossaryField(i, "word", e.target.value)
-                              }
-                              placeholder="Niko"
-                              className="rb-hero-input w-full rounded-[8px] px-3 py-2.5 text-[15px] outline-none"
-                              style={
-                                {
-                                  background: t.panel2,
-                                  border: `1px solid ${t.lineStrong}`,
-                                  color: t.ink,
-                                  "--rb-ph": t.inkFaint,
-                                } as React.CSSProperties
-                              }
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1 sm:basis-0 sm:flex-[1.4]">
-                            <label
-                              htmlFor={`rb-meaning-${i}`}
-                              className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.1em]"
-                              style={{ color: t.accentOnPanel }}
-                            >
-                              What it is
-                            </label>
-                            <input
-                              id={`rb-meaning-${i}`}
-                              value={row.meaning}
-                              onChange={(e) =>
-                                setGlossaryField(i, "meaning", e.target.value)
-                              }
-                              placeholder="my dog"
-                              className="rb-hero-input w-full rounded-[8px] px-3 py-2.5 text-[15px] outline-none"
-                              style={
-                                {
-                                  background: t.panel2,
-                                  border: `1px solid ${t.lineStrong}`,
-                                  color: t.ink,
-                                  "--rb-ph": t.inkFaint,
-                                } as React.CSSProperties
-                              }
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeGlossaryRow(i)}
-                            disabled={glossaryIsEmpty}
-                            aria-label={
-                              row.word.trim()
-                                ? `Remove ${row.word.trim()}`
-                                : "Remove this word"
-                            }
-                            title="Remove"
-                            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[8px] text-[16px] transition active:translate-y-px"
-                            style={{
-                              background: t.panel2,
-                              border: `1px solid ${t.lineStrong}`,
-                              color: t.inkDim,
-                              opacity: glossaryIsEmpty ? 0.35 : 1,
-                              cursor: glossaryIsEmpty ? "not-allowed" : "pointer",
-                            }}
-                          >
-                            <span aria-hidden>&#215;</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={addGlossaryRow}
-                      className="font-mono-label mt-2 rounded-[7px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
-                      style={{
-                        background: t.panel2,
-                        border: `1px solid ${t.lineStrong}`,
-                        color: t.ink,
-                      }}
-                    >
-                      + Add another
-                    </button>
-                  </PickerMenu>
-                )}
-              </div>
-
-              <div className="relative">
-                <PickerTrigger
-                  display={cleanProfanity ? "Profanity: cleaned" : "Profanity"}
-                  muted={!cleanProfanity}
-                  open={openPicker === "profanity"}
-                  onToggle={() => toggle("profanity")}
-                />
-                {openPicker === "profanity" && (
-                  <PickerMenu onClose={closeMenu}>
-                    <div className="flex flex-wrap gap-1.5">
-                      <Pill
-                        label="Keep it"
-                        active={!cleanProfanity}
-                        onClick={() => {
-                          setCleanProfanity(false);
-                          closeMenu();
-                        }}
-                      />
-                      <Pill
-                        label="Clean it up"
-                        active={cleanProfanity}
-                        onClick={() => {
-                          setCleanProfanity(true);
-                          closeMenu();
-                        }}
-                      />
-                    </div>
-                  </PickerMenu>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ACTIVE selections. Sits just below the options (no big dead gap),
-              toward the bottom of the rail. New Ramble lives only in the output
-              box now, so it is not repeated here. */}
           <div
-            className="mt-4 flex flex-col gap-3 pt-4"
-            style={{ borderTop: `1px solid ${t.line}` }}
+            className="font-mono-label px-2.5 pb-2.5 text-[11px] font-bold uppercase tracking-[0.2em]"
+            style={{ color: t.inkDim }}
           >
-            <span
-              className="font-mono-label text-[12px] uppercase tracking-[0.18em]"
-              style={{ color: t.inkDim }}
-            >
-              Active
-            </span>
-            {activeChips.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {activeChips.map((c, i) => (
-                  <Chip key={`${c}-${i}`}>{c}</Chip>
-                ))}
-              </div>
-            ) : (
-              <span className="text-[13px]" style={{ color: t.inkDim }}>
-                Nothing stacked yet.
-              </span>
-            )}
+            RambleBabble
           </div>
+
+          <RailNavItem
+            icon={<span aria-hidden>&#9998;</span>}
+            label="New ramble"
+            active
+            onClick={handleNewRamble}
+          />
+          <RailNavItem
+            icon={<span aria-hidden>&#8635;</span>}
+            label="Clear ramble"
+            onClick={clearRamble}
+          />
+          <RailNavItem
+            icon={<span aria-hidden>&#9636;</span>}
+            label="My rambles"
+            onClick={onOpenHistory}
+          />
+
+          <div className="h-4" aria-hidden />
+
+          <RailNavItem
+            icon={<span aria-hidden>&#9881;</span>}
+            label="Settings"
+            soon
+            onClick={() => setRailStub("Settings")}
+          />
+          <RailNavItem
+            icon={<span aria-hidden>?</span>}
+            label="How-tos"
+            soon
+            onClick={() => setRailStub("How-tos")}
+          />
+
+          {railStub && (
+            <p
+              className="mt-2 px-2.5 text-[13px] leading-[1.5]"
+              style={{ color: t.inkDim }}
+              role="status"
+            >
+              {railStub} is coming soon.
+            </p>
+          )}
         </aside>
 
         {/* ---------- WORK FRAME (blueprint .work) ---------- */}
         <section className="flex flex-col px-4 py-6 sm:px-8 sm:py-7">
+          {/* Format ticker (LOCKED, rule 27): calm drift of every output format,
+              on the dark canvas above the ramble, alongside the Format dropdown. */}
+          <div className="mb-5">
+            <FormatMarquee />
+          </div>
+
           {/* --- YOUR RAMBLE --- */}
           <div className="mb-3">
             <StepMark>Your ramble</StepMark>
@@ -1575,47 +1201,395 @@ export default function RambleBabbleApp({
                 </p>
               </div>
             ) : (
-              /* --- IDLE: record / textarea / babble --- */
-              <div className="relative" style={{ zIndex: 1 }}>
-                <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-5">
-                  <button
-                    type="button"
-                    onClick={handleStart}
-                    className="inline-flex items-center justify-center gap-2 rounded-[10px] px-5 py-2.5 text-[15px] font-bold transition active:translate-y-px"
-                    style={{
-                      background: "transparent",
-                      border: `1px solid ${t.recordBorder}`,
-                      color: t.linkViolet,
-                    }}
-                  >
-                    <span
-                      aria-hidden
+              /* --- IDLE: toolbar + textarea + babble --- */
+              <div className="relative" style={{ zIndex: 4 }}>
+                {/* TOOLBAR (blueprint .toolbar): a thin Record, the setup fields,
+                    then the live word count and Clear. Each field opens the same
+                    shared picker, dropping just below the row. */}
+                <div className="relative">
+                  <div className="flex flex-wrap items-center gap-2.5 px-4 pt-4 sm:px-5">
+                    <button
+                      type="button"
+                      onClick={handleStart}
+                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[9px] px-3.5 py-2 text-[13px] font-bold transition active:translate-y-px"
                       style={{
-                        display: "inline-block",
-                        height: 11,
-                        width: 11,
-                        borderRadius: 999,
-                        background: t.linkViolet,
+                        background: "transparent",
+                        border: `1px solid ${t.recordBorder}`,
+                        color: t.linkViolet,
                       }}
+                    >
+                      <span
+                        aria-hidden
+                        style={{
+                          display: "inline-block",
+                          height: 9,
+                          width: 9,
+                          borderRadius: 999,
+                          background: t.linkViolet,
+                        }}
+                      />
+                      Record
+                    </button>
+
+                    <ToolbarField
+                      label="Format"
+                      value={formatName || undefined}
+                      open={openPicker === "format"}
+                      onToggle={() => toggle("format")}
                     />
-                    Record
-                  </button>
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className="font-mono-label text-[12px] uppercase tracking-[0.08em]"
-                      style={{ color: t.inkDim }}
-                    >
-                      {words} words
-                    </span>
-                    <LinkWord
-                      onClick={clearRamble}
-                      disabled={!inputText}
-                      className="text-[12px] tracking-[0.06em]"
-                    >
-                      <span aria-hidden>&#10005;</span> Clear
-                    </LinkWord>
+                    <ToolbarField
+                      label="Tone"
+                      value={selectedTone?.label}
+                      open={openPicker === "tone"}
+                      onToggle={() => toggle("tone")}
+                    />
+                    <ToolbarField
+                      label="Character"
+                      value={selectedPersona?.label}
+                      open={openPicker === "character"}
+                      onToggle={() => toggle("character")}
+                    />
+                    <ToolbarField
+                      label="Accent"
+                      value={selectedAccent?.label}
+                      open={openPicker === "accent"}
+                      onToggle={() => toggle("accent")}
+                    />
+                    <ToolbarField
+                      label="Language"
+                      value={targetLanguage || undefined}
+                      open={openPicker === "language"}
+                      onToggle={() => toggle("language")}
+                    />
+                    <ToolbarField
+                      label="Glossary"
+                      value={glossaryIsEmpty ? undefined : "on"}
+                      open={openPicker === "glossary"}
+                      onToggle={() => toggle("glossary")}
+                    />
+                    <ToolbarField
+                      label="Profanity"
+                      value={cleanProfanity ? "cleaned" : undefined}
+                      open={openPicker === "profanity"}
+                      onToggle={() => toggle("profanity")}
+                    />
+
+                    <div className="ml-auto flex items-center gap-3">
+                      <span
+                        className="font-mono-label text-[12px] uppercase tracking-[0.08em]"
+                        style={{ color: t.inkDim }}
+                      >
+                        {words} words
+                      </span>
+                      <LinkWord
+                        onClick={clearRamble}
+                        disabled={!inputText}
+                        className="text-[12px] tracking-[0.06em]"
+                      >
+                        <span aria-hidden>&#10005;</span> Clear
+                      </LinkWord>
+                    </div>
                   </div>
+
+                  {openPicker === "format" && (
+                    <PickerMenu onClose={closeMenu}>
+                      <div className="flex flex-col gap-3">
+                        <PickerGroup
+                          label="Just refine"
+                          open={openFmtGroup === "just"}
+                          onToggle={() =>
+                            setOpenFmtGroup((g) => (g === "just" ? null : "just"))
+                          }
+                        >
+                          {renderFormatRows(["note", "conversational"])}
+                        </PickerGroup>
+
+                        <FormatGroup heading="Practical">
+                          {USEFUL_GROUPS.map((g) => (
+                            <PickerGroup
+                              key={g.label}
+                              label={g.label}
+                              open={openFmtGroup === `u:${g.label}`}
+                              onToggle={() =>
+                                setOpenFmtGroup((cur) =>
+                                  cur === `u:${g.label}` ? null : `u:${g.label}`,
+                                )
+                              }
+                            >
+                              {renderFormatRows(g.ids)}
+                            </PickerGroup>
+                          ))}
+                        </FormatGroup>
+
+                        <FormatGroup heading="Fun">
+                          {FUN_GROUPS.map((g) => (
+                            <PickerGroup
+                              key={g.label}
+                              label={g.label}
+                              open={openFmtGroup === `f:${g.label}`}
+                              onToggle={() =>
+                                setOpenFmtGroup((cur) =>
+                                  cur === `f:${g.label}` ? null : `f:${g.label}`,
+                                )
+                              }
+                            >
+                              {renderFormatRows(g.ids)}
+                            </PickerGroup>
+                          ))}
+                        </FormatGroup>
+
+                        <PickerGroup
+                          label="Something else"
+                          open={openFmtGroup === "custom"}
+                          onToggle={() =>
+                            setOpenFmtGroup((g) => (g === "custom" ? null : "custom"))
+                          }
+                        >
+                          {renderFormatRows(["custom"])}
+                        </PickerGroup>
+                      </div>
+                    </PickerMenu>
+                  )}
+
+                  {openPicker === "tone" && (
+                    <PickerMenu onClose={closeMenu}>
+                      <NoneRow
+                        active={!tone}
+                        onClick={() => {
+                          setTone("");
+                          closeMenu();
+                        }}
+                      />
+                      <PillGroups
+                        groups={TONE_GROUPS}
+                        options={TONES}
+                        value={tone}
+                        onPick={(v) => {
+                          setTone(v);
+                          closeMenu();
+                        }}
+                      />
+                    </PickerMenu>
+                  )}
+
+                  {openPicker === "character" && (
+                    <PickerMenu onClose={closeMenu}>
+                      <NoneRow
+                        active={!persona}
+                        onClick={() => {
+                          setPersona("");
+                          closeMenu();
+                        }}
+                      />
+                      <PillGroups
+                        groups={PERSONA_GROUPS}
+                        options={PERSONAS}
+                        value={persona}
+                        onPick={(v) => {
+                          setPersona(v);
+                          closeMenu();
+                        }}
+                      />
+                    </PickerMenu>
+                  )}
+
+                  {openPicker === "accent" && (
+                    <PickerMenu onClose={closeMenu} align="right">
+                      <NoneRow
+                        active={!accent}
+                        onClick={() => {
+                          setAccent("");
+                          closeMenu();
+                        }}
+                      />
+                      <PillGroups
+                        groups={ACCENT_GROUPS}
+                        options={ACCENTS}
+                        value={accent}
+                        onPick={(v) => {
+                          setAccent(v);
+                          closeMenu();
+                        }}
+                      />
+                    </PickerMenu>
+                  )}
+
+                  {openPicker === "language" && (
+                    <PickerMenu onClose={closeMenu} align="right">
+                      <div className="flex flex-wrap gap-1.5">
+                        <Pill
+                          label="None"
+                          active={!targetLanguage}
+                          onClick={() => {
+                            setTargetLanguage("");
+                            closeMenu();
+                          }}
+                        />
+                        {LANGUAGES.map((l) => (
+                          <Pill
+                            key={l}
+                            label={l}
+                            active={targetLanguage === l}
+                            onClick={() => {
+                              setTargetLanguage(targetLanguage === l ? "" : l);
+                              closeMenu();
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </PickerMenu>
+                  )}
+
+                  {openPicker === "glossary" && (
+                    <PickerMenu onClose={closeMenu} align="right">
+                      <div className="mb-2 flex flex-wrap gap-1.5">
+                        <Pill
+                          label="None"
+                          active={glossaryIsEmpty}
+                          onClick={() => setGlossary(EMPTY_GLOSSARY)}
+                        />
+                      </div>
+                      <p className="mb-2 text-[13px]" style={{ color: t.inkDim }}>
+                        Names, brands, or words you use that we should get right.
+                        Tell us what they mean so we know when you mean them.
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {glossary.map((row, i) => (
+                          <div key={i} className="flex flex-wrap items-end gap-2">
+                            <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
+                              <label
+                                htmlFor={`rb-word-${i}`}
+                                className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.1em]"
+                                style={{ color: t.accentOnPanel }}
+                              >
+                                Word
+                              </label>
+                              <input
+                                id={`rb-word-${i}`}
+                                value={row.word}
+                                onChange={(e) =>
+                                  setGlossaryField(i, "word", e.target.value)
+                                }
+                                placeholder="Niko"
+                                className="rb-hero-input w-full rounded-[8px] px-3 py-2.5 text-[15px] outline-none"
+                                style={
+                                  {
+                                    background: t.panel2,
+                                    border: `1px solid ${t.lineStrong}`,
+                                    color: t.ink,
+                                    "--rb-ph": t.inkFaint,
+                                  } as React.CSSProperties
+                                }
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1 sm:basis-0 sm:flex-[1.4]">
+                              <label
+                                htmlFor={`rb-meaning-${i}`}
+                                className="font-mono-label mb-1 block text-[10px] uppercase tracking-[0.1em]"
+                                style={{ color: t.accentOnPanel }}
+                              >
+                                What it is
+                              </label>
+                              <input
+                                id={`rb-meaning-${i}`}
+                                value={row.meaning}
+                                onChange={(e) =>
+                                  setGlossaryField(i, "meaning", e.target.value)
+                                }
+                                placeholder="my dog"
+                                className="rb-hero-input w-full rounded-[8px] px-3 py-2.5 text-[15px] outline-none"
+                                style={
+                                  {
+                                    background: t.panel2,
+                                    border: `1px solid ${t.lineStrong}`,
+                                    color: t.ink,
+                                    "--rb-ph": t.inkFaint,
+                                  } as React.CSSProperties
+                                }
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeGlossaryRow(i)}
+                              disabled={glossaryIsEmpty}
+                              aria-label={
+                                row.word.trim()
+                                  ? `Remove ${row.word.trim()}`
+                                  : "Remove this word"
+                              }
+                              title="Remove"
+                              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[8px] text-[16px] transition active:translate-y-px"
+                              style={{
+                                background: t.panel2,
+                                border: `1px solid ${t.lineStrong}`,
+                                color: t.inkDim,
+                                opacity: glossaryIsEmpty ? 0.35 : 1,
+                                cursor: glossaryIsEmpty ? "not-allowed" : "pointer",
+                              }}
+                            >
+                              <span aria-hidden>&#215;</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addGlossaryRow}
+                        className="font-mono-label mt-2 rounded-[7px] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition active:translate-y-px"
+                        style={{
+                          background: t.panel2,
+                          border: `1px solid ${t.lineStrong}`,
+                          color: t.ink,
+                        }}
+                      >
+                        + Add another
+                      </button>
+                    </PickerMenu>
+                  )}
+
+                  {openPicker === "profanity" && (
+                    <PickerMenu onClose={closeMenu} align="right">
+                      <div className="flex flex-wrap gap-1.5">
+                        <Pill
+                          label="Keep it"
+                          active={!cleanProfanity}
+                          onClick={() => {
+                            setCleanProfanity(false);
+                            closeMenu();
+                          }}
+                        />
+                        <Pill
+                          label="Clean it up"
+                          active={cleanProfanity}
+                          onClick={() => {
+                            setCleanProfanity(true);
+                            closeMenu();
+                          }}
+                        />
+                      </div>
+                    </PickerMenu>
+                  )}
                 </div>
+
+                {outputType === "custom" && (
+                  <div className="px-4 pt-3 sm:px-5">
+                    <input
+                      value={customInstruction}
+                      onChange={(e) => setCustomInstruction(e.target.value)}
+                      placeholder="Turn it into... e.g. a wedding toast, a recipe"
+                      aria-label="Turn it into"
+                      className="rb-hero-input w-full rounded-[8px] px-3 py-2.5 text-[15px] outline-none"
+                      style={
+                        {
+                          background: t.panel2,
+                          border: `1px solid ${t.lineStrong}`,
+                          color: t.ink,
+                          "--rb-ph": t.inkFaint,
+                        } as React.CSSProperties
+                      }
+                    />
+                  </div>
+                )}
 
                 <textarea
                   ref={inputRef}
@@ -1692,11 +1666,18 @@ export default function RambleBabbleApp({
               style={{ background: t.panel, border: `1px solid ${t.edge}` }}
             >
               <div
-                className="mb-4 flex flex-wrap items-center justify-between gap-3 pb-4"
+                className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 pb-4"
                 style={{ borderBottom: `1px solid ${t.line}` }}
               >
                 <StepMark onPanel>Your babble</StepMark>
-                <div className="flex flex-wrap items-center gap-4">
+                {outputChips.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {outputChips.map((c, i) => (
+                      <Chip key={`${c}-${i}`}>{c}</Chip>
+                    ))}
+                  </div>
+                )}
+                <div className="ml-auto flex flex-wrap items-center gap-4">
                   <LinkWord
                     onClick={handleCopy}
                     disabled={!cleaned}
@@ -1986,57 +1967,148 @@ function NavLink({
   );
 }
 
-/** A numbered step label in the sidebar: a solid violet badge + a bright label,
- *  with an optional dim "(optional)". */
-function StepLabel({
-  num,
-  label,
-  optional,
-}: {
-  num: string;
-  label: string;
-  optional?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span
-        className="font-bric inline-grid place-items-center font-extrabold"
-        style={{
-          width: 26,
-          height: 26,
-          borderRadius: 7,
-          background: t.violet,
-          color: t.btnColor,
-          fontSize: 15,
-        }}
-      >
-        {num}
-      </span>
-      <span
-        className="font-mono-label text-[15px] font-bold uppercase tracking-[0.1em]"
-        style={{ color: t.ink }}
-      >
-        {label}
-      </span>
-      {optional && (
+/** LOCKED ELEMENT (global rule 27): the format ticker. A calm, edge-masked
+ *  marquee of every output format, separated by violet diamonds, drifting across
+ *  the top of the workspace on the always-dark canvas (identical in both themes).
+ *  Rendered twice so the .rb-marquee -50% translate loops seamlessly. Speed is
+ *  fixed in globals.css (.rb-marquee, 120s) - do not speed it up. */
+function FormatMarquee() {
+  const items = OUTPUT_TYPES;
+  const strip = (copy: number) =>
+    items.map((o) => (
+      <span key={`${copy}-${o.id}`} className="inline-flex items-center">
         <span
-          tabIndex={0}
-          role="note"
-          aria-label="Optional. Stack a tone, character, or accent on top."
-          title="Optional. Stack a tone, character, or accent on top."
-          className="font-mono-label inline-grid place-items-center rounded-full text-[11px] font-bold"
-          style={{
-            width: 18,
-            height: 18,
-            color: t.accentOnPanel,
-            border: `1px solid ${t.fieldBorder}`,
-            cursor: "help",
-          }}
+          className="font-mono-label text-[12px] uppercase tracking-[0.18em]"
+          style={{ color: t.cDim }}
         >
-          ?
+          {o.label}
+        </span>
+        <span
+          aria-hidden
+          className="mx-3 text-[10px]"
+          style={{ color: t.accentOnCanvas }}
+        >
+          &#9670;
+        </span>
+      </span>
+    ));
+  return (
+    <div
+      className="relative overflow-hidden py-3"
+      style={{
+        borderBottom: `1px solid ${t.cLine}`,
+        WebkitMaskImage:
+          "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
+        maskImage:
+          "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
+      }}
+      aria-hidden
+    >
+      <div className="rb-marquee">
+        {strip(0)}
+        {strip(1)}
+      </div>
+    </div>
+  );
+}
+
+/** A left-rail nav item (blueprint .navitem): an icon + a bright label, an
+ *  active violet-soft highlight, and a hover wash. `soon` marks a not-yet-built
+ *  destination with a quiet "SOON" tag. Label ink clears 7:1 on the rail in
+ *  both themes, in every state. */
+function RailNavItem({
+  icon,
+  label,
+  active,
+  soon,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  soon?: boolean;
+  onClick: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      aria-current={active ? "page" : undefined}
+      className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[15px] font-semibold transition active:translate-y-px"
+      style={{
+        background: active ? t.violetSoft : hover ? t.navHover : "transparent",
+        color: t.ink,
+      }}
+    >
+      <span
+        aria-hidden
+        className="grid w-[18px] shrink-0 place-items-center text-[15px]"
+        style={{ color: t.accentOnPanel }}
+      >
+        {icon}
+      </span>
+      <span className="flex-1">{label}</span>
+      {soon && (
+        <span
+          className="font-mono-label rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]"
+          style={{ color: t.inkDim, border: `1px solid ${t.lineStrong}` }}
+        >
+          Soon
         </span>
       )}
-    </div>
+    </button>
+  );
+}
+
+/** A compact toolbar dropdown chip (blueprint .fld): a recessed --field surface
+ *  with a violet outline and a violet chevron. Shows the axis name, plus the
+ *  chosen value in bold violet when set. Opens the shared picker for its axis.
+ *  Every part clears 7:1 on the field in both themes; the outline clears the
+ *  3:1 UI bar. */
+function ToolbarField({
+  label,
+  value,
+  open,
+  onToggle,
+}: {
+  label: string;
+  value?: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-[9px] px-2.5 py-2 text-[12.5px] font-semibold transition active:translate-y-px"
+      style={{
+        background: t.field,
+        border: `1px solid ${t.fieldBorder}`,
+        color: t.ink,
+      }}
+    >
+      <span style={{ color: t.ink }}>
+        {label}
+        {value ? ":" : ""}
+      </span>
+      {value && (
+        <span style={{ color: t.accentOnPanel, fontWeight: 700 }}>{value}</span>
+      )}
+      <span
+        aria-hidden
+        className="text-[11px] transition-transform"
+        style={{
+          color: t.accentOnPanel,
+          transform: open ? "rotate(180deg)" : "none",
+        }}
+      >
+        &#9662;
+      </span>
+    </button>
   );
 }
 
@@ -2140,68 +2212,31 @@ function SolidBtn({
   );
 }
 
-/** A sidebar dropdown field: the recessed violet-tinted field (--field) with a
- *  violet outline and a violet chevron that flips when open. Shows the current
- *  selection; muted (no selection) drops the label to inkDim, which still clears
- *  7:1 on the field in both themes. */
-function PickerTrigger({
-  display,
-  muted,
-  open,
-  onToggle,
-}: {
-  display: string;
-  muted?: boolean;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-expanded={open}
-      className="flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-2.5 text-left text-[14px] font-semibold transition active:translate-y-px"
-      style={{
-        background: t.field,
-        border: `1px solid ${t.fieldBorder}`,
-        color: muted ? t.inkDim : t.ink,
-      }}
-    >
-      <span className="truncate">{display}</span>
-      <span
-        aria-hidden
-        className="shrink-0 text-[12px] transition-transform"
-        style={{
-          color: t.accentOnPanel,
-          transform: open ? "rotate(180deg)" : "none",
-        }}
-      >
-        &#9662;
-      </span>
-    </button>
-  );
-}
-
 /** The popover menu body for a picker: a panel surface anchored under its
  *  trigger, dismissed by a click-outside backdrop or Escape. A transient
  *  select-style menu (not a content panel): it caps its height and scrolls only
  *  when a very long list would otherwise run off-screen. */
 function PickerMenu({
   onClose,
+  align = "left",
   children,
 }: {
   onClose: () => void;
+  align?: "left" | "right";
   children: React.ReactNode;
 }) {
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
-        className="absolute left-0 right-0 top-full z-50 mt-1.5 rounded-[10px] p-2"
+        className={`absolute top-full z-50 mt-1.5 rounded-[10px] p-2 ${
+          align === "right" ? "right-0" : "left-0"
+        }`}
         style={{
           background: t.panel,
           border: `1px solid ${t.lineStrong}`,
           boxShadow: "0 24px 50px -16px rgba(0,0,0,0.55)",
+          width: "min(360px, 100%)",
           maxHeight: "min(64vh, 560px)",
           overflowY: "auto",
         }}

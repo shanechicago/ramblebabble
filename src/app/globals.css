@@ -34,6 +34,7 @@
   --canvas: #0b0c10; /* work-area canvas, behind the cards */
   --chrome: #111219; /* sticky top nav (1px --edge bottom border) */
   --rail: #16181f; /* left sidebar column - clearly lighter than the canvas */
+  --navHover: #1e222c; /* rail nav-item hover - a step up from the rail */
   --panel: #1b1f28; /* cards: ramble box + output box, lifted off the canvas */
   --panel2: #262b37; /* inner raised surfaces: inputs, mouth, plan cards */
   --panel3: #232734; /* pressed segment (theme toggle) */
@@ -71,6 +72,7 @@
   --canvas: #0b0c10; /* canvas stays dark in both themes */
   --chrome: #e6e9ef; /* nav - light */
   --rail: #d7dbe4; /* sidebar - a step darker than the nav */
+  --navHover: #c9ced9; /* rail nav-item hover - a step down from the rail */
   --panel: #eef1f5; /* cards - brightest, float on the dark canvas */
   --panel2: #dfe3ea; /* inner wells: inputs, mouth, plan cards */
   --panel3: #cdd3dd; /* pressed segment (theme toggle) */
@@ -132,6 +134,16 @@ body {
   font-family: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
   font-size: 17px;
   line-height: 1.5;
+}
+
+/* WebKit seeds -webkit-text-fill-color from the first `color` it resolves (the
+   app root's cInk, a light value) and inherits that LITERAL down, so it overrides
+   each element's own `color` in Day, where the panel ink flips to dark but the
+   inherited fill stays light (rail labels, Record, fields rendered light-on-light).
+   Reset it so every element's text-fill tracks its own color. The gradient wordmark
+   uses `color: transparent` (see .rb-waveletter), so it stays transparent here. */
+* {
+  -webkit-text-fill-color: currentColor;
 }
 
 /* ----- Polish: scrollbars, selection, focus -----
@@ -304,10 +316,14 @@ a:hover,
     transform: translateX(-50%);
   }
 }
+/* LOCKED ELEMENT (global rule 27): the format ticker speed is fixed at a calm,
+   readable 120s-per-loop drift (~60px/s across the full strip). Do NOT speed
+   this up in future changes. It was deliberately slowed from a fast 34s crawl.
+   Any change to this duration must be explicitly requested. */
 .rb-marquee {
   display: inline-flex;
   white-space: nowrap;
-  animation: rb-marquee 34s linear infinite;
+  animation: rb-marquee 120s linear infinite;
 }
 
 /* ----- Motion ----- */
