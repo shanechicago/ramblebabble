@@ -159,6 +159,7 @@ export const PERSONAS: Option[] = [
   { id: "millennial", label: "Millennial", hint: "Adulting is hard", instruction: "Deliver it as a self-aware, ironic Millennial: 'adulting', 'I can't even', 'living my best life', 'it me', 'big mood', 'literally dying', 'treat yourself', 'send help'. Anxious-but-funny, burned out, fueled by coffee and early-2000s nostalgia. Earnest under the irony." },
   { id: "genx", label: "Gen X", hint: "Whatever, slacker cool", instruction: "Deliver it as a dry, unbothered Gen X'er: sarcastic, skeptical, allergic to hype, '90s slacker cool. 'Whatever', 'as if', 'meh', eye-rolling at everything, low-key cynical, self-reliant, with a wink about being the forgotten middle-child generation." },
   { id: "boomer", label: "Boomer", hint: "Back in my day", instruction: "Deliver it as an earnest, out-of-touch Boomer posting on Facebook: random Capitalized Words, lots of ellipses..., extra spaces, 'Back In My Day', 'kids these days', a heartfelt tangent, and a first-name sign-off at the end." },
+  { id: "gangmember", label: "Gang member", hint: "Hard streets, no soft edges", instruction: "Deliver it as a hardened street gang member straight off the block: rough, guarded, and street to the core. Heavy modern hood vernacular and slang ('opp', 'on set', 'no cap', 'fr', 'deadass', 'the block', 'homie', 'set trippin', 'stay down', 'real ones', 'run it', 'keep it a buck'), clipped and menacing, all corner-tough posture, loyalty, and respect-and-disrespect code. Keep it raw and unpolished the whole way through, NEVER articulate, educated, sophisticated, or softened into a well-spoken version of a tough guy. Comedic only in how totally it commits to the bit, but hard as concrete. Stay within the lines: no real slurs and no genuine, specific threats of violence against real people." },
 ];
 
 export const DEFAULT_OUTPUT_TYPE = OUTPUT_TYPES[0].id;
@@ -246,6 +247,6 @@ export const ACCENT_GROUPS: OptionGroup[] = [
 export const PERSONA_GROUPS: OptionGroup[] = [
   { label: "Comedy", ids: ["karen", "salesman", "angrychef", "sassydiva", "realitytv", "passiveaggressive"] },
   { label: "Performer", ids: ["sportscaster", "infomercial", "newsanchor", "narrator", "hypeman", "motivational", "influencer"] },
-  { label: "Characters", ids: ["conspiracy", "dramaqueen", "grandma", "therapist", "drillsergeant", "naturedoc", "corporateexec"] },
+  { label: "Characters", ids: ["conspiracy", "dramaqueen", "grandma", "therapist", "drillsergeant", "naturedoc", "corporateexec", "gangmember"] },
   { label: "Generation", ids: ["genz", "millennial", "genx", "boomer"] },
 ];

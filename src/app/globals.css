@@ -215,6 +215,9 @@ body {
     position: sticky;
     top: var(--rb-nav, 64px);
     align-self: start;
+    /* Fill the viewport height below the nav so the rail reads as a full-height
+       anchored panel, never a short floating cut-off box. */
+    min-height: calc(100vh - var(--rb-nav, 64px));
   }
 }
 

@@ -88,22 +88,12 @@ Or something unhinged enough to get you blocked.
 
 Depends on what you clicked.`;
 
-const LANGUAGES = [
-  "English",
-  "Spanish",
-  "French",
-  "German",
-  "Portuguese",
-  "Italian",
-  "Dutch",
-  "Russian",
-  "Arabic",
-  "Hindi",
-  "Mandarin Chinese",
-  "Japanese",
-  "Korean",
-  "Vietnamese",
-  "Tagalog",
+// Languages, grouped into collapsible categories so the Language dropdown uses
+// the SAME nested structure as every other picker (rule 21).
+const LANGUAGE_GROUPS: { label: string; langs: string[] }[] = [
+  { label: "European", langs: ["English", "Spanish", "French", "German", "Portuguese", "Italian", "Dutch", "Russian"] },
+  { label: "Asian", langs: ["Hindi", "Mandarin Chinese", "Japanese", "Korean", "Vietnamese", "Tagalog"] },
+  { label: "Middle Eastern", langs: ["Arabic"] },
 ];
 
 // Number of vertical bars in the recording "mouth" waveform. They flex to fill
@@ -169,6 +159,15 @@ function toGlossaryEntries(rows: GlossaryRow[]): GlossaryEntry[] {
   return entries;
 }
 
+/** Saved entries -> editable rows, so reopening a ramble restores the glossary
+ *  exactly as it was. An empty/missing saved glossary yields one blank row. */
+function rowsFromEntries(
+  entries: GlossaryEntry[] | null | undefined,
+): GlossaryRow[] {
+  if (!Array.isArray(entries) || entries.length === 0) return EMPTY_GLOSSARY;
+  return entries.map((e) => ({ word: e.word ?? "", meaning: e.meaning ?? "" }));
+}
+
 export default function RambleBabbleApp({
   userId,
   userEmail,
@@ -192,22 +191,39 @@ export default function RambleBabbleApp({
   const accountName = (userEmail || "").split("@")[0] || "you";
   const accountInitial = (accountName[0] || "Y").toUpperCase();
 
+  // Reopening a saved ramble restores EVERY selection, not just the text and
+  // tone: format, character, accent, language, glossary, and the profanity
+  // toggle all come back exactly as they were saved (fixes the dropped Accent).
   const [inputText, setInputText] = useState(reopen?.transcript ?? "");
   const [outputType, setOutputType] = useState(reopen?.output_type ?? "note");
   const [tone, setTone] = useState(reopen?.tone ?? "");
-  const [glossary, setGlossary] = useState<GlossaryRow[]>(EMPTY_GLOSSARY);
-  const [accent, setAccent] = useState("");
-  const [persona, setPersona] = useState("");
-  const [targetLanguage, setTargetLanguage] = useState("");
-  const [customInstruction, setCustomInstruction] = useState("");
+  const [glossary, setGlossary] = useState<GlossaryRow[]>(
+    rowsFromEntries(reopen?.glossary),
+  );
+  const [accent, setAccent] = useState(reopen?.accent ?? "");
+  const [persona, setPersona] = useState(reopen?.persona ?? "");
+  const [targetLanguage, setTargetLanguage] = useState(
+    reopen?.target_language ?? "",
+  );
+  // A custom format stored its typed instruction in output_label; restore it so a
+  // reopened "Something else" ramble keeps its target.
+  const [customInstruction, setCustomInstruction] = useState(
+    reopen?.output_type === "custom" ? reopen?.output_label ?? "" : "",
+  );
   // Default: keep the speaker's swearing verbatim. Toggle "Clean it up" to strip
   // the curse words while keeping the anger.
-  const [cleanProfanity, setCleanProfanity] = useState(false);
+  const [cleanProfanity, setCleanProfanity] = useState(
+    reopen?.clean_profanity ?? false,
+  );
 
   // Which sidebar picker menu is open (one at a time). null = all closed.
   const [openPicker, setOpenPicker] = useState<string | null>(null);
   // Nested collapsible format groups inside the FORMAT menu (one at a time).
   const [openFmtGroup, setOpenFmtGroup] = useState<string | null>(null);
+  // Nested collapsible category open in the OTHER pickers (Tone, Character,
+  // Accent, Language), keyed like "tone:Professional". One open at a time, so
+  // every dropdown behaves exactly like Format. null = all collapsed.
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
 
   const [cleaned, setCleaned] = useState(reopen?.cleaned ?? "");
   // Bumped on every new result so the decode replays even when the engine hands
@@ -592,12 +608,39 @@ export default function RambleBabbleApp({
     await transcribeBlob(blob);
   }, [recorder, transcribeBlob]);
 
+  // Reset ONLY the format + stack selections (format, tone, character, accent,
+  // language, glossary, profanity, custom instruction). Leaves the ramble text
+  // and the babble output untouched. Backs "Clear options", the full "Clear",
+  // and "New ramble".
+  const resetOptions = useCallback(() => {
+    setOutputType("");
+    setTone("");
+    setPersona("");
+    setAccent("");
+    setTargetLanguage("");
+    setGlossary(EMPTY_GLOSSARY);
+    setCleanProfanity(false);
+    setCustomInstruction("");
+    setOpenFmtGroup(null);
+    setOpenGroup(null);
+    setOpenPicker(null);
+  }, []);
+
+  // Clear (the ramble-box "Clear" and the "Clear ramble" menu item): a FULL
+  // reset to a clean slate, wiping the ramble text, EVERY selection, AND the
+  // babble output. Stays on the page; "New ramble" is the same reset but also
+  // glides back to the top.
   const clearRamble = useCallback(() => {
     if (recorder.status === "recording") recorder.cancel();
     setInputText("");
+    resetOptions();
+    setCleaned("");
+    setKeyPoints([]);
+    setFollowUps([]);
+    setSavedNotice(false);
     setError(null);
     setLimitNotice(null);
-  }, [recorder]);
+  }, [recorder, resetOptions]);
 
   const runCleanup = useCallback(
     async (modifier?: string) => {
@@ -669,6 +712,12 @@ export default function RambleBabbleApp({
             output_type: outputType,
             output_label: label,
             tone,
+            // Persist the rest of the selection stack so reopening restores it all.
+            accent: accent || null,
+            persona: persona || null,
+            target_language: targetLanguage || null,
+            glossary: glossaryEntries.length ? glossaryEntries : null,
+            clean_profanity: cleanProfanity,
             cleaned: out,
             key_points: Array.isArray(data.keyPoints) ? data.keyPoints : [],
             follow_ups: Array.isArray(data.followUps) ? data.followUps : [],
@@ -716,22 +765,6 @@ export default function RambleBabbleApp({
       setError("Your clipboard said no. Even it has boundaries, apparently.");
     }
   }, [cleaned]);
-
-  // Reset ONLY the format + stack selections (format, tone, character, accent,
-  // language, glossary, profanity, custom instruction). Leaves the ramble text
-  // and the babble output untouched. Shared by "Clear options" and "New Ramble".
-  const resetOptions = useCallback(() => {
-    setOutputType("");
-    setTone("");
-    setPersona("");
-    setAccent("");
-    setTargetLanguage("");
-    setGlossary(EMPTY_GLOSSARY);
-    setCleanProfanity(false);
-    setCustomInstruction("");
-    setOpenFmtGroup(null);
-    setOpenPicker(null);
-  }, []);
 
   // New Ramble: FULL reset. Clear the ramble text, reset the output to idle,
   // clear every option, then glide back to the top of the page.
@@ -782,6 +815,19 @@ export default function RambleBabbleApp({
   const words = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
   const hasResult = !!cleaned;
   const canBabble = !!outputType && !!inputText.trim();
+  // Any selection worth resetting (drives "Clear options"); anything at all on
+  // the workspace (drives the full "Clear all").
+  const hasOptions = !!(
+    outputType ||
+    tone ||
+    persona ||
+    accent ||
+    targetLanguage ||
+    cleanProfanity ||
+    customInstruction ||
+    !glossaryIsEmpty
+  );
+  const hasAnything = !!inputText || hasResult || hasOptions;
 
   // Every babble (revealKey bumps once per run, regenerate included) glides the
   // output section's TOP EDGE to the top of the viewport, at every width. Keyed
@@ -1067,7 +1113,7 @@ export default function RambleBabbleApp({
         <section className="flex flex-col px-4 py-6 sm:px-8 sm:py-7">
           {/* Format ticker (LOCKED, rule 27): calm drift of every output format,
               on the dark canvas above the ramble, alongside the Format dropdown. */}
-          <div className="mb-5">
+          <div className="mb-4">
             <FormatMarquee />
           </div>
 
@@ -1077,7 +1123,7 @@ export default function RambleBabbleApp({
           </div>
 
           <div
-            className={`relative rb-racing${cleaning ? " rb-racing-fast" : ""}`}
+            className={`relative${!hasResult && !cleaning ? " rb-racing" : ""}`}
             style={{
               background: t.panel,
               border: `1px solid ${t.edge}`,
@@ -1208,13 +1254,18 @@ export default function RambleBabbleApp({
                     shared picker, dropping just below the row. */}
                 <div className="relative">
                   <div className="flex flex-wrap items-center gap-2.5 px-4 pt-4 sm:px-5">
+                    {/* Record: the one prominent control in the toolbar (a filled,
+                        bordered button among underlined words), but its label sits
+                        on the card surface (link-violet, >=7:1 both themes) rather
+                        than near-black on a solid violet fill, which only reaches
+                        ~6:1. The gradient stays reserved for Babble it. */}
                     <button
                       type="button"
                       onClick={handleStart}
-                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[9px] px-3.5 py-2 text-[13px] font-bold transition active:translate-y-px"
+                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[9px] px-4 py-2.5 text-[14px] font-extrabold transition hover:brightness-110 active:translate-y-px"
                       style={{
-                        background: "transparent",
-                        border: `1px solid ${t.recordBorder}`,
+                        background: t.violetSoft,
+                        border: `2px solid ${t.accentOnPanel}`,
                         color: t.linkViolet,
                       }}
                     >
@@ -1225,7 +1276,7 @@ export default function RambleBabbleApp({
                           height: 9,
                           width: 9,
                           borderRadius: 999,
-                          background: t.linkViolet,
+                          background: t.accentOnPanel,
                         }}
                       />
                       Record
@@ -1274,19 +1325,28 @@ export default function RambleBabbleApp({
                       onToggle={() => toggle("profanity")}
                     />
 
-                    <div className="ml-auto flex items-center gap-3">
+                    <div className="ml-auto flex items-center gap-3.5">
                       <span
                         className="font-mono-label text-[12px] uppercase tracking-[0.08em]"
                         style={{ color: t.inkDim }}
                       >
                         {words} words
                       </span>
+                      {/* Options-only reset (keeps the ramble + babble). */}
                       <LinkWord
-                        onClick={clearRamble}
-                        disabled={!inputText}
+                        onClick={resetOptions}
+                        disabled={!hasOptions}
                         className="text-[12px] tracking-[0.06em]"
                       >
-                        <span aria-hidden>&#10005;</span> Clear
+                        Clear options
+                      </LinkWord>
+                      {/* Full reset: ramble text, every selection, and the babble. */}
+                      <LinkWord
+                        onClick={clearRamble}
+                        disabled={!hasAnything}
+                        className="text-[12px] tracking-[0.06em]"
+                      >
+                        <span aria-hidden>&#10005;</span> Clear all
                       </LinkWord>
                     </div>
                   </div>
@@ -1360,10 +1420,13 @@ export default function RambleBabbleApp({
                           closeMenu();
                         }}
                       />
-                      <PillGroups
+                      <CollapsibleGroups
                         groups={TONE_GROUPS}
                         options={TONES}
                         value={tone}
+                        prefix="tone"
+                        openKey={openGroup}
+                        setOpenKey={setOpenGroup}
                         onPick={(v) => {
                           setTone(v);
                           closeMenu();
@@ -1381,10 +1444,13 @@ export default function RambleBabbleApp({
                           closeMenu();
                         }}
                       />
-                      <PillGroups
+                      <CollapsibleGroups
                         groups={PERSONA_GROUPS}
                         options={PERSONAS}
                         value={persona}
+                        prefix="char"
+                        openKey={openGroup}
+                        setOpenKey={setOpenGroup}
                         onPick={(v) => {
                           setPersona(v);
                           closeMenu();
@@ -1394,7 +1460,7 @@ export default function RambleBabbleApp({
                   )}
 
                   {openPicker === "accent" && (
-                    <PickerMenu onClose={closeMenu} align="right">
+                    <PickerMenu onClose={closeMenu}>
                       <NoneRow
                         active={!accent}
                         onClick={() => {
@@ -1402,10 +1468,13 @@ export default function RambleBabbleApp({
                           closeMenu();
                         }}
                       />
-                      <PillGroups
+                      <CollapsibleGroups
                         groups={ACCENT_GROUPS}
                         options={ACCENTS}
                         value={accent}
+                        prefix="accent"
+                        openKey={openGroup}
+                        setOpenKey={setOpenGroup}
                         onPick={(v) => {
                           setAccent(v);
                           closeMenu();
@@ -1415,33 +1484,28 @@ export default function RambleBabbleApp({
                   )}
 
                   {openPicker === "language" && (
-                    <PickerMenu onClose={closeMenu} align="right">
-                      <div className="flex flex-wrap gap-1.5">
-                        <Pill
-                          label="None"
-                          active={!targetLanguage}
-                          onClick={() => {
-                            setTargetLanguage("");
-                            closeMenu();
-                          }}
-                        />
-                        {LANGUAGES.map((l) => (
-                          <Pill
-                            key={l}
-                            label={l}
-                            active={targetLanguage === l}
-                            onClick={() => {
-                              setTargetLanguage(targetLanguage === l ? "" : l);
-                              closeMenu();
-                            }}
-                          />
-                        ))}
-                      </div>
+                    <PickerMenu onClose={closeMenu}>
+                      <NoneRow
+                        active={!targetLanguage}
+                        onClick={() => {
+                          setTargetLanguage("");
+                          closeMenu();
+                        }}
+                      />
+                      <CollapsibleLanguageGroups
+                        value={targetLanguage}
+                        openKey={openGroup}
+                        setOpenKey={setOpenGroup}
+                        onPick={(v) => {
+                          setTargetLanguage(v);
+                          closeMenu();
+                        }}
+                      />
                     </PickerMenu>
                   )}
 
                   {openPicker === "glossary" && (
-                    <PickerMenu onClose={closeMenu} align="right">
+                    <PickerMenu onClose={closeMenu}>
                       <div className="mb-2 flex flex-wrap gap-1.5">
                         <Pill
                           label="None"
@@ -1548,7 +1612,7 @@ export default function RambleBabbleApp({
                   )}
 
                   {openPicker === "profanity" && (
-                    <PickerMenu onClose={closeMenu} align="right">
+                    <PickerMenu onClose={closeMenu}>
                       <div className="flex flex-wrap gap-1.5">
                         <Pill
                           label="Keep it"
@@ -1604,7 +1668,7 @@ export default function RambleBabbleApp({
                     {
                       color: t.ink,
                       background: "transparent",
-                      minHeight: 140,
+                      minHeight: 120,
                       overflowY: "hidden",
                       border: "1px solid transparent",
                       "--rb-ph": t.inkFaint,
@@ -1660,20 +1724,34 @@ export default function RambleBabbleApp({
           )}
 
           {/* --- YOUR BABBLE (output) --- */}
-          <section ref={goodsRef} className="mt-8">
+          <section ref={goodsRef} className="mt-6">
             <div
-              className="flex min-h-[300px] flex-col rounded-[14px] p-5 sm:p-6"
+              className={`relative flex min-h-[220px] flex-col rounded-[14px] p-5${
+                cleaning || hasResult ? " rb-racing" : ""
+              }${cleaning ? " rb-racing-fast" : ""}`}
               style={{ background: t.panel, border: `1px solid ${t.edge}` }}
             >
               <div
-                className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 pb-4"
+                className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 pb-3"
                 style={{ borderBottom: `1px solid ${t.line}` }}
               >
-                <StepMark onPanel>Your babble</StepMark>
+                {/* The selections the babble was built from, as underlined words
+                    (not pills), level with the actions. "Your babble" dropped. */}
                 {outputChips.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     {outputChips.map((c, i) => (
-                      <Chip key={`${c}-${i}`}>{c}</Chip>
+                      <span
+                        key={`${c}-${i}`}
+                        className="text-[13px] font-semibold"
+                        style={{
+                          color: t.accentOnPanel,
+                          textDecoration: "underline dotted",
+                          textDecorationThickness: "1px",
+                          textUnderlineOffset: "3px",
+                        }}
+                      >
+                        {c}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -1741,16 +1819,19 @@ export default function RambleBabbleApp({
               ) : (
                 <div>
                   {/* THE REVEAL. Glyph noise resolving left to right into the real
-                      text. `cleaned` (never this) is what Copy reads. */}
+                      text. `cleaned` (never this) is what Copy reads. A clean,
+                      neutral sans, non-italic, so it copy-pastes cleanly; the box
+                      width is used in full (no artificial measure), and paragraph
+                      breaks are preserved by whitespace-pre-wrap so it never reads
+                      as one wall of text. */}
                   <div
-                    className="font-serif-i whitespace-pre-wrap"
+                    className="whitespace-pre-wrap"
                     style={{
                       color: t.ink,
-                      fontStyle: "italic",
-                      fontSize: 19,
-                      lineHeight: 1.6,
-                      letterSpacing: "0.005em",
-                      maxWidth: "64ch",
+                      fontFamily:
+                        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                      fontSize: 17,
+                      lineHeight: 1.65,
                     }}
                   >
                     {revealText}
@@ -2063,11 +2144,11 @@ function RailNavItem({
   );
 }
 
-/** A compact toolbar dropdown chip (blueprint .fld): a recessed --field surface
- *  with a violet outline and a violet chevron. Shows the axis name, plus the
- *  chosen value in bold violet when set. Opens the shared picker for its axis.
- *  Every part clears 7:1 on the field in both themes; the outline clears the
- *  3:1 UI bar. */
+/** A toolbar setup control, rendered as an underlined clickable WORD (not a
+ *  pill): the axis name in link-violet with a dotted underline, the chosen value
+ *  appended in accent violet when set, and a caret. Only Record and Babble it
+ *  stay buttons; every setup control reads as a word (rule F). Link-violet and
+ *  accent-violet both clear 7:1 on the card in either theme. */
 function ToolbarField({
   label,
   value,
@@ -2084,23 +2165,27 @@ function ToolbarField({
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-[9px] px-2.5 py-2 text-[12.5px] font-semibold transition active:translate-y-px"
-      style={{
-        background: t.field,
-        border: `1px solid ${t.fieldBorder}`,
-        color: t.ink,
-      }}
+      className="inline-flex items-baseline gap-1 whitespace-nowrap bg-transparent text-[13px] font-bold transition active:translate-y-px"
+      style={{ color: t.linkViolet }}
     >
-      <span style={{ color: t.ink }}>
-        {label}
-        {value ? ":" : ""}
+      <span
+        style={{
+          textDecoration: "underline dotted",
+          textDecorationThickness: "1px",
+          textUnderlineOffset: "3px",
+        }}
+      >
+        <span style={{ color: t.linkViolet }}>
+          {label}
+          {value ? ": " : ""}
+        </span>
+        {value && (
+          <span style={{ color: t.accentOnPanel, fontWeight: 700 }}>{value}</span>
+        )}
       </span>
-      {value && (
-        <span style={{ color: t.accentOnPanel, fontWeight: 700 }}>{value}</span>
-      )}
       <span
         aria-hidden
-        className="text-[11px] transition-transform"
+        className="text-[10px] transition-transform"
         style={{
           color: t.accentOnPanel,
           transform: open ? "rotate(180deg)" : "none",
@@ -2256,22 +2341,6 @@ function NoneRow({ active, onClick }: { active: boolean; onClick: () => void }) 
   );
 }
 
-/** An active-selection chip (violet-soft fill, light-violet label). */
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className="rounded-full px-3 py-1 text-[13px] font-semibold"
-      style={{
-        background: t.chipBg,
-        border: `1px solid ${t.chipBorder}`,
-        color: t.chipText,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 /** A top-level accent heading in the format picker (Practical / Fun), above the
  *  collapsible groups it contains. */
 function FormatGroup({
@@ -2345,27 +2414,6 @@ function PickerGroup({
   );
 }
 
-/** A sub-heading (family label) with its content below, in the accent violet. */
-function SubGroup({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div
-        className="font-mono-label mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em]"
-        style={{ color: t.accentOnPanel }}
-      >
-        {label}
-      </div>
-      {children}
-    </div>
-  );
-}
-
 /** Tiles format rows into columns so the list stays scannable, not a mile tall. */
 function FormatGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-1.5">{children}</div>;
@@ -2408,38 +2456,96 @@ function FormatRow({
   );
 }
 
-/** Grouped pills for a single-select axis (click the active one to clear it). */
-function PillGroups({
+/** Every non-Format picker's body: its option groups rendered as the SAME
+ *  nested, collapsible categories as Format (one open at a time), so every
+ *  dropdown is structurally identical (rule 21). Reuses FormatRow so the
+ *  selected state reads the same everywhere. */
+function CollapsibleGroups({
   groups,
   options,
   value,
   onPick,
+  openKey,
+  setOpenKey,
+  prefix,
 }: {
   groups: OptionGroup[];
   options: Option[];
   value: string;
   onPick: (id: string) => void;
+  openKey: string | null;
+  setOpenKey: (k: string | null) => void;
+  prefix: string;
 }) {
   return (
-    <div className="flex flex-col gap-3">
-      {groups.map((g) => (
-        <SubGroup key={g.label} label={g.label}>
-          <div className="flex flex-wrap gap-1.5">
-            {g.ids.map((id) => {
-              const o = options.find((x) => x.id === id);
-              if (!o) return null;
-              return (
-                <Pill
-                  key={id}
-                  label={o.label}
-                  active={value === id}
-                  onClick={() => onPick(value === id ? "" : id)}
+    <div className="flex flex-col gap-2">
+      {groups.map((g) => {
+        const key = `${prefix}:${g.label}`;
+        return (
+          <PickerGroup
+            key={g.label}
+            label={g.label}
+            open={openKey === key}
+            onToggle={() => setOpenKey(openKey === key ? null : key)}
+          >
+            <FormatGrid>
+              {g.ids.map((id) => {
+                const o = options.find((x) => x.id === id);
+                if (!o) return null;
+                return (
+                  <FormatRow
+                    key={id}
+                    label={o.label}
+                    active={value === id}
+                    onClick={() => onPick(value === id ? "" : id)}
+                  />
+                );
+              })}
+            </FormatGrid>
+          </PickerGroup>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The Language picker body: the same collapsible categories, over plain
+ *  language strings (LANGUAGE_GROUPS). */
+function CollapsibleLanguageGroups({
+  value,
+  onPick,
+  openKey,
+  setOpenKey,
+}: {
+  value: string;
+  onPick: (lang: string) => void;
+  openKey: string | null;
+  setOpenKey: (k: string | null) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {LANGUAGE_GROUPS.map((g) => {
+        const key = `lang:${g.label}`;
+        return (
+          <PickerGroup
+            key={g.label}
+            label={g.label}
+            open={openKey === key}
+            onToggle={() => setOpenKey(openKey === key ? null : key)}
+          >
+            <FormatGrid>
+              {g.langs.map((l) => (
+                <FormatRow
+                  key={l}
+                  label={l}
+                  active={value === l}
+                  onClick={() => onPick(value === l ? "" : l)}
                 />
-              );
-            })}
-          </div>
-        </SubGroup>
-      ))}
+              ))}
+            </FormatGrid>
+          </PickerGroup>
+        );
+      })}
     </div>
   );
 }
