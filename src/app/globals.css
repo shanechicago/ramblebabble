@@ -215,9 +215,13 @@ body {
     position: sticky;
     top: var(--rb-nav, 64px);
     align-self: start;
-    /* Fill the viewport height below the nav so the rail reads as a full-height
-       anchored panel, never a short floating cut-off box. */
-    min-height: calc(100vh - var(--rb-nav, 64px));
+    /* Own the full viewport height below the nav AND keep an internal scroll, so
+       the rail is a fixed, independent panel: it stays put while the work frame
+       scrolls, and if its own controls overflow it scrolls inside itself rather
+       than dragging the page along. */
+    height: calc(100vh - var(--rb-nav, 64px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 

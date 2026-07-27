@@ -1669,7 +1669,8 @@ export default function RambleBabbleApp({
                       color: t.ink,
                       background: "transparent",
                       minHeight: 120,
-                      overflowY: "hidden",
+                      maxHeight: 240,
+                      overflowY: "auto",
                       border: "1px solid transparent",
                       "--rb-ph": t.inkFaint,
                     } as React.CSSProperties

@@ -193,7 +193,8 @@ export const USEFUL_GROUPS: OptionGroup[] = [
 ];
 
 export const FUN_GROUPS: OptionGroup[] = [
-  { label: "Comedy", ids: ["roast", "meme", "recipe"] },
+  { label: "Comedy", ids: ["roast", "meme"] },
+  { label: "Novelty", ids: ["recipe"] },
   { label: "Story", ids: ["tale", "bedtime", "fairytale", "trailer", "screenplay"] },
   { label: "Music", ids: ["rap", "pop", "country", "rnb", "rockabilly"] },
   { label: "Poetry", ids: ["poem", "haiku", "nursery", "limerick"] },
