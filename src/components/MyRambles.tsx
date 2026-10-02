@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { BabbleWave } from "./BabbleText";
 import { ACCENT, ACCENT_ON_CANVAS, CANVAS, C_INK, C_DIM } from "@/lib/brand";
+import type { GlossaryEntry } from "@/lib/glossary";
 
 // Label sitting ON the violet accent FILL. White fails on violet (4.36), so the
 // label is the same near-black the brand button uses: #070809 clears AA at 4.60.
@@ -25,6 +26,12 @@ export interface SavedRamble {
   output_type: string;
   output_label: string | null;
   tone: string | null;
+  // The rest of the selection stack, persisted so reopening restores all of it.
+  accent: string | null;
+  persona: string | null;
+  target_language: string | null;
+  glossary: GlossaryEntry[] | null;
+  clean_profanity: boolean | null;
   cleaned: string;
   key_points: string[];
   follow_ups: string[];

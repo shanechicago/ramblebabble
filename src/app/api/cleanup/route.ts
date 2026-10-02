@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/providers";
 import { getOutputType, getTone, getAccent, getPersona } from "@/lib/options";
-import { stripBanned, stripBannedList, stripMarkdown } from "@/lib/sanitize";
+import {
+  stripBanned,
+  stripBannedList,
+  stripMarkdown,
+  stripProductLeak,
+  stripProductLeakList,
+} from "@/lib/sanitize";
 import { resolveGlossary } from "@/lib/glossary";
 import { RATE_LIMIT_MESSAGE } from "@/lib/config";
 import { getClientIp, checkRateLimit } from "@/lib/ratelimit";
@@ -115,12 +121,22 @@ export async function POST(req: NextRequest) {
       modifier: typeof body.modifier === "string" ? body.modifier : undefined,
     });
 
-    // Hard-enforce the non-negotiable rules (no em dashes, no emojis, no
-    // leaked Markdown) before anything reaches the user.
+    // Hard-enforce the non-negotiable rules before anything reaches the user:
+    // no em dashes, no emojis, no leaked Markdown, and no product-name leak into
+    // a babble whose transcript never named it (checked against the transcript).
     return NextResponse.json({
-      cleaned: stripBanned(stripMarkdown(result.cleaned)),
-      keyPoints: stripBannedList(result.keyPoints),
-      followUps: stripBannedList(result.followUps),
+      cleaned: stripProductLeak(
+        stripBanned(stripMarkdown(result.cleaned)),
+        transcript,
+      ),
+      keyPoints: stripProductLeakList(
+        stripBannedList(result.keyPoints),
+        transcript,
+      ),
+      followUps: stripProductLeakList(
+        stripBannedList(result.followUps),
+        transcript,
+      ),
     });
   } catch (err) {
     console.error("[cleanup] error:", err);

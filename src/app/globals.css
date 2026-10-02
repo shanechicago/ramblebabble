@@ -215,6 +215,13 @@ body {
     position: sticky;
     top: var(--rb-nav, 64px);
     align-self: start;
+    /* Own the full viewport height below the nav AND keep an internal scroll, so
+       the rail is a fixed, independent panel: it stays put while the work frame
+       scrolls, and if its own controls overflow it scrolls inside itself rather
+       than dragging the page along. */
+    height: calc(100vh - var(--rb-nav, 64px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 
