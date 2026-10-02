@@ -1361,7 +1361,7 @@ export default function RambleBabbleApp({
                             setOpenFmtGroup((g) => (g === "just" ? null : "just"))
                           }
                         >
-                          {renderFormatRows(["note", "conversational"])}
+                          {renderFormatRows(["auto", "note", "conversational"])}
                         </PickerGroup>
 
                         <FormatGroup heading="Practical">
@@ -2055,7 +2055,8 @@ function NavLink({
  *  Rendered twice so the .rb-marquee -50% translate loops seamlessly. Speed is
  *  fixed in globals.css (.rb-marquee, 120s) - do not speed it up. */
 function FormatMarquee() {
-  const items = OUTPUT_TYPES;
+  // "Let it decide" is a mode, not a format to advertise: the LOCKED ticker (rule 27) drifts the real formats only.
+  const items = OUTPUT_TYPES.filter((o) => o.id !== "auto");
   const strip = (copy: number) =>
     items.map((o) => (
       <span key={`${copy}-${o.id}`} className="inline-flex items-center">
