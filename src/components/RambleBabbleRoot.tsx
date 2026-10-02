@@ -26,6 +26,10 @@ export default function RambleBabbleRoot() {
       setUser(session?.user ?? null);
       // Always land on the main workspace right after signing in.
       if (event === "SIGNED_IN") setScreen("main");
+      // A sign-in or sign-out is a workspace boundary. Never carry a reopened
+      // ramble across it: a fresh account must land on an empty workspace, never
+      // on the previous user's last ramble, babble, and selections.
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") setReopen(null);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -33,6 +37,7 @@ export default function RambleBabbleRoot() {
   const signOut = useCallback(async () => {
     await getSupabase().auth.signOut();
     setScreen("main");
+    setReopen(null);
   }, []);
 
   const handleReopen = useCallback((r: SavedRamble) => {
@@ -65,9 +70,12 @@ export default function RambleBabbleRoot() {
     );
   }
 
+  // Keyed on the account as well as the reopen sequence, so switching users
+  // remounts the whole workspace with fresh state instead of inheriting the
+  // previous user's ramble, babble, and selections.
   return (
     <RambleBabbleApp
-      key={reopenSeq}
+      key={`${user.id}:${reopenSeq}`}
       userId={user.id}
       userEmail={user.email ?? ""}
       onOpenHistory={() => setScreen("history")}
